@@ -1,0 +1,32 @@
+resolver: lts-16.8
+compiler: ghc-8.10.2
+
+packages:
+- . 
+
+extra-deps:
+# Required for the 8.10.1 build
+- text-format-0.3.2
+- optics-0.2
+- Diff-0.3.4
+- aeson-1.4.7.1
+- th-compat-0.1.2@sha256:3d55de1adc542c1a870c9ada90da2fbbe5f4e8bcd3eed545a55c3df9311b32a8,2854
+
+- git: https://github.com/ucsd-progsys/liquidhaskell
+  commit: c06fd0b141054d04614af0ce3015d055a7980bce
+ 
+- git: https://github.com/ucsd-progsys/liquidhaskell
+  commit: c06fd0b141054d04614af0ce3015d055a7980bce
+  subdirs:
+      - liquid-base
+      - liquid-ghc-prim
+      - liquid-containers
+
+- git: https://github.com/ucsd-progsys/liquid-fixpoint
+  commit: 90e19918bc51a2c246909ec1e4edba636077c675
+
+- git: https://github.com/well-typed/optics.git
+  commit: 0a4940cc927df3f50151692282f8b148bf326886
+  subdirs:
+    - optics-core
+    - optics-th

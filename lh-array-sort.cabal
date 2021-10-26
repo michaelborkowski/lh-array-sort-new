@@ -1,0 +1,30 @@
+cabal-version: 1.12
+
+name:           project
+version:        0.1.0.0
+description:    hw5 from CSE230 - "Proofs of Programs"
+homepage:
+bug-reports:
+author:         Ranjit Jhala 
+maintainer:     jhala@cs.ucsd.edu
+copyright:      2020 Ranjit Jhala 
+license:        MIT 
+license-file:   LICENSE
+build-type:     Simple
+
+library
+  exposed-modules: 
+      Compile
+      Imp
+      Array
+      Order
+      Merge
+      Insertion
+  hs-source-dirs:
+      src
+  build-depends:
+      liquid-base,
+      liquid-containers,
+      liquidhaskell
+  default-language: Haskell2010
+  ghc-options: -fplugin=LiquidHaskell
