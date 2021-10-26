@@ -1,5 +1,5 @@
 {-@ LIQUID "--reflection"  @-}
-{-@ LIQUID "--diff"        @-}
+-- {-@ LIQUID "--diff"        @-}
 {-@ LIQUID "--ple"         @-}
 {-@ LIQUID "--short-names" @-}
 -- {-@ LIQUID "--checks=lma_merge_max" @-}
@@ -26,7 +26,7 @@ import           Order
 --------------------------------------------------------------------------------
 -- | Implementations
 --------------------------------------------------------------------------------
-
+ 
 -- >>>  merge [1:3:4:6] [2:5] 4 2
 --
 
@@ -146,7 +146,6 @@ lma_merge_max_m xs ys m z
       zs  = merge xs ys 0 (m-1)
       ys_m = get ys (m-1)
 
-
 -- TODO: Dumb to write this proof separately, for the case n = 0
 {-@ lma_merge_max_n :: xs:{isSorted xs} -> ys:_ -> n:{v:Nat | v > 0 && v <= size xs} -> z:{ z >= (get xs (n-1))}
       -> { z >= get (merge xs ys n 0) (n-1) } @-}
@@ -173,12 +172,6 @@ lma_merge :: Ord a => Array a -> Array a -> Int -> Int -> Proof
 lma_merge xs ys 0 0 = ()
 lma_merge xs ys 0 1 = ()
 lma_merge xs ys 1 0 = ()
--- lma_merge xs ys 0 m = undefined
--- lma_merge xs ys n 0 = undefined
--- lma_merge xs ys 1 m = undefined -- need to implement 
--- lma_merge xs ys n 1 = undefined -- need to implement
-
-
 lma_merge xs ys 0 m 
   = isSortedFstN mer1 m
   -- === (((get mer1 (m-2)) <= (get mer1 (m-1))) && (isSortedFstN mer1 (m-1)))
@@ -243,7 +236,7 @@ lma_merge xs ys n m =
       *** QED
     False -> isSortedFstN mer1 (n+m) 
       -- === (((get mer1 (n+m-2)) <= (get mer1 (n+m-1))) && (isSortedFstN mer1 (n+m-1))) 
-      -- === (((get mer3 (n+m-2)) <= (get mer3 (n+m-1))) && (isSortedFstN mer3 (n+m-1))) -- TODO: this line causes panic
+      -- === (((get mer3 (n+m-2)) <= (get mer3 (n+m-1))) && (isSortedFstN mer3 (n+m-1)))
       -- ==! True *** QED
         ? (lma_gs zs2 (n+m-1) xs_n) &&& (lma_gns zs2 (n+m-1) (n+m-2) xs_n)
       -- === (((get zs2 (n+m-2)) <= xs_n) && (isSortedFstN mer3 (n+m-1)))
@@ -273,7 +266,7 @@ lma_msort xs
       n = (size xs)
     in
       isSortedFstN (msort xs) n
-      === isSortedFstN (merge ls' rs' (size ls') (size rs')) n
+      -- === isSortedFstN (merge ls' rs' (size ls') (size rs')) n
         ? (lma_merge (ls' ? (lma_msort ls)) (rs' ? (lma_msort rs)) (size ls') (size rs'))
       === True
       *** QED

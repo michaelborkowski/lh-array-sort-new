@@ -61,13 +61,13 @@ insert (x:xs) n y = x:(insert xs (n-1) y)
 lma_gs :: Array a -> Int -> a -> Proof
 lma_gs (x:xs) 0 x' 
   = get (set (x:xs) 0 x') 0 
-  === get (x':xs) 0
+  -- === get (x':xs) 0
   === x'
   *** QED
 lma_gs (x:xs) n x' 
   =  get (set (x:xs) n x') n
-  === get (x:(set xs (n-1) x')) n
-  === get (set xs (n-1) x') (n-1)
+  -- === get (x:(set xs (n-1) x')) n
+  -- === get (set xs (n-1) x') (n-1)
     ? lma_gs xs (n-1) x'
   === x'
   *** QED
@@ -78,23 +78,23 @@ lma_gs (x:xs) n x'
 lma_gns :: Array a -> Int -> Int -> a -> Proof
 lma_gns (x:xs) 0 m x'
   = get (set (x:xs) 0 x') m
-  === get (x':xs) m
-  === get xs (m-1)
+  -- === get (x':xs) m
+  -- === get xs (m-1)
   === get (x:xs) m
   *** QED
 
 lma_gns (x:xs) n 0 x'
   = get (set (x:xs) n x') 0
-  === get (x:(set xs (n-1) x')) 0
-  === x
+  -- === get (x:(set xs (n-1) x')) 0
+  -- === x
   === get (x:xs) 0
   *** QED
 
 lma_gns (x:xs) n m x'
   = get (set (x:xs) n x') m
-  === get (x:(set xs (n-1) x')) m
-  === get (set xs (n-1) x') (m-1)
+  -- === get (x:(set xs (n-1) x')) m
+  -- === get (set xs (n-1) x') (m-1)
     ? lma_gns xs (n-1) (m-1) x'
-  === get xs (m-1)
+  -- === get xs (m-1)
   === get (x:xs) m
   *** QED

@@ -1,5 +1,5 @@
 {-@ LIQUID "--reflection"  @-}
-{-@ LIQUID "--diff"        @-}
+-- {-@ LIQUID "--diff"        @-}
 {-@ LIQUID "--ple"         @-}
 {-@ LIQUID "--short-names" @-}
 
