@@ -56,7 +56,7 @@ insert (x:xs) n y = x:(insert xs (n-1) y)
 -- proof
 
 -- lemma showing that get n from set n xs x is x
-{-@ lma_gs :: xs:_ -> {n:Nat | n < size xs } -> x:_ 
+{-@ lma_gs :: xs:_ -> n:{v:Nat | v < size xs } -> x:_ 
       -> {get (set xs n x) n = x} @-}
 lma_gs :: Array a -> Int -> a -> Proof
 lma_gs (x:xs) 0 x' 

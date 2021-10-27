@@ -1,6 +1,6 @@
 cabal-version: 1.12
 
-name:           project
+name:           lh-array-sort 
 version:        0.1.0.0
 description:    hw5 from CSE230 - "Proofs of Programs"
 homepage:

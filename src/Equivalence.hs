@@ -21,4 +21,9 @@ import           Array
 
 
 
+toSet :: Array a -> Int -> Int -> S.Set a
+toSet xs n m = undefined
+
+
 equal_perm :: Array a -> Array a -> Bool
+equal_perm xs ys = (toSet xs) == (toSet ys)
