@@ -12,11 +12,7 @@ module Order where
 
 import           Prelude hiding ((++)) 
 import           ProofCombinators
-import qualified State as S
 -- import qualified Data.Set as S
--- import           Expressions 
-import           Imp 
-import           BigStep
 import           Array
 
 
