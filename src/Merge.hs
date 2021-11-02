@@ -1,5 +1,5 @@
 {-@ LIQUID "--reflection"  @-}
--- {-@ LIQUID "--diff"        @-}
+{-@ LIQUID "--diff"        @-}
 {-@ LIQUID "--ple"         @-}
 {-@ LIQUID "--short-names" @-}
 -- {-@ LIQUID "--checks=lma_merge_max" @-}
@@ -20,6 +20,7 @@ import           Imp
 import           BigStep
 import           Array
 import           Order
+import           Equivalence
 
 -- 6'34 compiling time
 
@@ -68,16 +69,12 @@ msort xs | (size xs) == 0 = xs
 {-@ reflect splitMid @-}
 {-@ splitMid :: xs:{size xs >= 2} -> {t:_ | ((size (fst t)) < (size xs) && (size (snd t)) < (size xs)) && (size xs = (size (fst t)) + (size (snd t)))} @-}
 splitMid :: Array a -> (Array a, Array a)
-splitMid xs = ((subArray xs 0 m m), (subArray xs m n (n-m)))
+splitMid xs = ((subArray xs 0 m), (subArray xs m n))
   where 
     n = size xs 
     m = mydiv n
 
-{-@ reflect subArray @-}
-{-@ subArray :: xs:{size xs >= 1} -> n:{v:Nat | v <= size xs} -> m:{v:Nat | n <= m && m <= size xs} -> c:{v:Nat | v <= m-n} -> ys:{size ys == m-n} / [c]@-}
-subArray :: Array a -> Int -> Int -> Int -> Array a
-subArray xs n m 0 = make (m-n) (get xs 0)  
-subArray xs n m c = set (subArray xs n m (c-1)) (c-1) (get xs (n+c-1))
+
 
 -- mydiv n = div n 2
 {-@ reflect mydiv @-}
