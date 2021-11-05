@@ -14,13 +14,12 @@ build-type:     Simple
 
 library
   exposed-modules: 
-      Compile
-      Imp
       Array
       Order
       Merge
       Insertion
       Equivalence
+      BagTest
   hs-source-dirs:
       src
   build-depends:
