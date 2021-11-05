@@ -20,6 +20,7 @@ library
       Order
       Merge
       Insertion
+      Equivalence
   hs-source-dirs:
       src
   build-depends:

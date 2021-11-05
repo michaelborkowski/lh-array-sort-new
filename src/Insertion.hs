@@ -2,7 +2,7 @@
 -- {-@ LIQUID "--diff"        @-}
 {-@ LIQUID "--ple"         @-}
 {-@ LIQUID "--short-names" @-}
--- {-@ LIQUID "--checks=lma_msort" @-}
+-- {-@ LIQUID "--checks=lma_insert_eq" @-}
 
 
 -- {-@ infixr ++  @-}  -- TODO: Silly to have to rewrite this annotation!
@@ -13,9 +13,10 @@ module Insertion where
 
 import           Prelude hiding ((++)) 
 import           ProofCombinators
--- import qualified Data.Set as S
+import qualified Data.Set as S
 import           Array
 import           Order
+import           Equivalence
 
 
 
@@ -47,7 +48,7 @@ isort xs n
 
 
 --------------------------------------------------------------------------------
--- | Proofs
+-- | Proofs for Sortedness
 --------------------------------------------------------------------------------
 
 -- lemma that shows insert on first n does not affect the elements after n
@@ -147,4 +148,73 @@ lma_isort xs n
     -- === isSortedFstN (insert (isort xs (n-1)) (get xs n) n) (n+1)
       ? (lma_insert (isort xs (n-1)) (get xs n) (n ? (lma_isort xs (n-1))))
     === True
+    *** QED
+
+
+--------------------------------------------------------------------------------
+-- | Proofs for Equivalence
+--------------------------------------------------------------------------------
+
+-- TODO: will be nice if there is an option to enable showing the constrains LH is checking during compile time
+-- LH Checking involving Sets are very slow
+{-@ lma_insert_eq :: xs:_ -> x:_ -> n:{v:Nat | v < size xs}
+       -> ys:{(toSet (insert xs x n) (n+1)) == (S.union (S.singleton x) (toSet xs n))} / [n] @-} 
+lma_insert_eq :: Ord a => Array a -> a -> Int -> Proof
+lma_insert_eq xs x 0 = ()
+lma_insert_eq xs x n
+  | x < (get xs (n-1)) 
+    = let 
+        xs' = (set xs (n) (get xs (n-1)))
+        ys = (insert xs' x (n - 1))
+      in toSet (insert xs x n) (n+1)
+      -- === toSet ys (n+1)
+      -- === S.union (S.singleton (get ys n)) (toSet ys n)
+        ? (lma_insert_eq xs' x (n-1))
+      -- === S.union (S.singleton (get ys n)) (S.union (S.singleton x) (toSet xs' (n-1)))
+      -- === S.union (S.singleton x) (S.union (S.singleton (get ys n)) (toSet xs' (n-1)))
+        ? (lma_set_equal xs (get xs (n-1)) n (n-1))
+      -- === S.union (S.singleton x) (S.union (S.singleton (get ys n)) (toSet xs (n-1)))
+        ? (lma_insert_fix xs' x (n-1) n)
+      -- === S.union (S.singleton x) (S.union (S.singleton (get xs' n)) (toSet xs (n-1)))
+        ? (lma_gs xs n (get xs (n-1)))
+      -- === S.union (S.singleton x) (S.union (S.singleton (get xs (n-1))) (toSet xs (n-1)))
+      === S.union (S.singleton x) (toSet xs n)
+      *** QED
+  | otherwise
+    = toSet (insert xs x n) (n+1)
+    -- === toSet (set xs n x) (n+1)
+    -- === S.union (S.singleton (get (set xs n x) n)) (toSet (set xs n x) n)
+      ? (lma_gs xs n x) &&& (lma_set_equal xs x n n)
+    === (S.union (S.singleton x) (toSet xs n))
+    *** QED
+
+
+{-@ lma_isort_eq_r :: xs:_ -> n:{v:Nat | v < size xs}
+       -> ys:{toSet (isort xs n) (n+1) == toSet xs (n+1)} / [n] @-} 
+lma_isort_eq_r :: Ord a => Array a -> Int -> Proof
+lma_isort_eq_r xs n 
+  | (size xs == 0) = ()
+  | (size xs == 1) = ()
+  | (n == 0)       = ()
+  | otherwise 
+    = toSet (isort xs n) (n+1)
+    -- === toSet (insert (isort xs (n-1)) (get xs n) n) (n+1)
+      ? (lma_insert_eq (isort xs (n-1)) (get xs n) n)
+    -- === S.union (S.singleton (get xs n)) (toSet (isort xs (n-1)) n)
+      ? (lma_isort_eq_r xs (n-1))
+    -- === S.union (S.singleton (get xs n)) (toSet xs (n))
+    === (toSet xs (n+1))
+    *** QED
+
+
+{-@ lma_isort_eq :: xs:_
+       -> { equalP (isort xs ((size xs)-1)) xs } @-}
+lma_isort_eq :: Ord a => Array a -> Proof
+lma_isort_eq xs 
+  | (size xs == 0) = ()
+  | otherwise      
+    = toSet (isort xs ((size xs)-1)) (size (isort xs ((size xs)-1)))
+    -- === toSet (isort xs ((size xs)-1)) (size xs)
+      ? lma_isort_eq_r xs ((size xs)-1)
+    === toSet xs (size xs)
     *** QED
