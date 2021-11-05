@@ -25,6 +25,7 @@ library
   build-depends:
       liquid-base,
       liquid-containers,
+      liquid-prelude,
       liquidhaskell
   default-language: Haskell2010
   ghc-options: -fplugin=LiquidHaskell
