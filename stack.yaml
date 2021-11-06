@@ -21,6 +21,7 @@ extra-deps:
       - liquid-base
       - liquid-ghc-prim
       - liquid-containers
+      - liquid-prelude
 
 - git: https://github.com/ucsd-progsys/liquid-fixpoint
   commit: a1b049592a57dffec2ba32e836d23d77e9e8c8f3

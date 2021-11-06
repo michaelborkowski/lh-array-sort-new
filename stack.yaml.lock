@@ -103,6 +103,19 @@ packages:
     git: https://github.com/ucsd-progsys/liquidhaskell
     commit: 2c10e1e47ac90e828cca2c35bdddb0316f51ff2b
 - completed:
+    subdir: liquid-prelude
+    name: liquid-prelude
+    version: 0.8.10.2
+    git: https://github.com/ucsd-progsys/liquidhaskell
+    pantry-tree:
+      size: 1029
+      sha256: 17fffd9d59ef7d3e7fa04b89174250bab84af77822d3f5de0124d608aa6827c6
+    commit: c06fd0b141054d04614af0ce3015d055a7980bce
+  original:
+    subdir: liquid-prelude
+    git: https://github.com/ucsd-progsys/liquidhaskell
+    commit: c06fd0b141054d04614af0ce3015d055a7980bce
+- completed:
     name: liquid-fixpoint
     version: 0.8.10.2.1
     git: https://github.com/ucsd-progsys/liquid-fixpoint
