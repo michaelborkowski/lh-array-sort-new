@@ -44,25 +44,25 @@ packages:
     version: 0.8.10.2.1
     git: https://github.com/ucsd-progsys/liquidhaskell
     pantry-tree:
-      size: 293339
-      sha256: 4a50ef749ac4f6ddfe802ddc95001dc54d170649decc9d9fd2e4292f0fe10ec2
-    commit: c06fd0b141054d04614af0ce3015d055a7980bce
+      size: 294654
+      sha256: 46225865a5f0707005036e8691025c5811659653245b58b1417783b4a283c816
+    commit: 2c10e1e47ac90e828cca2c35bdddb0316f51ff2b
   original:
     git: https://github.com/ucsd-progsys/liquidhaskell
-    commit: c06fd0b141054d04614af0ce3015d055a7980bce
+    commit: 2c10e1e47ac90e828cca2c35bdddb0316f51ff2b
 - completed:
     subdir: liquid-base
     name: liquid-base
     version: 4.14.1.0
     git: https://github.com/ucsd-progsys/liquidhaskell
     pantry-tree:
-      size: 14994
-      sha256: aca24f456895ce33928d8a443e4768ef7ab8646cc8f600a67378320d7f07dff9
-    commit: c06fd0b141054d04614af0ce3015d055a7980bce
+      size: 15057
+      sha256: 49214f6bd48452f1e93e33539a4877bc91815454ebab25954073b15a26397a28
+    commit: 2c10e1e47ac90e828cca2c35bdddb0316f51ff2b
   original:
     subdir: liquid-base
     git: https://github.com/ucsd-progsys/liquidhaskell
-    commit: c06fd0b141054d04614af0ce3015d055a7980bce
+    commit: 2c10e1e47ac90e828cca2c35bdddb0316f51ff2b
 - completed:
     subdir: liquid-ghc-prim
     name: liquid-ghc-prim
@@ -71,11 +71,11 @@ packages:
     pantry-tree:
       size: 912
       sha256: f4a142e73996a292cf2eae8c364f71fe9a1195937801cad720ac1394db1bd3ae
-    commit: c06fd0b141054d04614af0ce3015d055a7980bce
+    commit: 2c10e1e47ac90e828cca2c35bdddb0316f51ff2b
   original:
     subdir: liquid-ghc-prim
     git: https://github.com/ucsd-progsys/liquidhaskell
-    commit: c06fd0b141054d04614af0ce3015d055a7980bce
+    commit: 2c10e1e47ac90e828cca2c35bdddb0316f51ff2b
 - completed:
     subdir: liquid-containers
     name: liquid-containers
@@ -84,22 +84,35 @@ packages:
     pantry-tree:
       size: 2143
       sha256: e0813348d68667e035d96bcd225b9d545693bf7827f40d41d86c4535cf120cb8
-    commit: c06fd0b141054d04614af0ce3015d055a7980bce
+    commit: 2c10e1e47ac90e828cca2c35bdddb0316f51ff2b
   original:
     subdir: liquid-containers
     git: https://github.com/ucsd-progsys/liquidhaskell
-    commit: c06fd0b141054d04614af0ce3015d055a7980bce
+    commit: 2c10e1e47ac90e828cca2c35bdddb0316f51ff2b
+- completed:
+    subdir: liquid-prelude
+    name: liquid-prelude
+    version: 0.8.10.2
+    git: https://github.com/ucsd-progsys/liquidhaskell
+    pantry-tree:
+      size: 1029
+      sha256: 17fffd9d59ef7d3e7fa04b89174250bab84af77822d3f5de0124d608aa6827c6
+    commit: 2c10e1e47ac90e828cca2c35bdddb0316f51ff2b
+  original:
+    subdir: liquid-prelude
+    git: https://github.com/ucsd-progsys/liquidhaskell
+    commit: 2c10e1e47ac90e828cca2c35bdddb0316f51ff2b
 - completed:
     name: liquid-fixpoint
     version: 0.8.10.2.1
     git: https://github.com/ucsd-progsys/liquid-fixpoint
     pantry-tree:
-      size: 20518
-      sha256: 451a1fc1935d05750a2c0c39d8d8d509b194a96e447a40964acf5c687d2d62a7
-    commit: 90e19918bc51a2c246909ec1e4edba636077c675
+      size: 20726
+      sha256: 9c3dabef69d61a85a28ba7f7111c09a44d55307d69e1b8f66bced6ae8460cbc2
+    commit: a1b049592a57dffec2ba32e836d23d77e9e8c8f3
   original:
     git: https://github.com/ucsd-progsys/liquid-fixpoint
-    commit: 90e19918bc51a2c246909ec1e4edba636077c675
+    commit: a1b049592a57dffec2ba32e836d23d77e9e8c8f3
 - completed:
     subdir: optics-core
     name: optics-core

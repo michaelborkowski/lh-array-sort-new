@@ -13,17 +13,17 @@ extra-deps:
 - th-compat-0.1.2@sha256:3d55de1adc542c1a870c9ada90da2fbbe5f4e8bcd3eed545a55c3df9311b32a8,2854
 
 - git: https://github.com/ucsd-progsys/liquidhaskell
-  commit: c06fd0b141054d04614af0ce3015d055a7980bce
+  commit: 2c10e1e47ac90e828cca2c35bdddb0316f51ff2b
  
 - git: https://github.com/ucsd-progsys/liquidhaskell
-  commit: c06fd0b141054d04614af0ce3015d055a7980bce
+  commit: 2c10e1e47ac90e828cca2c35bdddb0316f51ff2b
   subdirs:
       - liquid-base
       - liquid-ghc-prim
       - liquid-containers
 
 - git: https://github.com/ucsd-progsys/liquid-fixpoint
-  commit: 90e19918bc51a2c246909ec1e4edba636077c675
+  commit: a1b049592a57dffec2ba32e836d23d77e9e8c8f3
 
 - git: https://github.com/well-typed/optics.git
   commit: 0a4940cc927df3f50151692282f8b148bf326886
