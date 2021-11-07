@@ -7,19 +7,15 @@
 
 {-# LANGUAGE GADTs #-}
 
-module Array (Array, make, get, set, size, fromList, lma_gs, lma_gns) where
+module Array (Array, make, get, set, size, lma_gs, lma_gns) where
 
-import           ProofCombinators
+import           Language.Haskell.Liquid.ProofCombinators
 
 
 
 type Array a = [a]
 
 
-{-@ reflect fromList @-}
-{-@ fromList :: xs:_ -> ys:{size ys == size xs} @-}
-fromList :: [a] -> Array a
-fromList xs = xs
 
 
 {-@ reflect make @-}

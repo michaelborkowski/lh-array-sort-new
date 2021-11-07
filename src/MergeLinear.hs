@@ -11,17 +11,12 @@
 
 module MergeLinear where
 
-import           Prelude hiding ((++)) 
-import           ProofCombinators
-import qualified State as S
+import           Prelude 
+import           Language.Haskell.Liquid.ProofCombinators
 -- import qualified Data.Set as S
--- import           Expressions 
-import           Imp 
-import           BigStep
-import           Array
-import           Order
+import           Array as A
 import           Equivalence
-
+import           Language.Haskell.Liquid.Bag as B
 -- 6'34 compiling time
 
 --------------------------------------------------------------------------------

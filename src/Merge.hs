@@ -11,16 +11,13 @@
 
 module Merge where
 
-import           Prelude hiding ((++)) 
-import           ProofCombinators
-import qualified State as S
+import           Prelude
+import           Language.Haskell.Liquid.ProofCombinators
 -- import qualified Data.Set as S
--- import           Expressions 
-import           Imp 
-import           BigStep
-import           Array
-import           Order
+import           Array as A
 import           Equivalence
+import           Order
+import           Language.Haskell.Liquid.Bag as B
 
 -- 6'34 compiling time
 
@@ -37,16 +34,16 @@ import           Equivalence
       -> zs:{(size zs) = ((size xs) + (size ys))} / [m+n] @-}
 merge :: Ord a => Array a -> Array a -> Int -> Int -> Array a
 merge [] ys _ _ = ys
-merge xs ys 0 0 = (make ((size xs)+(size ys)) (get xs 0))
-merge xs ys 0 m = let zs = merge xs ys 0 (m-1) in (set zs (m-1) (get ys (m-1)))
-merge xs ys n 0 = let zs = merge xs ys (n-1) 0 in (set zs (n-1) (get xs (n-1)))
+merge xs ys 0 0 = (make ((size xs)+(size ys)) (A.get xs 0))
+merge xs ys 0 m = let zs = merge xs ys 0 (m-1) in (set zs (m-1) (A.get ys (m-1)))
+merge xs ys n 0 = let zs = merge xs ys (n-1) 0 in (set zs (n-1) (A.get xs (n-1)))
 merge xs ys n m | xs_n <= ys_m = let zs = merge xs ys (n) (m-1)   
                                   in (set zs (m+n-1) ys_m)
                 | otherwise    = let zs = merge xs ys (n-1) (m) 
                                   in (set zs (m+n-1) xs_n)
                   where 
-                    xs_n = get xs (n-1)
-                    ys_m = get ys (m-1) 
+                    xs_n = A.get xs (n-1)
+                    ys_m = A.get ys (m-1) 
 
 
 -- >>>  msort (fromList [1,3,2,9,6,0,5,2,10,-1])
@@ -88,75 +85,75 @@ mydiv n = 1 + (mydiv (n-2))
 -- | Proofs
 --------------------------------------------------------------------------------
 
--- TODO: I really want to get rid of the edge cases where n-1 can be -1
--- FIXME: constrains z >= (get xs (n-1)) does not enforce n > 0, but it makes the program into a loop
+-- TODO: I really want to A.get rid of the edge cases where n-1 can be -1
+-- FIXME: constrains z >= (A.get xs (n-1)) does not enforce n > 0, but it makes the program into a loop
 --        nor does it check the constrain of n when i am calling this method, another loop
 -- n = 0 implies  -- TODO: Forever loop, Not working
--- {-@ lma_merge_max :: xs:{isSorted xs} -> ys:{isSorted ys} -> n:{v:Nat | v <= size xs} -> m:{v:Nat | v > 0 && v <= size ys} -> z:{  ((n > 0) => (z >= (get xs (n-1)))) && z >= (get ys (m-1))}
-      -- -> { z >= get (merge xs ys n m) (n+m-1) } @-}
-{-@ lma_merge_max :: xs:{isSorted xs} -> ys:{isSorted ys} -> n:{v:Nat | v > 0 && v <= size xs} -> m:{v:Nat | v > 0 && v <= size ys} -> z:{  z >= (get xs (n-1)) && z >= (get ys (m-1))} 
-      -> { z >= get (merge xs ys n m) (n+m-1) } @-}
+-- {-@ lma_merge_max :: xs:{isSorted xs} -> ys:{isSorted ys} -> n:{v:Nat | v <= size xs} -> m:{v:Nat | v > 0 && v <= size ys} -> z:{  ((n > 0) => (z >= (A.get xs (n-1)))) && z >= (A.get ys (m-1))}
+      -- -> { z >= A.get (merge xs ys n m) (n+m-1) } @-}
+{-@ lma_merge_max :: xs:{isSorted xs} -> ys:{isSorted ys} -> n:{v:Nat | v > 0 && v <= size xs} -> m:{v:Nat | v > 0 && v <= size ys} -> z:{  z >= (A.get xs (n-1)) && z >= (A.get ys (m-1))} 
+      -> { z >= A.get (merge xs ys n m) (n+m-1) } @-}
 lma_merge_max ::  Ord a => Array a -> Array a -> Int -> Int -> a -> Proof
 -- lma_merge_max xs ys 0 m z 
 --   = z
 --   =>= ys_m
 --     ? lma_gs zs (m-1) ys_m
---   === get (set zs (m-1) ys_m) (m-1)
---   === get (merge xs ys 0 m) (m-1)
+--   === A.get (set zs (m-1) ys_m) (m-1)
+--   === A.get (merge xs ys 0 m) (m-1)
 --   *** QED
 --     where 
 --       zs  = merge xs ys 0 (m-1)
---       ys_m = get ys (m-1)
+--       ys_m = A.get ys (m-1)
 lma_merge_max xs ys n m z 
   | xs_n <= ys_m 
     = z
     =>= ys_m
       ? lma_gs zs (m+n-1) ys_m
-    -- === get (set zs (m+n-1) ys_m) (m+n-1)
-    === get (merge xs ys n m) (m+n-1)
+    -- === A.get (set zs (m+n-1) ys_m) (m+n-1)
+    === A.get (merge xs ys n m) (m+n-1)
     *** QED
   | otherwise
     = z
     =>= xs_n
       ? lma_gs zs' (m+n-1) xs_n
-    -- === get (set zs' (m+n-1) xs_n) (m+n-1)
-    === get (merge xs ys n m) (m+n-1)
+    -- === A.get (set zs' (m+n-1) xs_n) (m+n-1)
+    === A.get (merge xs ys n m) (m+n-1)
     *** QED
       where 
         zs  = merge xs ys n (m-1)
         zs' = merge xs ys (n-1) m
-        xs_n = get xs (n-1)
-        ys_m = get ys (m-1)
+        xs_n = A.get xs (n-1)
+        ys_m = A.get ys (m-1)
 
 -- TODO: Dumb to write this proof separately, for the case n = 0
-{-@ lma_merge_max_m :: xs:_ -> ys:{isSorted ys} -> m:{v:Nat | v > 0 && v <= size ys} -> z:{ z >= (get ys (m-1))}
-      -> { z >= get (merge xs ys 0 m) (m-1) } @-}
+{-@ lma_merge_max_m :: xs:_ -> ys:{isSorted ys} -> m:{v:Nat | v > 0 && v <= size ys} -> z:{ z >= (A.get ys (m-1))}
+      -> { z >= A.get (merge xs ys 0 m) (m-1) } @-}
 lma_merge_max_m ::  Ord a => Array a -> Array a -> Int -> a -> Proof
 lma_merge_max_m xs ys m z 
   = z
   =>= ys_m
     ? lma_gs zs (m-1) ys_m
-  -- === get (set zs (m-1) ys_m) (m-1)
-  === get (merge xs ys 0 m) (m-1)
+  -- === A.get (set zs (m-1) ys_m) (m-1)
+  === A.get (merge xs ys 0 m) (m-1)
   *** QED
     where
       zs  = merge xs ys 0 (m-1)
-      ys_m = get ys (m-1)
+      ys_m = A.get ys (m-1)
 
 -- TODO: Dumb to write this proof separately, for the case n = 0
-{-@ lma_merge_max_n :: xs:{isSorted xs} -> ys:_ -> n:{v:Nat | v > 0 && v <= size xs} -> z:{ z >= (get xs (n-1))}
-      -> { z >= get (merge xs ys n 0) (n-1) } @-}
+{-@ lma_merge_max_n :: xs:{isSorted xs} -> ys:_ -> n:{v:Nat | v > 0 && v <= size xs} -> z:{ z >= (A.get xs (n-1))}
+      -> { z >= A.get (merge xs ys n 0) (n-1) } @-}
 lma_merge_max_n ::  Ord a => Array a -> Array a -> Int -> a -> Proof
 lma_merge_max_n xs ys n z 
   = z
   =>= xs_n
     ? lma_gs zs (n-1) xs_n
-  -- === get (set zs (n-1) xs_n) (n-1)
-  === get (merge xs ys n 0) (n-1)
+  -- === A.get (set zs (n-1) xs_n) (n-1)
+  === A.get (merge xs ys n 0) (n-1)
   *** QED
     where
       zs  = merge xs ys (n-1) 0
-      xs_n = get xs (n-1)
+      xs_n = A.get xs (n-1)
 
 
 -- Commenting out intermediate steps greatly reduces the runtime (12'5 -> 3'53)
@@ -171,14 +168,14 @@ lma_merge xs ys 0 1 = ()
 lma_merge xs ys 1 0 = ()
 lma_merge xs ys 0 m 
   = isSortedFstN mer1 m
-  -- === (((get mer1 (m-2)) <= (get mer1 (m-1))) && (isSortedFstN mer1 (m-1)))
-  -- === (((get mer2 (m-2)) <= (get mer2 (m-1))) && (isSortedFstN mer2 (m-1)))
+  -- === (((A.get mer1 (m-2)) <= (A.get mer1 (m-1))) && (isSortedFstN mer1 (m-1)))
+  -- === (((A.get mer2 (m-2)) <= (A.get mer2 (m-1))) && (isSortedFstN mer2 (m-1)))
     ? (lma_gs zs (m-1) ys_m) &&& (lma_gns zs (m-1) (m-2) ys_m)
-  -- === (((get zs (m-2)) <= ys_m) && (isSortedFstN mer2 (m-1)))
+  -- === (((A.get zs (m-2)) <= ys_m) && (isSortedFstN mer2 (m-1)))
     ? lma_isfn_set zs ys_m (m-1) (m-1)
-  -- === (((get zs (m-2)) <= ys_m) && (isSortedFstN zs (m-1)))
+  -- === (((A.get zs (m-2)) <= ys_m) && (isSortedFstN zs (m-1)))
     ? lma_merge xs ys 0 (m-1)
-  -- === ((get zs (m-2)) <= ys_m)
+  -- === ((A.get zs (m-2)) <= ys_m)
     ? lma_merge_max_m xs ys (m-1) (ys_m ? lma_is_isfn ys m)
   === True
   *** QED
@@ -186,17 +183,17 @@ lma_merge xs ys 0 m
       mer1 = (merge xs ys 0 m)
       mer2 = (set zs (m-1) ys_m)
       zs =  merge xs ys 0 (m-1)
-      ys_m = (get ys (m-1))
+      ys_m = (A.get ys (m-1))
 lma_merge xs ys n 0 
   = isSortedFstN mer1 n
-  -- === (((get mer1 (m-2)) <= (get mer1 (m-1))) && (isSortedFstN mer1 (m-1)))
-  -- === (((get mer2 (n-2)) <= (get mer2 (n-1))) && (isSortedFstN mer2 (n-1)))
+  -- === (((A.get mer1 (m-2)) <= (A.get mer1 (m-1))) && (isSortedFstN mer1 (m-1)))
+  -- === (((A.get mer2 (n-2)) <= (A.get mer2 (n-1))) && (isSortedFstN mer2 (n-1)))
     ? (lma_gs zs (n-1) xs_n) &&& (lma_gns zs (n-1) (n-2) xs_n)
-  -- === (((get zs (n-2)) <= xs_n) && (isSortedFstN mer2 (n-1)))
+  -- === (((A.get zs (n-2)) <= xs_n) && (isSortedFstN mer2 (n-1)))
     ? lma_isfn_set zs xs_n (n-1) (n-1)
-  -- === (((get zs (n-2)) <= xs_n) && (isSortedFstN zs (n-1)))
+  -- === (((A.get zs (n-2)) <= xs_n) && (isSortedFstN zs (n-1)))
     ? lma_merge xs ys (n-1) 0
-  -- === ((get zs (n-2)) <= xs_n)
+  -- === ((A.get zs (n-2)) <= xs_n)
     ? lma_merge_max_n xs ys (n-1) (xs_n ? lma_is_isfn xs n)
   === True
   *** QED
@@ -204,7 +201,7 @@ lma_merge xs ys n 0
       mer1 = (merge xs ys n 0)
       mer2 = (set zs (n-1) xs_n)
       zs =  merge xs ys (n-1) 0
-      xs_n = (get xs (n-1))
+      xs_n = (A.get xs (n-1))
 
 lma_merge xs ys n m = 
   let 
@@ -213,34 +210,34 @@ lma_merge xs ys n m =
     mer3 = (set zs2 (m+n-1) xs_n)
     zs1 = merge xs ys n (m-1)
     zs2 = merge xs ys (n-1) m
-    xs_n = get xs (n-1)
-    ys_m = get ys (m-1)
+    xs_n = A.get xs (n-1)
+    ys_m = A.get ys (m-1)
     merged = (set (merge xs ys (n) (m-1)) (m+n-1) ys_m) 
   in case xs_n <= ys_m of
     True -> isSortedFstN mer1 (n+m)
-      -- === (((get mer1 (n+m-2)) <= (get mer1 (n+m-1))) && (isSortedFstN mer1 (n+m-1)))
-      -- === (((get mer2 (n+m-2)) <= (get mer2 (n+m-1))) && (isSortedFstN mer2 (n+m-1)))
+      -- === (((A.get mer1 (n+m-2)) <= (A.get mer1 (n+m-1))) && (isSortedFstN mer1 (n+m-1)))
+      -- === (((A.get mer2 (n+m-2)) <= (A.get mer2 (n+m-1))) && (isSortedFstN mer2 (n+m-1)))
         ? (lma_gs zs1 (n+m-1) ys_m) &&& (lma_gns zs1 (n+m-1) (n+m-2) ys_m)
-      -- === (((get zs1 (n+m-2)) <= ys_m) &&  (isSortedFstN mer2 (n+m-1)))
+      -- === (((A.get zs1 (n+m-2)) <= ys_m) &&  (isSortedFstN mer2 (n+m-1)))
         ? lma_isfn_set zs1 ys_m (n+m-1) (n+m-1)
-      -- === (((get zs1 (n+m-2)) <= ys_m) && (isSortedFstN zs1 (n+m-1)))
+      -- === (((A.get zs1 (n+m-2)) <= ys_m) && (isSortedFstN zs1 (n+m-1)))
         ? lma_merge xs ys n (m-1)
-      -- === ((get zs1 (n+m-2)) <= ys_m)-- ys_m => get (merge xs ys n (m-1)) (n+m-2)
+      -- === ((A.get zs1 (n+m-2)) <= ys_m)-- ys_m => A.get (merge xs ys n (m-1)) (n+m-2)
         ? (if m > 1
             then lma_merge_max xs ys n (m-1) (ys_m ? (lma_is_isfn ys m))  
             else lma_merge_max_n xs ys n ys_m)
       === True
       *** QED
     False -> isSortedFstN mer1 (n+m) 
-      -- === (((get mer1 (n+m-2)) <= (get mer1 (n+m-1))) && (isSortedFstN mer1 (n+m-1))) 
-      -- === (((get mer3 (n+m-2)) <= (get mer3 (n+m-1))) && (isSortedFstN mer3 (n+m-1)))
+      -- === (((A.get mer1 (n+m-2)) <= (A.get mer1 (n+m-1))) && (isSortedFstN mer1 (n+m-1))) 
+      -- === (((A.get mer3 (n+m-2)) <= (A.get mer3 (n+m-1))) && (isSortedFstN mer3 (n+m-1)))
       -- ==! True *** QED
         ? (lma_gs zs2 (n+m-1) xs_n) &&& (lma_gns zs2 (n+m-1) (n+m-2) xs_n)
-      -- === (((get zs2 (n+m-2)) <= xs_n) && (isSortedFstN mer3 (n+m-1)))
+      -- === (((A.get zs2 (n+m-2)) <= xs_n) && (isSortedFstN mer3 (n+m-1)))
         ? lma_isfn_set zs2 xs_n (n+m-1) (n+m-1)
-      -- === (((get zs2 (n+m-2)) <= xs_n) && (isSortedFstN zs2 (n+m-1)))
+      -- === (((A.get zs2 (n+m-2)) <= xs_n) && (isSortedFstN zs2 (n+m-1)))
         ? lma_merge xs ys (n-1) m
-      -- === ((get zs2 (n+m-2)) <= xs_n) -- ys_m => get (merge xs ys n (m-1)) (n+m-2)
+      -- === ((A.get zs2 (n+m-2)) <= xs_n) -- ys_m => A.get (merge xs ys n (m-1)) (n+m-2)
         ? (if n > 1
             then lma_merge_max xs ys (n-1) m (xs_n ? (lma_is_isfn xs n)) 
             else lma_merge_max_m xs ys m xs_n)

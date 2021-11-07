@@ -14,8 +14,6 @@ build-type:     Simple
 
 library
   exposed-modules: 
-      Compile
-      Imp
       Array
       Order
       Merge
