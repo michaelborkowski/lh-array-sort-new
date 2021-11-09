@@ -26,10 +26,10 @@ packages:
   original:
     hackage: Diff-0.3.4
 - completed:
-    hackage: aeson-1.4.7.1@sha256:6d8d2fd959b7122a1df9389cf4eca30420a053d67289f92cdc0dbc0dab3530ba,7098
+    hackage: aeson-1.4.7.1@sha256:6199a98b072e5a7748e81ab72476a0992cf23d925ebe4fefd5b917cbda9c2af8,7098
     pantry-tree:
       size: 40133
-      sha256: caa9306e519c601ab0170d113daa03c1163db53e5466be2968bbd61a771bebcb
+      sha256: 03fc9207bffa6928efbe42a1f603aa482b3dc821bde1db753faae000d0e2ee00
   original:
     hackage: aeson-1.4.7.1
 - completed:
