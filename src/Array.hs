@@ -12,11 +12,9 @@ module Array (Array, make, get, set, size, lma_gs, lma_gns) where
 import           Language.Haskell.Liquid.ProofCombinators
 
 
-
 type Array a = [a]
 
-
-
+-- basic API
 
 {-@ reflect make @-}
 {-@ make :: n:Nat -> x:_ -> xs:{(size xs) = n} @-}
@@ -25,7 +23,6 @@ make 0 x = []
 make n x = (x:(make (n-1) x))
 
 {-@ measure size @-}
--- {-@ reflect size @-}
 {-@ size :: xs:_ -> Nat @-}
 size :: Array a -> Int
 size [] = 0
@@ -49,11 +46,12 @@ insert :: Array a -> Int -> a -> Array a
 insert (x:xs) 0 y = (y:x:xs)
 insert (x:xs) n y = x:(insert xs (n-1) y)
 
--- proof
+
+-- proofs
 
 -- lemma showing that get n from set n xs x is x
-{-@ lma_gs :: xs:_ -> n:{v:Nat | v < size xs } -> x:_ 
-      -> {get (set xs n x) n = x} @-}
+{-@ lma_gs :: xs:_ -> {n:Nat | n < size xs } -> x:_ 
+      -> { pf:_ | get (set xs n x) n == x } @-}
 lma_gs :: Array a -> Int -> a -> Proof
 lma_gs (x:xs) 0 x' 
   = get (set (x:xs) 0 x') 0 
@@ -69,8 +67,8 @@ lma_gs (x:xs) n x'
   *** QED
 
 -- lemma showing that get n from set m xs x is 
-{-@ lma_gns :: xs:_ -> n:{v:Nat | v < size xs } -> m:{v:Nat | v /= n && v < size xs} -> x:_ 
-      -> {get (set xs n x) m = get xs m} @-}
+{-@ lma_gns :: xs:_ -> { n:Nat | n < size xs } -> {m:Nat | m /= n && m < size xs} -> x:_ 
+      -> {pf:_ | get (set xs n x) m = get xs m} @-}
 lma_gns :: Array a -> Int -> Int -> a -> Proof
 lma_gns (x:xs) 0 m x'
   = get (set (x:xs) 0 x') m

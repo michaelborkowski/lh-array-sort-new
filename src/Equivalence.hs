@@ -30,7 +30,7 @@ import           Array as A
        -> s:_ / [n] @-}
 toBag :: Ord a => Array a -> Int -> B.Bag a
 toBag xs 0 = B.empty
--- toBag xs n = B.put (A.get xs (n-1)) (toBag xs (n-1))
+toBag xs n = B.put (A.get xs (n-1)) (toBag xs (n-1))
 
 -- {-@ reflect equalP @-}
 -- equalP :: Ord a => Array a -> Array a -> Bool
@@ -42,11 +42,18 @@ subArrayR :: Array a -> Int -> Int -> Int -> Array a
 subArrayR xs n m 0 = make (m-n) (A.get xs 0)  
 subArrayR xs n m c = set (subArrayR xs n m (c-1)) (c-1) (A.get xs (n+c-1))
 
-{-@ reflect subArray @-}
-{-@ subArray :: xs:{size xs >= 1} -> n:{v:Nat | v <= size xs} -> m:{v:Nat | n <= m && m <= size xs} -> ys:{size ys == m-n}@-}
-subArray :: Array a -> Int -> Int -> Array a
-subArray xs n m = subArrayR xs n m (m-n)
+--{-@ reflect slice @-}
+--{-@ slice :: xs:(Array a) -> { i:Int | 0 <= i } -> m:{v:Nat | n <= m && m <= size xs} -> ys:{size ys == m-n}@-}
+--slice :: Array a -> Int -> Int -> Array a
+--slice xs n m = subArrayR xs n m (m-n)
 
+{-@ reflect splitAt @-}
+{-@ splitAt :: xs:(Array a) -> { i:Int | 0 <= i && i <= size xs }
+                   -> (Array a, Array a)<{\xls xrs -> size xs == size xls + size xrs &&
+                                                      size xls == i && size xrs == (size xs) - i &&
+                                                      toBag xs == Map_union (toBag xls) (toBag xrs) }> @-}
+splitAt :: Array a -> Int -> (Array a, Array a)
+splitAt xs i = undefined
 
 -- -- n > m
 -- {-@ lma_bag_equal :: xs:_ -> x:_ -> n:{v:Nat | v < size xs} -> m:{v:Nat | v <= n} 
