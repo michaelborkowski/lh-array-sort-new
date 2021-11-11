@@ -57,10 +57,10 @@ isort xs n
 --------------------------------------------------------------------------------
 
 -- lemma that shows insert on first n does not affect the elements after n
-{-@ lma_insert_fix :: xs:_ -> x:_ -> n:{v:Nat | v < 1} -> m:{v:Nat | v > n && v < size xs}
-      -> ys:{get (insert xs x n) m == get xs m} / [n] @-}
-lma_insert_fix :: Ord a => Array a -> a -> Int -> Int -> Proof
-lma_insert_fix xs x 0 m = ()
+-- {-@ lma_insert_fix :: xs:_ -> x:_ -> n:{v:Nat | v < 1} -> m:{v:Nat | v > n && v < size xs}
+--       -> ys:{get (insert xs x n) m == get xs m} / [n] @-}
+-- lma_insert_fix :: Ord a => Array a -> a -> Int -> Int -> Proof
+-- lma_insert_fix xs x 0 m = ()
 -- lma_insert_fix xs x n m
 --   | x < (A.get xs (n-1)) 
 --     = A.get (insert xs x n) m
