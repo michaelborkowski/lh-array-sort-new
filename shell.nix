@@ -8,9 +8,11 @@ let
                  }) {};
   ghc = pkgs.haskell.compiler.ghc8102;
   ghc901 = pkgs.haskell.compiler.ghc901;
+  stdenv = pkgs.overrideCC pkgs.stdenv pkgs.gcc7;
 in
   with pkgs;
   stdenv.mkDerivation {
     name = "lh-array-sort";
-    buildInputs = [ ghc ghc901 cabal-install stack ghcid z3 ];
+    buildInputs = [ ghc ghc901 cabal-install stack ghcid z3
+                    stdenv gcc gdb ];
   }

@@ -1,0 +1,26 @@
+CFILES   = $(wildcard *.c)
+OBJFILES = $(CFILES:.c=.o)
+OUT      = cbench.exe
+
+CC = gcc
+CFLAGS = -Wall -Wextra -Wpedantic -O3 -flto -lm
+CDEBUG = -DCBENCH_DEBUG
+
+$(OUT): $(OBJFILES)
+ifdef DEBUG
+	$(CC) $(CFLAGS) $(CDEBUG) -o $@ $^
+else
+	$(CC) $(CFLAGS) -o $@ $^
+endif
+
+%.o: %.c
+ifdef DEBUG
+	$(CC) $(CFLAGS) $(CDEBUG) -c -o $@ $^
+else
+	$(CC) $(CFLAGS) -c -o $@ $^
+endif
+
+clean:
+	rm -f $(OBJFILES) $(OUT)
+
+.PHONY: clean
