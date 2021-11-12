@@ -1,8 +1,8 @@
-cabal-version: 1.12
+cabal-version: >=1.12
 
 name:           lh-array-sort 
 version:        0.1.0.0
-description:    hw5 from CSE230 - "Proofs of Programs"
+description:    Various "in place" sorting algorithms verified with LH.
 homepage:
 bug-reports:
 author:         Ranjit Jhala 
@@ -22,6 +22,7 @@ library
   hs-source-dirs:
       src
   build-depends:
+      -- Versions pinned in cabal.project.
       liquid-base,
       liquid-containers,
       liquid-prelude,
