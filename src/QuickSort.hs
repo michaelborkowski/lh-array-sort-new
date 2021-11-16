@@ -4,42 +4,45 @@
 
 module QuickSort where
 
-import Language.Haskell.Liquid.ProofCombinators
-import Array
--- import Equivalence
+import qualified Language.Haskell.Liquid.Bag as B
+import           Language.Haskell.Liquid.ProofCombinators
+
+import Array as A
+import Equivalence
 import Order
 
-{- @ quickSort :: xs:(Array a) -> { ys:(Array a) | isSorted' ys && toBag xs == toBag ys } @-}
-{-@ quickSort :: xs:(Array a) -> { ys:(Array a) | isSorted' ys && size xs == size ys } @-}
+{-@ quickSort :: xs:(Array a) -> { ys:(Array a) | isSorted' ys && A.size xs == A.size ys &&
+                                                                  toBag  xs == toBag  ys } @-}
 quickSort :: Ord a => Array a -> Array a 
 quickSort xs = quickSortBtw xs 0 (size xs)
 
-{- @ @-}
-{-@ quickSortBtw :: xs:(Array a) -> { i:Int | 0 <= i } -> { j:Int | i <= j && j <= size xs }
-                                 -> { ys:(Array a) | isSortedBtw ys i j &&
-                                                     size xs == size ys } / [j - i] @-}
+{-@ quickSortBtw :: xs:(Array a) -> { i:Int | 0 <= i } -> { j:Int | i <= j && j <= A.size xs }
+                -> { ys:(Array a) | isSortedBtw ys i j && A.size xs == A.size ys &&
+                                    eqlSlice xs ys 0 i && eqlSlice xs ys j (A.size xs) &&
+                                    toBag    xs     == toBag    ys &&
+                                    toBagBtw xs i j == toBagBtw ys i j } / [j - i] @-}
 quickSortBtw :: Ord a => Array a -> Int -> Int -> Array a
 quickSortBtw xs i j = if n < 2
                         then xs
-                        else let (xs', i_piv) = shuffleBtw xs i j
+                        else let (xs', i_piv) = shuffleBtw xs i j -- isPartitionedBtw xs' i i_piv j
                                  xs''         = quickSortBtw xs'  i           i_piv
                                  xs'''        = quickSortBtw xs'' (i_piv + 1) j
                               in xs'''        ? lem_sorted_partitions xs''' i i_piv j
   where
     n   = j - i
 
-{- @                              toBagBtw xs 0 i == Map_union (toBagBtw zs 0 jl) 
-                                                               (toBagBtw zs (jr+1) (size zs)) @-}  
--- xs ranges from 0..i_piv+1
--- 0 <= i < i_piv  and  0 <= jl < jr <= i_piv
-{-@ shuffleBtw :: xs:(Array a) -> { i:Int | 0 <= i } -> { j:Int | i + 1 < j && j <= size xs }
-                  -> (Array a, Int)<{\ys ip -> isPartitionedBtw ys i ip j &&
-                                               i <= ip && ip < j && size ys == size xs }> @-}
+{-@ shuffleBtw :: xs:(Array a) -> { i:Int | 0 <= i } -> { j:Int | i + 1 < j && j <= A.size xs }
+                  -> (Array a, Int)<{\ys ip -> isPartitionedBtw ys i ip j && toBag xs == toBag ys &&
+                                               toBagBtw xs i j == toBagBtw ys i j &&
+                                               eqlSlice xs ys 0 i && eqlSlice xs ys j (A.size xs) &&
+                                               i <= ip && ip < j && A.size ys == A.size xs }> @-}
 shuffleBtw :: Ord a => Array a -> Int -> Int -> (Array a, Int)
 shuffleBtw xs i j = let (xs', ip) = goShuffle xs i (j-2) 
                         xs''      = if ip < j-1 
                                       then swap xs' ip (j-1) 
                                          ? lma_swap xs' ip (j-1)
+                                         ? lem_bag_swap    xs'   ip (j-1)
+                                         ? lem_bagBtw_swap xs' i ip (j-1) j
                                          ? lem_rangeLowerBound_right xs' ip (j-1) (get xs' (j-1))
                                          ? lem_range_inside_swap xs' ip (j-1)
                                          ? lem_range_outside_swap xs' i ip (j-1) j (get xs' (j-1))
@@ -47,16 +50,21 @@ shuffleBtw xs i j = let (xs', ip) = goShuffle xs i (j-2)
                                   
                      in (xs'', ip)
   where
-    piv = get xs (j-1) -- fix xs[j-1] as the pivot     -- toBag xs == toBag ys
-    {-@ goShuffle :: { zs:(Array a) | get zs (j-1) == piv && size zs == size xs }
+    piv = get xs (j-1) -- fix xs[j-1] as the pivot    
+    {-@ goShuffle :: { zs:(Array a) | get zs (j-1) == piv && A.size zs == A.size xs &&
+                                                             toBag  zs == toBag  xs &&
+                                                             toBagBtw zs i j == toBagBtw xs i j && 
+                                                             eqlSlice xs zs 0 i && eqlSlice xs zs j (A.size zs)}
                   -> { jl:Int | i <= jl    &&             rangeUpperBound zs i      jl    piv } 
                   -> { jr:Int | jl <= jr+1 && jr < j-1 && rangeLowerBound zs (jr+1) (j-1) piv }
                   -> (Array a, Int)<{\ws ip -> rangeUpperBound ws i      ip    piv && 
                                                rangeLowerBound ws ip     (j-1) piv &&
-                                               size ws == size zs && get ws (j-1) == get zs (j-1) && 
+                                               A.size ws == A.size zs && toBag zs == toBag ws &&
+                                               toBagBtw zs i j == toBagBtw ws i j &&
+                                               get ws (j-1) == get zs (j-1) && 
+                                               eqlSlice zs ws 0 i && eqlSlice zs ws j (A.size zs) &&
                                                i <= ip && ip < j }> / [jr - jl + 1] @-}
---                  -> (Array a, Int)<{\ws ip -> isPartitionedBtw ws i ip j && 
-    --goShuffle :: Ord a => Array a -> Int -> Int -> (Array a, Int)
+    -- goShuffle :: Ord a => Array a -> Int -> Int -> (Array a, Int)
     goShuffle zs jl jr 
       | jl > jr           = (zs, jl)
                             --(swap zs jl (j-1), jl) 
@@ -65,6 +73,8 @@ shuffleBtw xs i j = let (xs', ip) = goShuffle xs i (j-2)
       | otherwise         = let zs' = swap zs jl jr ? lma_swap_eql zs jl jr (j-1)
                                     ? lem_range_outside_swap zs i jl jr j piv
                                     ? lma_swap zs jl jr
+                                    ? lem_bag_swap    zs   jl jr
+                                    ? lem_bagBtw_swap zs i jl jr j
                              in goShuffle zs' jl (jr-1)
   
     
@@ -161,7 +171,11 @@ lem_range_inside_swap xs jl jr = () ? lma_swap xs jl jr
                         ? lma_swap_eql xs jl jr jj
                         ? lem_go_inside_swap (jj+1) 
       | otherwise  = () ? lma_swap xs jl jr
-                          
+                         
+{- @ lem_qs_pres_partition_left :: zs:(Array a) -> { i:Int | 0 <= i } -> { i_piv:Int | i <= i_piv }
+                                  -> { j:Int | i_piv < j && j <= size xs &&
+                                               isPartitionedBtw zs i i_piv j }
+                                  -> { pf:_  | isPartitionedBtw (quickSortBtw @-}
 
 {-@ lem_sorted_partitions :: xs:(Array a) -> { i:Int | 0 <= i } -> { i_piv:Int | i <= i_piv }
                                           -> { j:Int | i_piv < j && j <= size xs &&

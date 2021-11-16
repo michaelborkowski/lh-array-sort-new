@@ -103,11 +103,13 @@ swap xs i j = let xi  = get xs i
                   xs' = set xs i (get xs j)
                in set xs' j xi
 
-{-@ lma_swap :: xs:(Array a) -> { i:Int | 0 <= i && i < size xs } -> { j:Int | 0 <= j && j < size xs && i /= j }
+{-@ lma_swap :: xs:(Array a) -> { i:Int | 0 <= i && i < size xs } -> { j:Int | 0 <= j && j < size xs } 
                              -> { pf:_  | get (swap xs i j) i == get xs j && 
                                           get (swap xs i j) j == get xs i } @-}
 lma_swap :: Array a -> Int -> Int -> Proof
-lma_swap xs i j = () ? lma_gns xs' j i xi        --  
+lma_swap xs i j 
+   | i == j     = () ? lma_gs  xs' j xi
+   | i /= j     = () ? lma_gns xs' j i xi        --  
                      ? lma_gs  xs  i (get xs j)  -- these two prove    get (swap xs i j) i == get xs j
                      ? lma_gs  xs' j xi          -- this proves        get (swap xs i j) j == get xs i
   where
