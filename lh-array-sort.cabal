@@ -17,6 +17,7 @@ library
       Array
       Order
       Merge
+      LinearMerge
       Insertion
       Equivalence
   hs-source-dirs:
