@@ -15,7 +15,6 @@ import           Language.Haskell.Liquid.ProofCombinators
 import           Array
 
 
-
 data List a = Nil | Cons a (List a)
   deriving (Eq, Show)
 

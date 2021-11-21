@@ -11,12 +11,7 @@ module Array (Array, make, get, set, size, lma_gs, lma_gns) where
 
 import           Language.Haskell.Liquid.ProofCombinators
 
-
-
 type Array a = [a]
-
-
-
 
 {-@ reflect make @-}
 {-@ make :: n:Nat -> x:_ -> xs:{(size xs) = n} @-}

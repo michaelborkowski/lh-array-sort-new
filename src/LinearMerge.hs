@@ -13,11 +13,10 @@ module LinearMerge where
 
 import           Prelude 
 import           Language.Haskell.Liquid.ProofCombinators
-import qualified Data.Set as S
 import           Array as A
 import           Order
 import           Equivalence
--- import           Language.Haskell.Liquid.Bag as B
+import           Language.Haskell.Liquid.Bag as B
 
 -- 11 min compilation
 
@@ -82,6 +81,16 @@ splitMid xs = ((subArray xs 0 m), (subArray xs m n))
     n = A.size xs 
     m = mydiv n
 
+{-@ reflect subArrayR @-}
+{-@ subArrayR :: xs:{A.size xs >= 1} -> n:{v:Nat | v <= A.size xs} -> m:{v:Nat | n <= m && m <= A.size xs} -> c:{v:Nat | v <= m-n} -> ys:{A.size ys == m-n} / [c]@-}
+subArrayR :: A.Array a -> Int -> Int -> Int -> A.Array a
+subArrayR xs n m 0 = A.make (m-n) (A.get xs 0)  
+subArrayR xs n m c = A.set (subArrayR xs n m (c-1)) (c-1) (A.get xs (n+c-1))
+
+{-@ reflect subArray @-}
+{-@ subArray :: xs:{A.size xs >= 1} -> n:{v:Nat | v <= A.size xs} -> m:{v:Nat | n <= m && m <= A.size xs} -> ys:{A.size ys == m-n}@-}
+subArray :: A.Array a -> Int -> Int -> A.Array a
+subArray xs n m = subArrayR xs n m (m-n)
 
 -- mydiv n = div n 2
 {-@ reflect mydiv @-}
@@ -322,36 +331,36 @@ lma_topMSort xs
 -- | Proofs for Equivalence
 --------------------------------------------------------------------------------
 
--- toSet (merge xs ys zs n m) (n+m) = union (toSet xs n) (toSet ys m)
+-- toBagLeft (merge xs ys zs n m) (n+m) = union (toBagLeft xs n) (toBagLeft ys m)
 {-@ lma_merge_eq :: xs:_ -> ys:_ -> zs:{(A.size zs) = ((A.size xs) + (A.size ys))} -> n:{v:Nat | v <= A.size xs} -> m:{v:Nat | v <= A.size ys} 
-      -> {toSet (merge xs ys zs n m) (n+m) = S.union (toSet xs n) (toSet ys m)} / [m+n] @-}
+      -> {toBagLeft (merge xs ys zs n m) (n+m) = B.union (toBagLeft xs n) (toBagLeft ys m)} / [m+n] @-}
 lma_merge_eq :: Ord a => Array a -> Array a -> Array a -> Int -> Int -> Proof
 lma_merge_eq xs ys zs 0 0 = ()
 lma_merge_eq xs ys zs n 0 
-  = toSet (merge xs ys zs n 0) n
-  -- === toSet mer2 n
-  -- === S.union (S.singleton (get mer2 (n-1))) (toSet mer2 (n-1))
+  = toBagLeft (merge xs ys zs n 0) n
+  -- === toBagLeft mer2 n
+  -- === B.union (S.singleton (get mer2 (n-1))) (toBagLeft mer2 (n-1))
     ? (lma_merge_eq xs ys zs' (n-1) 0)
-  -- === S.union (S.singleton (get mer2 (n-1))) (S.union (toSet xs (n-1)) (toSet ys 0))
-  -- === S.union (toSet ys 0) (S.union (S.singleton (get mer2 (n-1))) (toSet xs (n-1)))
+  -- === B.union (S.singleton (get mer2 (n-1))) (B.union (toBagLeft xs (n-1)) (toBagLeft ys 0))
+  -- === B.union (toBagLeft ys 0) (B.union (S.singleton (get mer2 (n-1))) (toBagLeft xs (n-1)))
     ? (lma_merge_fix xs ys zs' (n-1) 0 (n-1)) &&& (lma_gs zs (n-1) xs_n)
-  -- === S.union (toSet ys 0) (S.union (S.singleton xs_n) (toSet xs (n-1)))
-  === S.union (toSet ys 0) (toSet xs n)
+  -- === B.union (toBagLeft ys 0) (B.union (S.singleton xs_n) (toBagLeft xs (n-1)))
+  === B.union (toBagLeft ys 0) (toBagLeft xs n)
   *** QED
     where 
       xs_n = A.get xs (n-1)
       zs'  = set zs (n-1) xs_n
       mer2 = merge xs ys zs' (n-1) 0
 lma_merge_eq xs ys zs 0 m
-  = toSet (merge xs ys zs 0 m) m
-  -- === toSet mer2 m
-  -- === S.union (S.singleton (get mer2 (m-1))) (toSet mer2 (m-1))
+  = toBagLeft (merge xs ys zs 0 m) m
+  -- === toBagLeft mer2 m
+  -- === B.union (S.singleton (get mer2 (m-1))) (toBagLeft mer2 (m-1))
     ? (lma_merge_eq xs ys zs' 0 (m-1))
-  -- === S.union (S.singleton (get mer2 (m-1))) (S.union (toSet ys (m-1)) (toSet xs 0))
-  -- === S.union (toSet xs 0) (S.union (S.singleton (get mer2 (m-1))) (toSet ys (m-1)))
+  -- === B.union (S.singleton (get mer2 (m-1))) (B.union (toBagLeft ys (m-1)) (toBagLeft xs 0))
+  -- === B.union (toBagLeft xs 0) (B.union (S.singleton (get mer2 (m-1))) (toBagLeft ys (m-1)))
     ? (lma_merge_fix xs ys zs' 0 (m-1) (m-1)) &&& (lma_gs zs (m-1) ys_m)
-  -- === S.union (toSet xs 0) (S.union (S.singleton ys_m) (toSet ys (m-1)))
-  === S.union (toSet xs 0) (toSet ys m)
+  -- === B.union (toBagLeft xs 0) (B.union (S.singleton ys_m) (toBagLeft ys (m-1)))
+  === B.union (toBagLeft xs 0) (toBagLeft ys m)
   *** QED
     where 
       ys_m = A.get ys (m-1)
@@ -362,29 +371,29 @@ lma_merge_eq xs ys zs n m
     = let 
         zs' = set zs (m+n-1) ys_m 
         mer2 = merge xs ys zs' n (m-1)
-      in toSet (merge xs ys zs n m) (n+m)
-      -- === toSet mer2 (n+m)
-      -- === S.union (S.singleton (get mer2 (n+m-1))) (toSet mer2 (n+m-1))
+      in toBagLeft (merge xs ys zs n m) (n+m)
+      -- === toBagLeft mer2 (n+m)
+      -- === B.union (S.singleton (get mer2 (n+m-1))) (toBagLeft mer2 (n+m-1))
         ? (lma_merge_eq xs ys zs' n (m-1))
-      -- === S.union (S.singleton (get mer2 (n+m-1))) (S.union (toSet xs n) (toSet ys (m-1)))
-      -- === S.union (toSet xs n) (S.union (S.singleton (get mer2 (n+m-1))) (toSet ys (m-1)))
+      -- === B.union (S.singleton (get mer2 (n+m-1))) (B.union (toBagLeft xs n) (toBagLeft ys (m-1)))
+      -- === B.union (toBagLeft xs n) (B.union (S.singleton (get mer2 (n+m-1))) (toBagLeft ys (m-1)))
         ? (lma_merge_fix xs ys zs' n (m-1) (n+m-1)) &&& (lma_gs zs (n+m-1) ys_m)
-      -- === S.union (toSet xs n) (S.union (S.singleton ys_m) (toSet ys (m-1)))
-      === S.union (toSet xs n) (toSet ys m)
+      -- === B.union (toBagLeft xs n) (B.union (S.singleton ys_m) (toBagLeft ys (m-1)))
+      === B.union (toBagLeft xs n) (toBagLeft ys m)
       *** QED
   | otherwise
     = let 
         zs' = set zs (m+n-1) xs_n 
         mer2 = merge xs ys zs' (n-1) m
-      in toSet (merge xs ys zs n m) (n+m)
-      -- === toSet mer2 (n+m)
-      -- === S.union (S.singleton (get mer2 (n+m-1))) (toSet mer2 (n+m-1))
+      in toBagLeft (merge xs ys zs n m) (n+m)
+      -- === toBagLeft mer2 (n+m)
+      -- === B.union (S.singleton (get mer2 (n+m-1))) (toBagLeft mer2 (n+m-1))
         ? (lma_merge_eq xs ys zs' (n-1) m)
-      -- === S.union (S.singleton (get mer2 (n+m-1))) (S.union (toSet xs (n-1)) (toSet ys m))
-      -- === S.union (toSet ys m) (S.union (S.singleton (get mer2 (n+m-1))) (toSet xs (n-1)))
+      -- === B.union (S.singleton (get mer2 (n+m-1))) (B.union (toBagLeft xs (n-1)) (toBagLeft ys m))
+      -- === B.union (toBagLeft ys m) (B.union (S.singleton (get mer2 (n+m-1))) (toBagLeft xs (n-1)))
         ? (lma_merge_fix xs ys zs' (n-1) m (n+m-1)) &&& (lma_gs zs (n+m-1) xs_n)
-      -- === S.union (toSet ys m) (S.union (S.singleton xs_n) (toSet xs (n-1)))
-      === S.union (toSet ys m) (toSet xs n)
+      -- === B.union (toBagLeft ys m) (B.union (S.singleton xs_n) (toBagLeft xs (n-1)))
+      === B.union (toBagLeft ys m) (toBagLeft xs n)
       *** QED
         where
           xs_n = A.get xs (n-1)
@@ -392,7 +401,7 @@ lma_merge_eq xs ys zs n m
 
 
 {-@ lma_msort_eq :: xs:_  -> ys:{(A.size ys == A.size xs)}
-      -> { equalP (msort xs ys) xs } / [A.size xs]@-}
+      -> { toBagEqual (msort xs ys) xs } / [A.size xs]@-}
 lma_msort_eq :: Ord a => Array a -> Array a -> Proof
 lma_msort_eq xs ys 
   | (A.size xs) == 0 = ()
@@ -403,20 +412,20 @@ lma_msort_eq xs ys
         yrs' = (msort xrs yrs)
         (xls, xrs) = splitMid xs
         (yls, yrs) = splitMid ys
-      in toSet (msort xs ys) (A.size (msort xs ys))
-      -- === toSet (msort xs ys) (A.size xs)
-      -- === toSet (merge yls' yrs' xs (A.size yls') (A.size yrs')) (A.size xs)
+      in toBagLeft (msort xs ys) (A.size (msort xs ys))
+      -- === toBagLeft (msort xs ys) (A.size xs)
+      -- === toBagLeft (merge yls' yrs' xs (A.size yls') (A.size yrs')) (A.size xs)
         ? (lma_merge_eq yls' yrs' xs (A.size yls') (A.size yrs'))
-      -- === S.union (toSet yls' (A.size yls')) (toSet yrs' (A.size yrs'))
+      -- === B.union (toBagLeft yls' (A.size yls')) (toBagLeft yrs' (A.size yrs'))
         ? (lma_msort_eq xls yls) &&& (lma_msort_eq xrs yrs)
-      -- === S.union (toSet xls (A.size xls)) (toSet xrs (A.size xrs))
+      -- === B.union (toBagLeft xls (A.size xls)) (toBagLeft xrs (A.size xrs))
         ? (lma_splitMid_eq xs)
-      === toSet xs (A.size xs)
+      === toBagLeft xs (A.size xs)
       *** QED
 
 
--- assume that splitMid does its job, namely the union of the return lists is the toSet of original list
+-- assume that splitMid does its job, namely the union of the return lists is the toBagLeft of original list
 {-@ assume lma_splitMid_eq :: xs:{A.size xs >= 2} 
-      -> {S.union (toSet (fst (splitMid xs)) (A.size (fst (splitMid xs)))) (toSet (snd (splitMid xs)) (A.size (snd (splitMid xs)))) = toSet xs (A.size xs)}  @-}
+      -> {B.union (toBagLeft (fst (splitMid xs)) (A.size (fst (splitMid xs)))) (toBagLeft (snd (splitMid xs)) (A.size (snd (splitMid xs)))) = toBagLeft xs (A.size xs)}  @-}
 lma_splitMid_eq :: Array a -> Proof
 lma_splitMid_eq _ = ()
