@@ -417,12 +417,16 @@ lma_msort_eq xs ys
       -- === toBagLeft (merge yls' yrs' xs (A.size yls') (A.size yrs')) (A.size xs)
         ? (lma_merge_eq yls' yrs' xs (A.size yls') (A.size yrs'))
       -- === B.union (toBagLeft yls' (A.size yls')) (toBagLeft yrs' (A.size yrs'))
-        ? (lma_msort_eq xls yls) &&& (lma_msort_eq xrs yrs)
+        ? ((lma_msort_eq xls yls) &&& (tri yls' xls)) &&& ((lma_msort_eq xrs yrs) &&& (tri yrs' xrs))
       -- === B.union (toBagLeft xls (A.size xls)) (toBagLeft xrs (A.size xrs))
         ? (lma_splitMid_eq xs)
-      === toBagLeft xs (A.size xs)
+      === toBagLeft xs (A.size xs) ? (tri (msort xs ys) xs) -- TODO: adding tri reduces the checking time
       *** QED
 
+-- {-@ reflect tri @-}
+{-@ tri :: xs:_ -> ys:_ -> {(toBagEqual xs ys) = (toBagLeft xs (size xs) == toBagLeft ys (size ys))} @-}
+tri :: Ord a => Array a -> Array a -> Proof
+tri xs ys = ()
 
 -- assume that splitMid does its job, namely the union of the return lists is the toBagLeft of original list
 {-@ assume lma_splitMid_eq :: xs:{A.size xs >= 2} 

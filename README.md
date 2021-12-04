@@ -3,4 +3,6 @@ Various "in place" sorting algorithms verified with LH
 
 Now have: Proof of Sortedness for Merge, Linear Merge and Insertion, Proof of Equivalence for all using Bag
 
-Working on: Optimizin checking time by reimplementing Array (Now takes around 10 min)
+Array are implemented using List
+
+Checking time should not exceed 2min for any single file
