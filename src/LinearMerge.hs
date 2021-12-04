@@ -1,7 +1,7 @@
 {-@ LIQUID "--reflection"  @-}
 -- {-@ LIQUID "--diff"        @-}
-{-@ LIQUID "--ple"         @-}
-{-@ LIQUID "--short-names" @-}
+-- {-@ LIQUID "--ple"         @-}
+-- {-@ LIQUID "--short-names" @-}
 -- {-@ LIQUID "--checks=lma_msort_eq" @-}
 
 
@@ -24,7 +24,7 @@ import           Language.Haskell.Liquid.Bag as B
 -- | Implementations
 --------------------------------------------------------------------------------
  
--- >>>  merge [1:3:4:6] [2:5] 4 2
+-- >>>  LinearMerge.merge [1,3,4,6] [2,5] [0,0,0,0,0,0] 4 2
 --
 
 -- merging the first n,m indices of xs, ys
@@ -50,6 +50,10 @@ merge xs ys zs n m | xs_n <= ys_m = let zs' = set zs (m+n-1) ys_m
 
 
 -- >>>  LinearMerge.msort ([1,3,2,9,6,0,5,2,10,-1]) ([0,0,0,0,0,0,0,0,0,0])
+
+-- LinearMerge.msort ([18,-3,22,9,6,0,5,-2,-10,-1]) ([0,0,0,0,0,0,0,0,0,0])
+-- LinearMerge.splitMid ([18,-3,22,9,6,0,5,-2,-10,-1])
+-- LinearMerge.topMSort ([18,-3,22,9,6,0,5,-2,-10,-1])
 -- [-1,0,1,2,2,3,5,6,9,10]
 -- TODO: Inefficient implementation 
 -- need to show xs == ys 
@@ -76,7 +80,7 @@ topMSort xs | (A.size xs == 0) = xs
 {-@ reflect splitMid @-}
 {-@ splitMid :: xs:{A.size xs >= 2} -> {t:_ | ((A.size (fst t)) < (A.size xs) && (A.size (snd t)) < (A.size xs)) && (A.size xs = (A.size (fst t)) + (A.size (snd t))) && ((A.size (fst t)) = (mydiv (A.size xs)))} @-}
 splitMid :: Array a -> (Array a, Array a)
-splitMid xs = ((subArray xs 0 m), (subArray xs m n)) 
+splitMid xs = ((A.slice xs 0 m), (A.slice xs m n)) 
   where 
     n = A.size xs 
     m = mydiv n
@@ -100,7 +104,6 @@ mydiv 2 = 1
 mydiv 3 = 1 
 mydiv n = 1 + (mydiv (n-2))
 
-
 --------------------------------------------------------------------------------
 -- | Proofs for Sortedness
 --------------------------------------------------------------------------------
@@ -108,7 +111,10 @@ mydiv n = 1 + (mydiv (n-2))
 {-@ lma_merge_fix :: xs:_-> ys:_ -> zs:{(A.size zs) = ((A.size xs) + (A.size ys))} -> n:{v:Nat | v <= A.size xs} -> m:{v:Nat | v <= A.size ys} -> l:{v:Nat | l >= n+m && v < A.size zs} 
       -> { A.get (merge xs ys zs n m) l = A.get zs l } / [n+m] @-}
 lma_merge_fix ::  Ord a => Array a -> Array a -> Array a -> Int -> Int -> Int -> Proof
-lma_merge_fix xs ys zs 0 0 _ = ()
+lma_merge_fix xs ys zs 0 0 l -- = () -- TODO: Cant use this line. 
+  = A.get (merge xs ys zs 0 0) l
+  === A.get zs l
+  *** QED
 lma_merge_fix xs ys zs n 0 l 
   = A.get (merge xs ys zs n 0) l
   -- === A.get (merge xs ys zs' (n-1) 0) l
@@ -221,16 +227,25 @@ lma_merge_max xs ys zs n m z
       -> { isSortedFstN (merge xs ys zs n m) (n+m)} / [n+m]@-}
 lma_merge :: Ord a => Array a -> Array a -> Array a -> Int -> Int -> Proof
 -- -- lma_merge [] ys _ _ = ()
-lma_merge xs ys zs 0 0 = ()
-lma_merge xs ys zs 0 1 = ()
-lma_merge xs ys zs 1 0 = ()
+lma_merge xs ys zs 0 0 
+  = isSortedFstN (merge xs ys zs 0 0) 0
+  -- === True
+  *** QED
+lma_merge xs ys zs 0 1
+  = isSortedFstN (merge xs ys zs 0 1) 1
+  -- === True
+  *** QED
+lma_merge xs ys zs 1 0
+  = isSortedFstN (merge xs ys zs 1 0) 1
+  -- === True
+  *** QED
 lma_merge xs ys zs n 0
   = isSortedFstN mer1 n
   -- === (((A.get mer1 (n-2)) <= (A.get mer1 (n-1))) && (isSortedFstN mer1 (n-1)))
   -- === (((A.get mer2 (n-2)) <= (A.get mer2 (n-1))) && (isSortedFstN mer2 (n-1)))
     ? (lma_merge_fix xs ys zs' (n-1) 0 (n-1)) &&& (lma_gs zs (n-1) xs_n)
   -- === (((A.get mer2 (n-2)) <= xs_n) && (isSortedFstN mer2 (n-1)))
-    ? (lma_merge_max xs ys zs' (n-1) 0 (xs_n ? lma_is_isfn xs n))
+    ? (lma_merge_max xs ys zs' (n-1) 0 (xs_n ? lma_is_le xs (n-1))) -- TODO: Does not work with lma_is_isfn xs n
   -- === (isSortedFstN mer2 (n-1))
     ? (lma_merge xs ys zs' (n-1) 0)
   === True
@@ -246,7 +261,7 @@ lma_merge xs ys zs 0 m
   -- === (((A.get mer2 (m-2)) <= (A.get mer2 (m-1))) && (isSortedFstN mer2 (m-1)))
     ? (lma_merge_fix xs ys zs' 0 (m-1) (m-1)) &&& (lma_gs zs (m-1) ys_m)
   -- === (((A.get mer2 (m-2)) <= ys_m) && (isSortedFstN mer2 (m-1)))
-    ? (lma_merge_max xs ys zs' 0 (m-1) (ys_m ? lma_is_isfn ys m))
+    ? (lma_merge_max xs ys zs' 0 (m-1) (ys_m ? lma_is_le ys (m-1)))
   -- === (isSortedFstN mer2 (m-1))
     ? (lma_merge xs ys zs' 0 (m-1))
   === True
@@ -266,7 +281,7 @@ lma_merge xs ys zs n m
       -- === (((A.get mer2 (n+m-2)) <= (A.get mer2 (n+m-1))) && (isSortedFstN mer2 (n+m-1)))
         ? (lma_merge_fix xs ys zs' n (m-1) (n+m-1)) &&& (lma_gs zs (n+m-1) ys_m)
       -- === (((A.get mer2 (n+m-2)) <= ys_m) && (isSortedFstN mer2 (n+m-1)))
-        ? (lma_merge_max xs ys zs' n (m-1) (ys_m ? lma_is_isfn ys m))
+        ? (lma_merge_max xs ys zs' n (m-1) (ys_m ? lma_is_le ys (m-1)))
       -- === (isSortedFstN mer2 (n+m-1))
         ? (lma_merge xs ys zs' n (m-1))
       === True
@@ -280,7 +295,7 @@ lma_merge xs ys zs n m
       -- === (((A.get mer2 (n+m-2)) <= (A.get mer2 (n+m-1))) && (isSortedFstN mer2 (n+m-1)))
         ? (lma_merge_fix xs ys zs' (n-1) m (n+m-1)) &&& (lma_gs zs (n+m-1) xs_n)
       -- === (((A.get mer2 (n+m-2)) <= xs_n) && (isSortedFstN mer2 (n+m-1)))
-        ? (lma_merge_max xs ys zs' (n-1) m (xs_n ? lma_is_isfn xs n))
+        ? (lma_merge_max xs ys zs' (n-1) m (xs_n ? lma_is_le xs (n-1)))
       -- === (isSortedFstN mer2 (n+m-1))
         ? (lma_merge xs ys zs' (n-1) m)
       === True
@@ -292,11 +307,17 @@ lma_merge xs ys zs n m
 
 
 {-@ lma_msort :: xs:_ -> ys:{(A.size ys == A.size xs)}
-      -> { isSortedFstN (msort xs ys) (A.size xs)} / [A.size xs] @-}
+      -> { isSorted (msort xs ys)} / [A.size xs] @-}
 lma_msort ::  Ord a => Array a ->  Array a -> Proof
 lma_msort xs ys
-  | (A.size xs == 0) = ()
-  | (A.size xs == 1) = ()
+  | (A.size xs == 0)
+    = isSorted (msort xs ys) -- TODO: LH doesn't agree such trivial fact
+    === isSortedFstN (msort xs ys) 0
+    *** QED
+  | (A.size xs == 1)
+    = isSorted (msort xs ys)
+    === isSortedFstN (msort xs ys) 1
+    *** QED
   | otherwise      =
     let 
       yls' = (msort xls yls)
@@ -305,7 +326,8 @@ lma_msort xs ys
       (yls, yrs) = splitMid ys
       n = (A.size xs)
     in
-      isSortedFstN (msort xs ys) n
+      isSorted (msort xs ys)
+      === isSortedFstN (msort xs ys) n
       -- === isSortedFstN (merge yls' yrs' xs (A.size yls') (A.size yrs')) n
         ? (lma_merge (yls' ? (lma_msort xls yls)) (yrs' ? (lma_msort xrs yrs)) xs (A.size yls') (A.size yrs'))
       === True
@@ -315,7 +337,10 @@ lma_msort xs ys
       -> { isSorted (topMSort xs) } / [A.size xs] @-}
 lma_topMSort ::  Ord a => Array a ->  Proof
 lma_topMSort xs
-  | (A.size xs == 0) = ()
+  | (A.size xs == 0) 
+    = isSorted (topMSort xs)
+    === isSortedFstN (topMSort xs) 0
+    *** QED
   | otherwise      =
     let 
       tmp = make (A.size xs) (A.get xs 0)
@@ -335,7 +360,10 @@ lma_topMSort xs
 {-@ lma_merge_eq :: xs:_ -> ys:_ -> zs:{(A.size zs) = ((A.size xs) + (A.size ys))} -> n:{v:Nat | v <= A.size xs} -> m:{v:Nat | v <= A.size ys} 
       -> {toBagLeft (merge xs ys zs n m) (n+m) = B.union (toBagLeft xs n) (toBagLeft ys m)} / [m+n] @-}
 lma_merge_eq :: Ord a => Array a -> Array a -> Array a -> Int -> Int -> Proof
-lma_merge_eq xs ys zs 0 0 = ()
+lma_merge_eq xs ys zs 0 0
+  = toBagLeft (merge xs ys zs 0 0) 0
+  === B.union (toBagLeft xs 0) (toBagLeft ys 0)
+  *** QED
 lma_merge_eq xs ys zs n 0 
   = toBagLeft (merge xs ys zs n 0) n
   -- === toBagLeft mer2 n
@@ -402,10 +430,12 @@ lma_merge_eq xs ys zs n m
 
 {-@ lma_msort_eq :: xs:_  -> ys:{(A.size ys == A.size xs)}
       -> { toBagEqual (msort xs ys) xs } / [A.size xs]@-}
+-- toBagEqual (msort xs ys) xs
 lma_msort_eq :: Ord a => Array a -> Array a -> Proof
 lma_msort_eq xs ys 
-  | (A.size xs) == 0 = ()
-  | (A.size xs) == 1 = ()
+  -- | ((A.size xs) == 0) = () -- TODO: This line wont work
+  | ((A.size xs) == 0) = toBagEqual (msort xs ys) xs *** QED -- Don't understand why such trivial fact needs to be provided 
+  | ((A.size xs) == 1) = toBagEqual (msort xs ys) xs *** QED
   | otherwise
     = let  
         yls' = (msort xls yls)
@@ -417,10 +447,10 @@ lma_msort_eq xs ys
       -- === toBagLeft (merge yls' yrs' xs (A.size yls') (A.size yrs')) (A.size xs)
         ? (lma_merge_eq yls' yrs' xs (A.size yls') (A.size yrs'))
       -- === B.union (toBagLeft yls' (A.size yls')) (toBagLeft yrs' (A.size yrs'))
-        ? (lma_msort_eq xls yls) &&& (lma_msort_eq xrs yrs)
+        ? ((lma_msort_eq xls yls) &&& (tri yls' xls)) &&& ((lma_msort_eq xrs yrs) &&& (tri yrs' xrs)) -- TODO: won't work without tri
       -- === B.union (toBagLeft xls (A.size xls)) (toBagLeft xrs (A.size xrs))
         ? (lma_splitMid_eq xs)
-      === toBagLeft xs (A.size xs)
+      === toBagLeft xs (A.size xs) ? (tri (msort xs ys) xs) -- TODO: won't work without tri i.e. LH doesn't see the def of toBagEqual
       *** QED
 
 

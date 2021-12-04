@@ -26,10 +26,9 @@ import           Order
 
 -- merging the first n,m indices of xs, ys
 {-@ reflect merge @-}
-{-@ merge :: xs:_ -> ys:_ -> n:{v:Nat | v <= A.size xs} -> m:{v:Nat | v <= A.size ys} 
+{-@ merge :: xs:{A.size xs > 0} -> ys:_ -> n:{v:Nat | v <= A.size xs} -> m:{v:Nat | v <= A.size ys} 
       -> zs:{(A.size zs) = ((A.size xs) + (A.size ys))} / [m+n] @-}
 merge :: Ord a => A.Array a -> A.Array a -> Int -> Int -> A.Array a
-merge [] ys _ _ = ys
 merge xs ys 0 0 = (A.make ((A.size xs)+(A.size ys)) (A.get xs 0))
 merge xs ys 0 m = let zs = merge xs ys 0 (m-1) in (A.set zs (m-1) (A.get ys (m-1)))
 merge xs ys n 0 = let zs = merge xs ys (n-1) 0 in (A.set zs (n-1) (A.get xs (n-1)))
@@ -62,7 +61,7 @@ msort xs | (A.size xs) == 0 = xs
 {-@ reflect splitMid @-}
 {-@ splitMid :: xs:{A.size xs >= 2} -> {t:_ | ((A.size (fst t)) < (A.size xs) && (A.size (snd t)) < (A.size xs)) && (A.size xs = (A.size (fst t)) + (A.size (snd t)))} @-}
 splitMid :: A.Array a -> (A.Array a, A.Array a)
-splitMid xs = ((subArray xs 0 m), (subArray xs m n))
+splitMid xs = ((A.slice xs 0 m), (A.slice xs m n))
   where 
     n = A.size xs 
     m = mydiv n
@@ -132,7 +131,7 @@ lma_merge_max xs ys n m z
         ys_m = A.get ys (m-1)
 
 -- TODO: Dumb to write this proof separately, for the case n = 0
-{-@ lma_merge_max_m :: xs:_ -> ys:{isSorted ys} -> m:{v:Nat | v > 0 && v <= A.size ys} -> z:{ z >= (A.get ys (m-1))}
+{-@ lma_merge_max_m :: xs:{A.size xs > 0} -> ys:{isSorted ys} -> m:{v:Nat | v > 0 && v <= A.size ys} -> z:{ z >= (A.get ys (m-1))}
       -> { z >= A.get (merge xs ys 0 m) (m-1) } @-}
 lma_merge_max_m ::  Ord a => A.Array a -> A.Array a -> Int -> a -> Proof
 lma_merge_max_m xs ys m z 
@@ -165,7 +164,7 @@ lma_merge_max_n xs ys n z
 -- Commenting out intermediate steps greatly reduces the runtime (12'5 -> 3'53)
 -- showing the output of merge is sorted if the inputs are sorted
 -- TODO: Interesting observation: one less line of proof increase the compile time by 1/5 (from 100s to 80s)
-{-@ lma_merge :: xs:{isSorted xs} -> ys:{isSorted ys} -> n:{v:Nat | v <= A.size xs} -> m:{v:Nat | v <= A.size ys} 
+{-@ lma_merge :: xs:{isSorted xs && A.size xs > 0} -> ys:{isSorted ys} -> n:{v:Nat | v <= A.size xs} -> m:{v:Nat | v <= A.size ys} 
       -> { isSortedFstN (merge xs ys n m) (n+m)} / [n+m]@-}
 lma_merge :: Ord a => A.Array a -> A.Array a -> Int -> Int -> Proof
 -- -- lma_merge [] ys _ _ = ()

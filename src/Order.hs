@@ -33,12 +33,32 @@ app (Cons x xs) ys = Cons x (app xs ys)
 
 -- proofs
 
+-- subfunctions in measure has to be measure as well? TODO:
+{-@ reflect isSorted @-}
+isSorted :: Ord a => Array a -> Bool
+isSorted xs = isSortedFstN xs (size xs)
+
+
+{-@ reflect isSortedFstN @-}
+{-@ isSortedFstN :: xs:_ -> m:{n:Nat | n <= size xs} -> b:_ / [m] @-}
+isSortedFstN :: Ord a => Array a -> Int -> Bool
+isSortedFstN xs 0 = True
+isSortedFstN xs 1 = True
+isSortedFstN xs n = ((get xs (n-2)) <= (get xs (n-1))) && (isSortedFstN xs (n-1))
+
 -- lemma showing set preserves sortedness of indices before n, and if the new 
 -- element is greater than the previous, xs is sorted up to n+1
 {-@ lma_set_ps :: xs:_ -> n:{m:Nat | m < size xs && m > 0 } -> x:{(isSortedFstN xs n) && ((x >= (get xs (n-1))))} 
       -> { isSortedFstN (set xs n x) (n+1)} / [n]@-}
 lma_set_ps :: Ord a => Array a -> Int -> a -> Proof
-lma_set_ps xs 1 x = ()
+lma_set_ps xs 1 x 
+  = isSortedFstN (set xs 1 x) 2
+  -- === (((get (set xs 1 x) 0) <= (get (set xs 1 x) 1)) && (isSortedFstN (set xs 1 x) 1))
+    ? (lma_gns xs 1 0 x) &&& (lma_gs xs 1 x)
+  -- === (((get xs 0) <= x) && (isSortedFstN (set xs 1 x) 1))
+  -- === isSortedFstN (set xs 1 x) 1
+  === True
+  *** QED
 lma_set_ps xs n x 
   = isSortedFstN (set xs n x) (n+1)
   -- === (((get (set xs n x) (n-1)) <= (get (set xs n x) (n))) && (isSortedFstN (set xs n x) (n)))
@@ -55,18 +75,15 @@ lma_set_ps xs n x
   *** QED
 
 
--- subfunctions in measure has to be measure as well? TODO:
-{-@ reflect isSorted @-}
-isSorted :: Ord a => Array a -> Bool
-isSorted xs = isSortedFstN xs (size xs)
-
-
-{-@ reflect isSortedFstN @-}
-{-@ isSortedFstN :: xs:_ -> m:{n:Nat | n <= size xs} -> b:_ / [m] @-}
-isSortedFstN :: Ord a => Array a -> Int -> Bool
-isSortedFstN xs 0 = True
-isSortedFstN xs 1 = True
-isSortedFstN xs n = ((get xs (n-2)) <= (get xs (n-1))) && (isSortedFstN xs (n-1))
+-- lemma showing that isSorted xs implies xs[n] <= xs[n+m]
+{-@ lma_is_le :: xs:{isSorted xs} -> n:{v:Nat | v < size xs}
+      -> {(0 < n) => (get xs (n-1) <= get xs n)} / [n] @-}
+lma_is_le :: Ord a => Array a -> Int -> Proof
+lma_is_le xs n = () ? (lma_is_isfn xs (n+1))
+  -- = get xs (n-1) <= get xs n
+  --   ? (lma_is_isfn xs (n+1))
+  -- === True
+  -- *** QED
 
 -- lemma showing that isSorted xs implies isSorted for first n when n in range
 {-@ lma_is_isfn :: xs:{isSorted xs} -> n:{v:Nat |  v <= size xs} 
@@ -79,7 +96,6 @@ lma_is_isfn xs n
     ? lma_isfn1 xs (size xs) n
   === isSortedFstN xs n
   *** QED
-
 
 -- lemma showing that set xs n x does not change the fact that the first m<n of xs is sorted
 {-@ lma_isfn_set :: xs:_ -> x:_ -> n:{v:Nat |  v < size xs} -> m:{v:Nat | v <= n } 

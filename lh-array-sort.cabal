@@ -16,10 +16,11 @@ library
   exposed-modules: 
       Array
       Order
-      Merge
-      LinearMerge
-      Insertion
       Equivalence
+      Merge
+      Insertion
+      LinearMerge
+      
   hs-source-dirs:
       src
   build-depends:

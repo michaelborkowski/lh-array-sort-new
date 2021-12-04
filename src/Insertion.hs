@@ -14,7 +14,7 @@ module Insertion where
 import           Prelude
 import           Language.Haskell.Liquid.ProofCombinators
 import qualified Language.Haskell.Liquid.Bag as B
-import qualified Array as A
+import qualified Array as A 
 import           Order
 import           Equivalence
 
@@ -54,7 +54,14 @@ isort xs n
 {-@ lma_insert_fix :: xs:_ -> x:_ -> n:{v:Nat | v < A.size xs} -> m:{v:Nat | v > n && v < A.size xs}
       -> ys:{A.get (insert xs x n) m == A.get xs m} / [n] @-}
 lma_insert_fix :: Ord a => A.Array a -> a -> Int -> Int -> Proof
-lma_insert_fix xs x 0 m = ()
+lma_insert_fix xs x 0 m 
+  = A.get (insert xs x 0) m
+  -- === A.get (A.set xs 0 x) m
+    ? (A.lma_gns xs 0 m x)
+  === A.get xs m
+  *** QED
+
+
 lma_insert_fix xs x n m
   | x < (A.get xs (n-1)) 
     = A.get (insert xs x n) m
@@ -130,7 +137,8 @@ lma_insert xs x n
         -- === (A.get ys (n-1)) <= (A.get xs' (n)) 
           ? (A.lma_gs xs n (A.get xs (n-1)))
         -- === (A.get ys (n-1)) <= (A.get xs (n-1)) 
-          ? (A.lma_gs xs 0 x)
+          ? (A.lma_gs xs' 0 x)-- A.get ys (n-1) === get (insert xs' x (n-1)) (n-1) === 
+        -- === x <= (A.get xs (n-1)) 
         === True
         *** QED
   | otherwise
@@ -173,7 +181,13 @@ lma_isort xs n
 {-@ lma_insert_eq :: xs:_ -> x:_ -> n:{v:Nat | v < A.size xs}
        -> ys:{(toBagLeft (insert xs x n) (n+1)) == (B.put x (toBagLeft xs n))} / [n] @-} 
 lma_insert_eq :: Ord a => A.Array a -> a -> Int -> Proof
-lma_insert_eq xs x 0 = ()
+lma_insert_eq xs x 0 
+  = toBagLeft (insert xs x 0) 1
+  -- === toBagLeft (A.set xs 0 x) 1
+  -- === B.put (A.get (A.set xs 0 x) 0) (toBagLeft xs 0)
+    ? (A.lma_gs xs 0 x)
+  === B.put x (toBagLeft xs 0)
+  *** QED
 lma_insert_eq xs x n
   | x < (A.get xs (n-1)) 
     = let 
@@ -208,7 +222,13 @@ lma_isort_eq_r :: Ord a => A.Array a -> Int -> Proof
 lma_isort_eq_r xs n 
   | (A.size xs == 0) = ()
   | (A.size xs == 1) = ()
-  | (n == 0)       = ()
+  | (n == 0)
+    = toBagLeft (isort xs 0) 1
+    -- === B.put (A.get (isort xs 0) 0) (toBagLeft (isort xs 0) 0)
+    === B.put (A.get (A.make (A.size xs) (A.get xs 0)) 0) (toBagLeft (isort xs 0) 0) -- TODO: UNSAFE if this line gets commented 
+    -- === B.put (A.get xs 0) (toBagLeft xs 0)
+    === toBagLeft xs 1
+    *** QED
   | otherwise 
     = toBagLeft (isort xs n) (n+1)
     -- === toBagLeft (insert (isort xs (n-1)) (A.get xs n) n) (n+1)
