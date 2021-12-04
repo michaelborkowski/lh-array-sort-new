@@ -1,7 +1,7 @@
 {-@ LIQUID "--reflection"  @-}
 -- {-@ LIQUID "--diff"        @-}
--- {-@ LIQUID "--ple"         @-}
--- {-@ LIQUID "--short-names" @-}
+{-@ LIQUID "--ple"         @-}
+{-@ LIQUID "--short-names" @-}
 -- {-@ LIQUID "--checks=lma_msort_eq" @-}
 
 
