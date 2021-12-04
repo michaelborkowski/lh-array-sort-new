@@ -10,8 +10,8 @@
 
 
 -- TODO: cannot only exposing certain functions otherwise LH complains 
-module Array where --
--- module Array (Array, make, set, size, lma_gs, lma_gns) where --
+module Array where -- works
+-- module Array (Array, make, set, size, lma_gs, lma_gns) where -- won't work if uncomment
 
 import           Language.Haskell.Liquid.ProofCombinators
 
@@ -32,11 +32,9 @@ make 0 x = Arr [] 0 0
 make n x = let Arr lst l r = make (n-1) x in Arr (x:lst) l (r+1)
 
 {-@ measure size @-}
--- {-@ reflect size @-}
 {-@ size :: xs:_ -> Nat @-}
 size :: Array a -> Int
 size (Arr _ l r) = r-l
--- size (_:xs) = 1 + (size xs)
 
 {-@ reflect getList @-}
 {-@ getList :: xs:_ -> {n:Nat | n < len xs } -> x:_ @-}
@@ -64,12 +62,6 @@ set (Arr lst l r) n y = Arr (setList lst (l+n) y) l r
 {-@ slice :: xs:_ -> {l:Nat | l <= size xs } -> {r:Nat | r <= size xs && l <= r} -> ys:{size ys = r-l} @-}
 slice :: Array a -> Int -> Int -> Array a 
 slice (Arr lst l r) l' r' = Arr lst (l+l') (l+r')
-
--- -- {-@ reflect insert @-}
--- -- {-@ insert :: xs:_ -> {n:Nat | n < size xs } -> x:_ -> nxs:_ @-}
--- -- insert :: Array a -> Int -> a -> Array a
--- -- insert (x:xs) 0 y = (y:x:xs)
--- -- insert (x:xs) n y = x:(insert xs (n-1) y)
 
 -- -- proof
 

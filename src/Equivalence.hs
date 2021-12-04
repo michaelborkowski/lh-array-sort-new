@@ -40,15 +40,6 @@ toBagLeft xs n = B.put (A.get xs (n-1)) (toBagLeft xs (n-1))
 toBagEqual :: Ord a => Array a -> Array a -> Bool
 toBagEqual xs ys = (toBagLeft xs (size xs)) == (toBagLeft ys (size ys))
 
--- {-@ reflect tri @-}
-{-@ tri :: xs:_ -> ys:_ -> {(toBagEqual xs ys) = (toBagLeft xs (size xs) == toBagLeft ys (size ys))} @-}
-tri :: Ord a => Array a -> Array a -> Proof
-tri xs ys = ()
-
-{-@ empty_eq :: xs:_ -> ys:_ -> {toBagLeft xs 0 == toBagLeft ys 0} @-}
-empty_eq :: Ord a => Array a -> Array a -> Proof
-empty_eq xs ys = ()
-
 -- n > m
 {-@ lma_set_equal :: xs:_ -> x:_ -> n:{v:Nat | v < A.size xs} -> m:{v:Nat | v <= n} 
       -> {(toBagLeft (set xs n x) m == toBagLeft xs m)} / [m] @-}
@@ -62,4 +53,4 @@ lma_set_equal xs x n m
     ? (lma_set_equal xs x n (m-1))
   -- === S.union (S.singleton (get xs (m-1))) (toSet xs (m-1))
   === toBagLeft xs m
-  *** QED
+  *** QED-- {-@ reflect tri @-}
