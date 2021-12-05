@@ -15,15 +15,15 @@ module Array where -- works
 
 import           Language.Haskell.Liquid.ProofCombinators
 
-{-@ data Array a = Arr { lst  :: _
-                        , left :: {v: Nat | v <= (len lst) }
-                        , right :: {v:Nat | v >= left && v <= (len lst)}
+{-@ data Array a = Arr {  lst   :: _
+                        , left  :: {v: Nat | v <= (len lst) }
+                        , right :: {v: Nat | v >= left && v <= (len lst)}
                         }
   @-}
 
-data Array a = Arr {lst :: [a] 
-                   ,left:: Int 
-                   ,right:: Int}
+data Array a = Arr { lst   :: [a] 
+                   , left  :: Int 
+                   , right :: Int}
 
 {-@ reflect make @-}
 {-@ make :: n:Nat -> x:_ -> xs:{(size xs) = n} @-}
