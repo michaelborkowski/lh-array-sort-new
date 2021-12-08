@@ -5,8 +5,6 @@
 -- {-@ LIQUID "--checks=lma_msort_eq" @-}
 
 
--- {-@ infixr ++  @-}  -- TODO: Silly to have to rewrite this annotation!
-
 {-# LANGUAGE GADTs #-}
 
 module LinearMerge where
@@ -21,9 +19,6 @@ import           Language.Haskell.Liquid.Bag as B
 --------------------------------------------------------------------------------
 -- | Implementations
 --------------------------------------------------------------------------------
- 
--- >>>  LinearMerge.merge [1,3,4,6] [2,5] [0,0,0,0,0,0] 4 2
---
 
 -- merging the first n,m indices of xs, ys
 {-@ reflect merge @-}
@@ -46,15 +41,6 @@ merge xs ys zs n m | xs_n <= ys_m = let zs' = set zs (m+n-1) ys_m
                         xs_n = A.get xs (n-1)
                         ys_m = A.get ys (m-1) 
 
-
--- >>>  LinearMerge.msort ([1,3,2,9,6,0,5,2,10,-1]) ([0,0,0,0,0,0,0,0,0,0])
-
--- LinearMerge.msort ([18,-3,22,9,6,0,5,-2,-10,-1]) ([0,0,0,0,0,0,0,0,0,0])
--- LinearMerge.splitMid ([18,-3,22,9,6,0,5,-2,-10,-1])
--- LinearMerge.topMSort ([18,-3,22,9,6,0,5,-2,-10,-1])
--- [-1,0,1,2,2,3,5,6,9,10]
--- TODO: Inefficient implementation 
--- need to show xs == ys 
 {-@ reflect msort @-}
 {-@ msort :: xs:_ -> ys:{(A.size ys == A.size xs)} -> zs:{(A.size ys == A.size zs)} / [A.size xs] @-}
 msort :: Ord a => Array a -> Array a -> Array a
@@ -82,17 +68,6 @@ splitMid xs = ((A.slice xs 0 m), (A.slice xs m n))
   where 
     n = A.size xs 
     m = mydiv n
-
-{-@ reflect subArrayR @-}
-{-@ subArrayR :: xs:{A.size xs >= 1} -> n:{v:Nat | v <= A.size xs} -> m:{v:Nat | n <= m && m <= A.size xs} -> c:{v:Nat | v <= m-n} -> ys:{A.size ys == m-n} / [c]@-}
-subArrayR :: A.Array a -> Int -> Int -> Int -> A.Array a
-subArrayR xs n m 0 = A.make (m-n) (A.get xs 0)  
-subArrayR xs n m c = A.set (subArrayR xs n m (c-1)) (c-1) (A.get xs (n+c-1))
-
-{-@ reflect subArray @-}
-{-@ subArray :: xs:{A.size xs >= 1} -> n:{v:Nat | v <= A.size xs} -> m:{v:Nat | n <= m && m <= A.size xs} -> ys:{A.size ys == m-n}@-}
-subArray :: A.Array a -> Int -> Int -> A.Array a
-subArray xs n m = subArrayR xs n m (m-n)
 
 -- mydiv n = div n 2
 {-@ reflect mydiv @-}
@@ -154,15 +129,8 @@ lma_merge_fix xs ys zs n m l
           ys_m = A.get ys (m-1) 
 
 
-
--- TODO: I really want to A.get rid of the edge cases where n-1 can be -1
--- FIXME: constrains z >= (A.get xs (n-1)) does not enforce n > 0, but it makes the program into a loop
---        nor does it check the constrain of n when i am calling this method, another loop
--- n = 0 implies  -- TODO: Forever loop, Not working
 {-@ lma_merge_max :: xs:{isSorted xs} -> ys:{isSorted ys} -> zs:{(A.size zs) = ((A.size xs) + (A.size ys))} -> n:{v:Nat | v <= A.size xs} -> m:{v:Nat | v <= A.size ys && (n+m) > 0} -> z:{  ((m > 0) => (z >= (A.get ys (m-1)))) && ((n > 0) => (z >= (A.get xs (n-1))))}
       -> { z >= A.get (merge xs ys zs n m) (n+m-1) } / [A.size zs]@-}
--- {-@ lma_merge_max :: xs:{isSorted xs} -> ys:{isSorted ys} -> zs:{(A.size zs) = ((A.size xs) + (A.size ys))} -> n:{v:Nat | v > 0 && v <= A.size xs} -> m:{v:Nat | v > 0 && v <= A.size ys} -> z:{  z >= (A.get xs (n-1)) && z >= (A.get ys (m-1))} 
---       -> { z >= A.get (merge xs ys zs n m) (n+m-1) } @-}
 lma_merge_max ::  Ord a => Array a -> Array a -> Array a -> Int -> Int -> a -> Proof
 lma_merge_max xs ys zs n 0 z
   = z 
@@ -217,7 +185,6 @@ lma_merge_max xs ys zs n m z
 
 -- Commenting out intermediate steps greatly reduces the runtime (12'5 -> 3'53)
 -- showing the output of merge is sorted if the inputs are sorted
--- TODO: Interesting observation: one less line of proof increase the compile time by 1/5 (from 100s to 80s)
 {-@ lma_merge :: xs:{isSorted xs} -> ys:{isSorted ys} -> zs:{(A.size zs) = ((A.size xs) + (A.size ys))} -> n:{v:Nat | v <= A.size xs} -> m:{v:Nat | v <= A.size ys} 
       -> { isSortedFstN (merge xs ys zs n m) (n+m)} / [n+m]@-}
 lma_merge :: Ord a => Array a -> Array a -> Array a -> Int -> Int -> Proof
@@ -298,7 +265,7 @@ lma_msort ::  Ord a => Array a ->  Array a -> Proof
 lma_msort xs ys
   | (A.size xs == 0) = ()
   | (A.size xs == 1) = ()
-  | otherwise      =
+  | otherwise        =
     let 
       yls' = (msort xls yls)
       yrs' = (msort xrs yrs)
@@ -321,7 +288,7 @@ lma_topMSort xs
     = isSorted (topMSort xs)
     === isSortedFstN (topMSort xs) 0
     *** QED
-  | otherwise      =
+  | otherwise =
     let 
       tmp = make (A.size xs) (A.get xs 0)
     in

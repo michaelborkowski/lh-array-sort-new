@@ -3,9 +3,6 @@
 {-@ LIQUID "--ple"         @-}
 {-@ LIQUID "--short-names" @-}
 
-
--- {-@ infixr ++  @-}  -- TODO: Silly to have to rewrite this annotation!
-
 {-# LANGUAGE GADTs #-}
 
 module Order where
@@ -14,30 +11,16 @@ import           Prelude hiding ((++))
 import           Language.Haskell.Liquid.ProofCombinators
 import           Array
 
-
 data List a = Nil | Cons a (List a)
   deriving (Eq, Show)
 
--- TODO: List equal up to permutation
+--------------------------------------------------------------------------------
+-- | Proofs
+--------------------------------------------------------------------------------
 
-{-@ reflect myhead @-}
-myhead :: List a -> Maybe a
-myhead Nil = Nothing
-myhead (Cons x xs) = Just x
-
-{-@ reflect app @-}
-app :: List a -> List a -> List a 
-app Nil ys         = ys 
-app (Cons x xs) ys = Cons x (app xs ys)
-
-
--- proofs
-
--- subfunctions in measure has to be measure as well? TODO:
 {-@ reflect isSorted @-}
 isSorted :: Ord a => Array a -> Bool
 isSorted xs = isSortedFstN xs (size xs)
-
 
 {-@ reflect isSortedFstN @-}
 {-@ isSortedFstN :: xs:_ -> m:{n:Nat | n <= size xs} -> b:_ / [m] @-}
@@ -74,7 +57,6 @@ lma_set_ps xs n x
   === True
   *** QED
 
-
 -- lemma showing that isSorted xs implies xs[n] <= xs[n+m]
 {-@ lma_is_le :: xs:{isSorted xs} -> n:{v:Nat | v < size xs}
       -> {(0 < n) => (get xs (n-1) <= get xs n)} / [n] @-}
@@ -100,7 +82,6 @@ lma_is_isfn xs n
 -- lemma showing that set xs n x does not change the fact that the first m<n of xs is sorted
 {-@ lma_isfn_set :: xs:_ -> x:_ -> n:{v:Nat |  v < size xs} -> m:{v:Nat | v <= n } 
       -> {(isSortedFstN (set xs n x) m) = (isSortedFstN xs m)} / [m] @-}
-
 lma_isfn_set :: Ord a => Array a -> a -> Int -> Int -> Proof
 lma_isfn_set xs x n 0 = ()
 lma_isfn_set xs x n 1 = ()
@@ -114,7 +95,6 @@ lma_isfn_set xs x n m
   === isSortedFstN xs m
   *** QED
 
-
 -- lemma showing (isSortedFstN xs n) => (isSortedFstN xs m) for all m < n
 {-@ lma_isfn1 :: xs:_ -> n:{v:Nat | v <= size xs && (isSortedFstN xs v)} -> m:{v:Nat | v <= n} 
       -> {isSortedFstN xs m} / [n-m] @-}
@@ -127,13 +107,3 @@ lma_isfn1 xs n m | m == (n) = ()
   -- === (((get xs (m-1)) <= (get xs (m))) && (isSortedFstN xs (m)))
   === (isSortedFstN xs (m))
   *** QED
-
-{- TODO: CANNOT prove going the other direction 
-lma_isfn1 xs n m | m == (n-1) = ()
-           | otherwise = (isSortedFstN xs (m))
-  === (((get xs (m-1)) <= (get xs (m))) && (isSortedFstN xs (m)))
-  === isSortedFstN xs (m+1)
-    ? lma_isfn1 xs n (m+1)
-  === True
-  *** QED
--}

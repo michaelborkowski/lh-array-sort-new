@@ -7,8 +7,6 @@
 
 {-# LANGUAGE GADTs #-}
 
-
-
 -- TODO: cannot only exposing certain functions otherwise LH complains 
 module Array where -- works
 -- module Array (Array, make, set, size, lma_gs, lma_gns) where -- won't work if uncomment
@@ -63,7 +61,9 @@ set (Arr lst l r) n y = Arr (setList lst (l+n) y) l r
 slice :: Array a -> Int -> Int -> Array a 
 slice (Arr lst l r) l' r' = Arr lst (l+l') (l+r')
 
--- -- proof
+--------------------------------------------------------------------------------
+-- | Proofs
+--------------------------------------------------------------------------------
 
 -- lemma showing that get n from set n xs x is x
 {-@ lma_gs_list :: xs:_ -> n:{v:Nat | v < len xs } -> x:_ 

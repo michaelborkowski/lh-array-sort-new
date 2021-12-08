@@ -4,9 +4,6 @@
 {-@ LIQUID "--short-names" @-}
 -- {-@ LIQUID "--checks=lma_insert_eq" @-}
 
-
--- {-@ infixr ++  @-}  -- TODO: Silly to have to rewrite this annotation!
-
 {-# LANGUAGE GADTs #-}
 
 module Insertion where
@@ -30,11 +27,10 @@ import           Equivalence
 
 insert :: Ord a => A.Array a -> a -> Int -> A.Array a
 insert xs x 0 =  A.set xs 0 x -- first element is sorted
-insert xs x n               -- sort the nth element into the first n+1 elements
+insert xs x n                 -- sort the nth element into the first n+1 elements
   | x < (A.get xs (n-1)) = insert (A.set xs (n) (A.get xs (n-1))) x (n - 1)
   | otherwise          = A.set xs n x
 
--- >>>  isort (fromList [1,3,2,9,6,0,5,2,10,-1]) 9
 {-@ reflect isort @-}
 {-@ isort :: xs:_ -> n:{v:Nat | v < A.size xs}
       -> ys:{A.size ys == A.size xs} / [n] @-}
@@ -44,7 +40,6 @@ isort xs n
   | (A.size xs == 1) = xs
   | (n == 0)       = A.make (A.size xs) (A.get xs 0)
   | otherwise      = insert (isort xs (n-1)) (A.get xs n) n
-
 
 --------------------------------------------------------------------------------
 -- | Proofs for Sortedness
@@ -61,7 +56,6 @@ lma_insert_fix xs x 0 m
   === A.get xs m
   *** QED
 
-
 lma_insert_fix xs x n m
   | x < (A.get xs (n-1)) 
     = A.get (insert xs x n) m
@@ -77,7 +71,6 @@ lma_insert_fix xs x n m
       ? (A.lma_gns xs n m x)
     === A.get xs m
     *** QED
-
 
 -- more general lemma would be to show that the last index of (insert xs x n) 
 -- is either x or last of xs, but this form is handy in our case
@@ -101,7 +94,6 @@ lma_insert_max xs x y n
     -- === A.get (A.set xs n x) n
     === A.get (insert xs x n) n
     *** QED
-
 
 {-@ lma_insert :: xs:_ -> x:_ -> n:{v:Nat | v < A.size xs && (isSortedFstN xs (v))}
       -> ys:{isSortedFstN (insert xs x n) (n+1)} / [n] @-}
@@ -156,7 +148,6 @@ lma_insert xs x n
         === True
         *** QED
 
-
 {-@ lma_isort :: xs:_ -> n:{v:Nat | v < A.size xs }
       -> ys:{isSortedFstN (isort xs n) (n+1)} / [n] @-}
 lma_isort :: Ord a => A.Array a -> Int -> Proof
@@ -171,13 +162,10 @@ lma_isort xs n
     === True
     *** QED
 
-
 --------------------------------------------------------------------------------
 -- | Proofs for Equivalence
 --------------------------------------------------------------------------------
 
--- TODO: will be nice if there is an option to enable showing the constrains LH is checking during compile time
--- LH Checking involving Sets are very slow
 {-@ lma_insert_eq :: xs:_ -> x:_ -> n:{v:Nat | v < A.size xs}
        -> ys:{(toBagLeft (insert xs x n) (n+1)) == (B.put x (toBagLeft xs n))} / [n] @-} 
 lma_insert_eq :: Ord a => A.Array a -> a -> Int -> Proof
@@ -215,7 +203,6 @@ lma_insert_eq xs x n
     === (B.put x (toBagLeft xs n))
     *** QED
 
-
 {-@ lma_isort_eq_r :: xs:_ -> n:{v:Nat | v < A.size xs}
        -> ys:{toBagLeft (isort xs n) (n+1) == toBagLeft xs (n+1)} / [n] @-} 
 lma_isort_eq_r :: Ord a => A.Array a -> Int -> Proof
@@ -238,7 +225,6 @@ lma_isort_eq_r xs n
     -- === B.union (S.singleton (A.get xs n)) (toBagLeft xs (n))
     === (toBagLeft xs (n+1))
     *** QED
-
 
 {-@ lma_isort_eq :: xs:_
        -> { toBagEqual (isort xs ((A.size xs)-1)) xs } @-}

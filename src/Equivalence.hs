@@ -3,12 +3,8 @@
 {-@ LIQUID "--ple"         @-}
 {-@ LIQUID "--short-names" @-}
 
-
--- {-@ infixr ++  @-}  -- TODO: Silly to have to rewrite this annotation!
-
 {-# LANGUAGE GADTs #-}
 
--- assuming the array has distinct values
 module Equivalence where
 
 import           Prelude
