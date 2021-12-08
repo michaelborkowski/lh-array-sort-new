@@ -19,7 +19,8 @@ library
       Merge
       Insertion
       Equivalence
-      BagTest
+      Properties
+      QuickSort
   hs-source-dirs:
       src
   build-depends:

@@ -37,6 +37,33 @@ isSortedBtw :: Ord a => Array a -> Int -> Int -> Bool
 isSortedBtw xs i j | i + 1 >= j  = True
                    | otherwise   = (get xs i <= get xs (i+1)) && isSortedBtw xs (i+1) j
 
+{-@ lem_isSortedBtw_right :: xs:(Array a) -> {i:Int | 0 <= i } -> { j:Int | i < j-1 && j <= size xs }
+        -> { pf:_ | isSortedBtw xs i j <=> ((get xs (j-2) <= get xs (j-1)) && isSortedBtw xs i (j-1)) } / [j-i] @-}
+lem_isSortedBtw_right :: Ord a => Array a -> Int -> Int -> Proof
+lem_isSortedBtw_right xs i j | i + 2 == j  = ()
+                             | otherwise   = () ? lem_isSortedBtw_right xs (i+1) j
+
+{-@ lem_isSortedBtw_build_right :: xs:(Array a) -> {i:Int | 0 <= i } 
+                                -> { j:Int | i < j && j <= size xs && 
+                                             get xs (j-1) <= get xs j && isSortedBtw xs i j }
+                                -> { pf:_ | isSortedBtw xs i (j+1) } / [j-i] @-}
+lem_isSortedBtw_build_right :: Ord a => Array a -> Int -> Int -> Proof
+lem_isSortedBtw_build_right xs i j | i + 1 == j  = ()
+                             | otherwise   = () ? lem_isSortedBtw_build_right xs (i+1) j
+
+
+
+{-@ lem_isSortedBtw_compose :: xs:(Array a) -> { i:Int | 0 <= i } -> { j:Int | i <= j }
+                                            -> { k:Int | j < k && k <= size xs &&
+                                                         isSortedBtw xs i j && isSortedBtw xs j k &&
+                                                       ( i == j || get xs (j-1) <= get xs j ) }
+                                            -> { pf:_ | isSortedBtw xs i k } / [j - i] @-}
+lem_isSortedBtw_compose :: Ord a => Array a -> Int -> Int -> Int -> Proof
+lem_isSortedBtw_compose xs i j k | i == j      = ()
+                                 | i + 1 == j  = ()
+                                 | otherwise   = () ? lem_isSortedBtw_right   xs i j
+                                                    ? lem_isSortedBtw_compose xs i (j-1) k
+
 -- proofs
 
 -- lemma showing set preserves sortedness of indices before n, and if the new 

@@ -1,5 +1,6 @@
 {-@ LIQUID "--reflection"  @-}
 {-@ LIQUID "--ple"         @-}
+{- @ LIQUID "--ple-local"         @-}
 {-@ LIQUID "--short-names" @-}
 
 module QuickSort where
@@ -10,6 +11,7 @@ import           Language.Haskell.Liquid.ProofCombinators
 import Array as A
 import Equivalence
 import Order
+import Properties
 
 {-@ quickSort :: xs:(Array a) -> { ys:(Array a) | isSorted' ys && A.size xs == A.size ys &&
                                                                   toBag  xs == toBag  ys } @-}
@@ -18,144 +20,137 @@ quickSort xs = quickSortBtw xs 0 (size xs)
 
 {-@ quickSortBtw :: xs:(Array a) -> { i:Int | 0 <= i } -> { j:Int | i <= j && j <= A.size xs }
                 -> { ys:(Array a) | isSortedBtw ys i j && A.size xs == A.size ys &&
-                                    eqlSlice xs ys 0 i && eqlSlice xs ys j (A.size xs) &&
-                                    toBag    xs     == toBag    ys &&
+                                    toSlice xs 0 i == toSlice ys 0 i && 
+                                    toSlice xs j (A.size xs) == toSlice ys j (A.size xs) &&
                                     toBagBtw xs i j == toBagBtw ys i j } / [j - i] @-}
 quickSortBtw :: Ord a => Array a -> Int -> Int -> Array a
-quickSortBtw xs i j = if n < 2
-                        then xs
-                        else let (xs', i_piv) = shuffleBtw xs i j -- isPartitionedBtw xs' i i_piv j
-                                 xs''         = quickSortBtw xs'  i           i_piv
-                                 xs'''        = quickSortBtw xs'' (i_piv + 1) j
-                              in xs'''        ? lem_sorted_partitions xs''' i i_piv j
-  where
-    n   = j - i
+quickSortBtw xs i j 
+    | j - i < 2  = xs 
+    | otherwise  = let (xs', i_piv) = shuffleBtw xs i j   -- isPartitionedBtw xs' i i_piv j
+                       xs''         = quickSortBtw xs'  i           i_piv
+                       xs'''        = quickSortBtw xs'' (i_piv + 1) j
+                                    ? lem_qs_pres_partition_left  xs'  xs''  i i_piv j
+                    in xs'''        ? lem_sorted_partitions xs''' i i_piv (j
+                                          ? lem_equal_slice_sorted xs'' xs''' 0 i i_piv (i_piv+1)
+                                          ? lem_qs_pres_partition_right xs'' xs''' i i_piv j )
+                                    ? lem_equal_slice_narrow         xs'  xs'' i_piv j (A.size xs) (A.size xs)
+                                    ? lem_equal_slice_narrow         xs'  xs'' i_piv i_piv j (A.size xs)
+                                    ? lem_equal_slice_bag            xs'  xs''       i_piv j
+                                    ? lem_equal_slice_narrow         xs'' xs''' 0 0 i (i_piv+1)
+                                    ? lem_equal_slice_narrow         xs'' xs''' 0 i (i_piv+1) (i_piv+1)
+                                    ? lem_equal_slice_bag            xs'' xs'''   i (i_piv+1)
+                                    ? lem_toBagBtw_compose           xs'  xs''    i i_piv     j
+                                    ? lem_toBagBtw_compose           xs'' xs'''   i (i_piv+1) j
 
+{-@ ple shuffleBtw @-}
 {-@ shuffleBtw :: xs:(Array a) -> { i:Int | 0 <= i } -> { j:Int | i + 1 < j && j <= A.size xs }
-                  -> (Array a, Int)<{\ys ip -> isPartitionedBtw ys i ip j && toBag xs == toBag ys &&
+                  -> (Array a, Int)<{\ys ip -> isPartitionedBtw ys i ip j && 
+                                               toSlice xs 0 i == toSlice ys 0 i && 
+                                               toSlice xs j (A.size xs) == toSlice ys j (A.size xs) &&
                                                toBagBtw xs i j == toBagBtw ys i j &&
-                                               eqlSlice xs ys 0 i && eqlSlice xs ys j (A.size xs) &&
                                                i <= ip && ip < j && A.size ys == A.size xs }> @-}
 shuffleBtw :: Ord a => Array a -> Int -> Int -> (Array a, Int)
-shuffleBtw xs i j = let (xs', ip) = goShuffle xs i (j-2) 
+shuffleBtw xs i j = let (xs', ip) = goShuffle xs 
+                                              i (j-2)  -- BOTH bounds inclusive      
+                        {-@ xs'' :: { vs:(Array a) | isPartitionedBtw vs i ip j &&
+                                                     toSlice xs' 0 i == toSlice vs 0 i && 
+                                                     toSlice xs' j (A.size xs') == toSlice vs j (A.size xs') &&
+                                                     A.size xs' == A.size vs &&
+                                                     toBagBtw xs i j == toBagBtw vs i j } @-}
                         xs''      = if ip < j-1 
                                       then swap xs' ip (j-1) 
                                          ? lma_swap xs' ip (j-1)
-                                         ? lem_bag_swap    xs'   ip (j-1)
                                          ? lem_bagBtw_swap xs' i ip (j-1) j
-                                         ? lem_rangeLowerBound_right xs' ip (j-1) (get xs' (j-1))
                                          ? lem_range_inside_swap xs' ip (j-1)
                                          ? lem_range_outside_swap xs' i ip (j-1) j (get xs' (j-1))
-                                      else xs'
-                                  
+                                         ? lem_toSlice_swap xs' i ip (j-1) j
+                                      else xs' 
                      in (xs'', ip)
   where
-    piv = get xs (j-1) -- fix xs[j-1] as the pivot    
+    piv = get xs (j-1) -- fix xs[j-1] as the pivot                 
+                                                        
     {-@ goShuffle :: { zs:(Array a) | get zs (j-1) == piv && A.size zs == A.size xs &&
-                                                             toBag  zs == toBag  xs &&
                                                              toBagBtw zs i j == toBagBtw xs i j && 
-                                                             eqlSlice xs zs 0 i && eqlSlice xs zs j (A.size zs)}
+                                                             toSlice xs 0 i == toSlice zs 0 i && 
+                                                             toSlice xs j (A.size zs) == toSlice zs j (A.size zs)}
                   -> { jl:Int | i <= jl    &&             rangeUpperBound zs i      jl    piv } 
                   -> { jr:Int | jl <= jr+1 && jr < j-1 && rangeLowerBound zs (jr+1) (j-1) piv }
                   -> (Array a, Int)<{\ws ip -> rangeUpperBound ws i      ip    piv && 
                                                rangeLowerBound ws ip     (j-1) piv &&
-                                               A.size ws == A.size zs && toBag zs == toBag ws &&
+                                               A.size ws == A.size zs && 
+                                               get ws (j-1) == get zs (j-1) &&
                                                toBagBtw zs i j == toBagBtw ws i j &&
-                                               get ws (j-1) == get zs (j-1) && 
-                                               eqlSlice zs ws 0 i && eqlSlice zs ws j (A.size zs) &&
+                                               toBagBtw xs i j == toBagBtw ws i j &&
+                                               toSlice zs 0 i == toSlice ws 0 i && 
+                                               toSlice zs j (A.size zs) == toSlice ws j (A.size zs) &&
                                                i <= ip && ip < j }> / [jr - jl + 1] @-}
-    -- goShuffle :: Ord a => Array a -> Int -> Int -> (Array a, Int)
-    goShuffle zs jl jr 
-      | jl > jr           = (zs, jl)
-                            --(swap zs jl (j-1), jl) 
-      | get zs jl <= piv  = goShuffle zs (jl+1) jr
+    -- at return, all of ws[i:ip] <= ws[j-1] and all of ws[ip:j-1] > ws[j-1].
+    goShuffle zs jl jr    -- BOTH bounds inclusive here
+      | jl > jr           = (zs, jl) 
+      | get zs jl <= piv  = goShuffle zs (jl+1 ? lem_rangeProperty_build_right zs (belowPivot (get zs (j-1))) i (jl
+                                               ? toProof (belowPivot (get zs (j-1)) (get zs jl))
+                                         )) jr
       | get zs jr >  piv  = goShuffle zs jl     (jr-1)
-      | otherwise         = let zs' = swap zs jl jr ? lma_swap_eql zs jl jr (j-1)
-                                    ? lem_range_outside_swap zs i jl jr j piv
-                                    ? lma_swap zs jl jr
-                                    ? lem_bag_swap    zs   jl jr
-                                    ? lem_bagBtw_swap zs i jl jr j
+      | otherwise         = let zs' = swap zs jl jr 
+                                    ? lem_range_outside_swap zs i jl jr (j-1) piv
+                                    ? lma_swap        zs   jl jr
+                                    ? lma_swap_eql zs jl jr (j-1)
+                                    ? lem_bagBtw_swap zs i jl jr j   
+                                    ? lem_toSlice_swap  zs i jl jr j 
                              in goShuffle zs' jl (jr-1)
-  
-    
 
+ -- | The remaining definitions and lemmas pertain to the partition property w/r/t the pivot element
+
+{-@ reflect belowPivot @-}
+{-@ belowPivot :: a -> a -> Bool @-}
+belowPivot :: Ord a => a -> a -> Bool
+belowPivot piv v = v <= piv
+
+{-@ reflect abovePivot @-}
+{-@ abovePivot :: a -> a -> Bool @-}
+abovePivot :: Ord a => a -> a -> Bool
+abovePivot piv v = v >  piv
+
+{-@ reflect rangeUpperBound @-}
+{-@ rangeUpperBound :: xs:(Array a) -> { i:Int | 0 <= i } -> { j:Int | i <= j && j <= size xs }
+                                    -> a -> Bool @-}
+rangeUpperBound :: Ord a => Array a -> Int -> Int -> a -> Bool
+rangeUpperBound xs i j piv = rangeProperty xs i j (belowPivot piv)
+
+{-@ reflect rangeLowerBound @-}
+{-@ rangeLowerBound :: xs:(Array a) -> { i:Int | 0 <= i } -> { j:Int | i <= j && j <= size xs }
+                                    -> a -> Bool @-}
+rangeLowerBound :: Ord a => Array a -> Int -> Int -> a -> Bool
+rangeLowerBound xs i j piv = rangeProperty xs i j (abovePivot piv)
 
 {-@ reflect isPartitionedBtw @-}
 {-@ isPartitionedBtw :: xs:(Array a) -> { i:Int | 0 <= i } -> { i_piv:Int | i <= i_piv }
                                      -> { j:Int | i_piv < j && j <= size xs } -> Bool @-}
 isPartitionedBtw :: Ord a => Array a -> Int -> Int -> Int -> Bool
-isPartitionedBtw xs i i_piv j = rangeUpperBound xs i           i_piv     (get xs i_piv) &&
-                                rangeLowerBound xs (i_piv + 1) j         (get xs i_piv) 
+isPartitionedBtw xs i i_piv j = rangeUpperBound xs i           i_piv   (get xs i_piv)   &&
+                                rangeLowerBound xs (i_piv + 1) j       (get xs i_piv)   
 
-{-@ reflect rangeUpperBound @-}
-{-@ rangeUpperBound :: xs:(Array a) -> { n0:Int | 0 <= n0 } -> { n1:Int | n0 <=n1 && n1 <= size xs }
-                                    -> a -> Bool / [n1] @-}
-rangeUpperBound :: Ord a => Array a -> Int -> Int -> a -> Bool
-rangeUpperBound xs n0 n1 v | n0 >= n1  = True
-                           | otherwise = (get xs (n1 - 1) <= v) && rangeUpperBound xs n0 (n1 - 1) v
-
-{-@ reflect rangeLowerBound @-}
-{-@ rangeLowerBound :: xs:(Array a) -> { n0:Int | 0 <= n0 } -> { n1:Int | n0 <=n1 && n1 <= size xs }
-                                    -> a -> Bool / [n1-n0] @-}
-rangeLowerBound :: Ord a => Array a -> Int -> Int -> a -> Bool
-rangeLowerBound xs n0 n1 v | n0 >= n1  = True
-                           | otherwise = (v < get xs n0) && rangeLowerBound xs (n0+1) n1 v
-
-{-@ lem_rangeUpperBound_left :: xs:(Array a) -> { n0:Int | 0 <= n0 } -> { n1:Int | n0 < n1 && n1 <= size xs }
-                             -> { piv:a | rangeUpperBound xs n0 n1 piv }
-                             -> { pf:_  | get xs n0 <= piv && rangeUpperBound xs (n0+1) n1 piv } / [n1] @-}
-lem_rangeUpperBound_left :: Ord a => Array a -> Int -> Int -> a -> Proof
-lem_rangeUpperBound_left xs n0 n1 piv
-  | n0 + 1 == n1  = ()
-  | otherwise     = () ? lem_rangeUpperBound_left xs n0 (n1-1) piv
-
-{-@ lem_rangeUpperBound_build_left :: xs:(Array a) -> { n0:Int | 0 <= n0 } 
-                             -> { n1:Int | n0 < n1 && n1 <= size xs }
-                             -> { piv:a | get xs n0 <= piv && rangeUpperBound xs (n0+1) n1 piv }
-                             -> { pf:_  |                     rangeUpperBound xs n0     n1 piv } / [n1] @-}
-lem_rangeUpperBound_build_left :: Ord a => Array a -> Int -> Int -> a -> Proof
-lem_rangeUpperBound_build_left xs n0 n1 piv 
-  | n0 + 1 == n1  = ()
-  | otherwise     = () ? lem_rangeUpperBound_build_left xs n0 (n1-1) piv
-
-{-@ lem_rangeLowerBound_right :: xs:(Array a) -> { n0:Int | 0 <= n0 } -> { n1:Int | n0 < n1 && n1 <= size xs }
-                         -> { piv:a | rangeLowerBound xs n0 n1 piv }
-                         -> { pf:_  | get xs (n1-1) > piv && rangeLowerBound xs n0 (n1-1) piv } / [n1-n0] @-}
-lem_rangeLowerBound_right :: Ord a => Array a -> Int -> Int -> a -> Proof
-lem_rangeLowerBound_right xs n0 n1 piv
-  | n0 + 1 == n1  = ()
-  | otherwise     = () ? lem_rangeLowerBound_right xs (n0+1) n1 piv
-
-{-@ lem_rangeLowerBound_build_right :: xs:(Array a) -> { n0:Int | 0 <= n0 } 
-                         -> { n1:Int | n0 < n1 && n1 <= size xs }
-                         -> { piv:a | get xs (n1-1) > piv && rangeLowerBound xs n0 (n1-1) piv }
-                         -> { pf:_  |                        rangeLowerBound xs n0     n1 piv } / [n1-n0] @-}
-lem_rangeLowerBound_build_right :: Ord a => Array a -> Int -> Int -> a -> Proof
-lem_rangeLowerBound_build_right xs n0 n1 piv 
-  | n0 + 1 == n1  = ()
-  | otherwise     = () ? lem_rangeLowerBound_build_right xs (n0+1) n1 piv
-
+{-@ ple lem_range_outside_swap @-}
 {-@ lem_range_outside_swap :: xs:(Array a) -> { i:Int | 0 <= i } 
                            -> { jl:Int | i <= jl } -> { jr:Int | jl < jr }
                            -> { j:Int  | jr <= j-1 && j <= size xs }
                            -> { piv:a  | rangeUpperBound xs i      jl    piv &&
-                                         rangeLowerBound xs (jr+1) (j-1) piv }
+                                         rangeLowerBound xs (jr+1) j     piv }
                            -> { pf:_ | rangeUpperBound (swap xs jl jr) i      jl    piv &&
-                                       rangeLowerBound (swap xs jl jr) (jr+1) (j-1) piv } / [j-i] @-}
+                                       rangeLowerBound (swap xs jl jr) (jr+1) j     piv } / [j-i] @-}
 lem_range_outside_swap :: Ord a => Array a -> Int -> Int -> Int -> Int -> a -> Proof
 lem_range_outside_swap xs i jl jr j piv 
-  | i < jl     = () ? lma_swap_eql xs jl jr i
-                    ? lem_rangeUpperBound_left xs i jl piv
-                    ? lem_rangeUpperBound_build_left (swap xs jl jr) i jl 
-                          (piv ? lem_range_outside_swap xs (i+1) jl jr j     piv)
-  | jr+1 < j-1 = () ? lma_swap_eql xs jl jr (j-2)
-                    ? lem_rangeLowerBound_right xs (jr+1) (j-1) piv
-                    ? lem_rangeLowerBound_build_right (swap xs jl jr) (jr+1) (j-1) 
-                          (piv ? lem_range_outside_swap xs i     jl jr (j-1) piv)
-  | otherwise  = ()
+    | i < jl     = () ? lma_swap_eql xs jl jr i
+                      ? lem_range_outside_swap xs (i+1) jl jr j     piv 
+    | jr+1 < j   = () ? lma_swap_eql xs jl jr (j-1) 
+                      ? lem_rangeProperty_right xs (jr+1) j (abovePivot piv)
+                      ? lem_range_outside_swap xs i     jl jr (j-1) piv
+                      ? lem_rangeProperty_build_right (swap xs jl jr) (abovePivot piv) (jr+1) (j-1)
+    | otherwise  = () 
 
+{-@ ple lem_range_inside_swap @-}
 {-@ lem_range_inside_swap :: xs:(Array a) -> { jl:Int | 0 <= jl }
-                  -> { jr:Int | jl < jr && jr < size xs && get xs jl > get xs jr &&
+                  -> { jr:Int | jl < jr && jr < size xs && 
                                 rangeLowerBound xs jl jr (get xs jr) }
                   -> { pf:_ | rangeLowerBound (swap xs jl jr) (jl+1) (jr+1) (get (swap xs jl jr) jl) } @-}
 lem_range_inside_swap :: Ord a => Array a -> Int -> Int -> Proof
@@ -165,24 +160,60 @@ lem_range_inside_swap xs jl jr = () ? lma_swap xs jl jr
     {-@ lem_go_inside_swap :: { jj:Int | jl < jj && jj <= jr &&
                                          rangeLowerBound xs jj jr (get xs jr) } 
                  -> { pf:_ | rangeLowerBound (swap xs jl jr) jj (jr+1) (get (swap xs jl jr) jl) } / [jr-jj] @-}
-    -- lem_range_inside_swap :: Ord a => Array a -> Int -> Int -> Int -> Proof
     lem_go_inside_swap jj 
       | jj < jr    = () ? lma_swap xs jl jr
                         ? lma_swap_eql xs jl jr jj
                         ? lem_go_inside_swap (jj+1) 
       | otherwise  = () ? lma_swap xs jl jr
                          
-{- @ lem_qs_pres_partition_left :: zs:(Array a) -> { i:Int | 0 <= i } -> { i_piv:Int | i <= i_piv }
-                                  -> { j:Int | i_piv < j && j <= size xs &&
-                                               isPartitionedBtw zs i i_piv j }
-                                  -> { pf:_  | isPartitionedBtw (quickSortBtw @-}
 
+  -- Lemmas addressing how recursive calls to quickSortBtw preserve the partition property
+{-@ ple lem_qs_pres_partition_left @-}
+{-@ lem_qs_pres_partition_left  :: xs:(Array a) -> { ys:(Array a) | size xs == size ys }
+                                -> { i:Int | 0 <= i } -> { i_piv:Int | i <= i_piv }
+                                -> { j:Int | i_piv < j && j <= size xs &&
+                                             isPartitionedBtw xs i i_piv j &&
+                                             toBagBtw xs i i_piv == toBagBtw ys i i_piv &&
+                                             toSlice xs i_piv (size xs) == toSlice ys i_piv (size xs) }                     
+                                -> { pf:_  | isPartitionedBtw ys i i_piv j } @-}
+lem_qs_pres_partition_left  :: Ord a => Array a -> Array a -> Int -> Int -> Int -> Proof
+lem_qs_pres_partition_left  xs ys i i_piv j 
+    = () ? lem_bagBtw_pres_rangeProperty xs ys i i_piv      (belowPivot (get xs i_piv))
+         ? lem_bagBtw_pres_rangeProperty xs ys (i_piv+1) (j 
+         ? lem_equal_slice_narrow     xs ys (i_piv) (i_piv+1) j (size xs)
+         ? lem_equal_slice_bag        xs ys         (i_piv+1) j )
+                                                            (abovePivot (get xs i_piv))
+
+{-@ ple lem_qs_pres_partition_right @-}
+{-@ lem_qs_pres_partition_right  :: xs:(Array a) -> { ys:(Array a) | size xs == size ys }
+                                -> { i:Int | 0 <= i } -> { i_piv:Int | i <= i_piv }
+                                -> { j:Int | i_piv < j && j <= size xs &&
+                                             isPartitionedBtw xs i i_piv j &&
+                                             toBagBtw xs (i_piv+1) j == toBagBtw ys (i_piv+1) j &&
+                                             toSlice xs 0 (i_piv+1) == toSlice ys 0 (i_piv+1) }                     
+                                -> { pf:_  | isPartitionedBtw ys i i_piv j } @-}
+lem_qs_pres_partition_right :: Ord a => Array a -> Array a -> Int -> Int -> Int -> Proof
+lem_qs_pres_partition_right xs ys i i_piv j 
+    = () ? lem_bagBtw_pres_rangeProperty xs ys   i (i_piv   
+         ? lem_equal_slice_narrow     xs ys 0 i i_piv (i_piv+1)
+         ? lem_equal_slice_bag        xs ys   i i_piv )
+                                                           (belowPivot (get xs i_piv))
+         ? lem_equal_slice_narrow     xs ys 0 i_piv (i_piv+1) (i_piv+1)
+         ? lem_bagBtw_pres_rangeProperty xs ys (i_piv+1) j (abovePivot (get xs i_piv))
+
+{-@ ple lem_sorted_partitions @-}
 {-@ lem_sorted_partitions :: xs:(Array a) -> { i:Int | 0 <= i } -> { i_piv:Int | i <= i_piv }
-                                          -> { j:Int | i_piv < j && j <= size xs &&
+                                          -> { j:Int | i_piv < j && j <= size xs && j - i >= 2 &&
                                                        isSortedBtw xs i         i_piv &&
                                                        isSortedBtw xs (i_piv+1) j &&
                                                        isPartitionedBtw xs i i_piv j } 
                                           -> { pf:_ | isSortedBtw xs i j } @-}
 lem_sorted_partitions :: Ord a => Array a -> Int -> Int -> Int -> Proof
-lem_sorted_partitions = undefined -- TODO TODO
-
+lem_sorted_partitions xs i i_piv j 
+    | i == i_piv      = () 
+    | i_piv + 1 == j  = () ? lem_isSortedBtw_build_right xs i (i_piv 
+                           ? lem_rangeProperty_right xs i i_piv (belowPivot (get xs i_piv))
+                           ? toProof (belowPivot (get xs i_piv) (get xs (i_piv-1))) )
+    | otherwise       = () ? lem_isSortedBtw_compose xs i i_piv (j
+                           ? lem_rangeProperty_right xs i i_piv (belowPivot (get xs i_piv))
+                           ? toProof (belowPivot (get xs i_piv) (get xs (i_piv-1))) )
