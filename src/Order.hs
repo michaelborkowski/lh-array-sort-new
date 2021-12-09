@@ -11,7 +11,6 @@ module Order where
 
 import           Prelude hiding ((++)) 
 import           Language.Haskell.Liquid.ProofCombinators
--- import qualified Data.Set as S
 import           Array
 
 

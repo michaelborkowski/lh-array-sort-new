@@ -11,7 +11,6 @@ module Array (Array, make, get, set, size, lma_gs, lma_gns, swap, lma_swap, lma_
 
 import           Language.Haskell.Liquid.ProofCombinators
 
-
 type Array a = [a]
 
 -- basic API

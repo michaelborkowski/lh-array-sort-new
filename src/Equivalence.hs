@@ -34,7 +34,7 @@ toBagBtw :: Ord a => Array a -> Int -> Int -> B.Bag a
 toBagBtw xs i j | i == j     = B.empty
                 | otherwise  = B.put (A.get xs i) (toBagBtw xs (i+1) j)
 
-  -- Basic properties of toBagBtw
+  -- | Basic properties of toBagBtw
 
 {-@ lem_toBagBtw_right :: xs:(Array a) -> {i:Int | 0 <= i } -> { j:Int | i < j && j <= A.size xs }
                  -> { pf:_ | toBagBtw xs i j == B.put (A.get xs (j-1)) (toBagBtw xs i (j-1)) } / [j-i] @-}
@@ -141,20 +141,6 @@ lem_bagBtw_swap xs il i j ir | i == j    = () ? lma_swap xs i i
                                               ? lem_toBagBtw_compose xs (swap xs i j) il i     (j+1)
                                               ? lem_toBagBtw_compose xs (swap xs i j) il (j+1) ir
 
--- {-@ lma_bag_equal :: xs:_ -> x:_ -> n:{v:Nat | v < size xs} -> m:{v:Nat | v <= n} 
---       -> {(toBag (set xs n x) m == toBag xs m)} / [m] @-}
--- lma_bag_equal :: Ord a => Array a -> a -> Int -> Int -> Proof
--- lma_bag_equal xs x n 0 = ()
--- lma_bag_equal xs x n m
---   = toBag (set xs n x) m
---   -- === B.union (B.singleton (A.get (set xs n x) (m-1))) (toBag (set xs n x) (m-1))
---     ? (lma_gns xs n (m-1) x)
---   -- === B.union (B.singleton (A.get xs (m-1))) (toBag (set xs n x) (m-1))
---     ? (lma_bag_equal xs x n (m-1))
---   -- === B.union (B.singleton (A.get xs (m-1))) (toBag xs (m-1))
---   === toBag xs m
---   *** QED
-
   -- | Equality of Slices
 
 {-@ reflect toSlice @-}
@@ -230,43 +216,30 @@ lem_equal_slice_sorted xs ys i i' j' j
     | otherwise      = () ? lem_equal_slice_narrow xs ys i i' (i'+2) j
                           ? lem_equal_slice_sorted xs ys i (i'+1) j' j
 
+  -- | Elvis's bags 
 
-  -- | Set-based equivalence code
+{-@ reflect toBagLeft @-}
+{-@ toBagLeft :: xs:(Array a) -> n:{v:Nat | v <= A.size xs}
+                             -> s:(B.Bag a) / [n] @-} 
+toBagLeft :: Ord a => Array a -> Int -> B.Bag a
+toBagLeft xs 0 = B.empty
+toBagLeft xs n = B.put (A.get xs (n-1)) (toBagLeft xs (n-1))
 
-{-@ reflect toSet @-}
-{-@ toSet :: xs:_ -> n:{v:Nat | v <= A.size xs}
-       -> s:_ / [n] @-}
-toSet :: Ord a => Array a -> Int -> S.Set a
-toSet xs 0 = S.empty
-toSet xs n = S.union (S.singleton (A.get xs (n-1))) (toSet xs (n-1))
-
-{-@ reflect equalP @-}
-equalP :: Ord a => Array a -> Array a -> Bool
-equalP xs ys = (toSet xs (size xs)) == (toSet ys (size ys))
-
-{-@ reflect subArrayR @-}
-{-@ subArrayR :: xs:{A.size xs >= 1} -> n:{v:Nat | v <= A.size xs} -> m:{v:Nat | n <= m && m <= A.size xs} -> c:{v:Nat | v <= m-n} -> ys:{A.size ys == m-n} / [c]@-}
-subArrayR :: Array a -> Int -> Int -> Int -> Array a
-subArrayR xs n m 0 = make (m-n) (A.get xs 0)  
-subArrayR xs n m c = set (subArrayR xs n m (c-1)) (c-1) (A.get xs (n+c-1))
-
-{-@ reflect subArray @-}
-{-@ subArray :: xs:{A.size xs >= 1} -> n:{v:Nat | v <= A.size xs} -> m:{v:Nat | n <= m && m <= A.size xs} -> ys:{A.size ys == m-n}@-}
-subArray :: Array a -> Int -> Int -> Array a
-subArray xs n m = subArrayR xs n m (m-n)
-
+{-@ reflect toBagEqual @-}
+toBagEqual :: Ord a => Array a -> Array a -> Bool
+toBagEqual xs ys = (toBagLeft xs (size xs)) == (toBagLeft ys (size ys))
 
 -- n > m
 {-@ lma_set_equal :: xs:_ -> x:_ -> n:{v:Nat | v < A.size xs} -> m:{v:Nat | v <= n} 
-      -> {(toSet (set xs n x) m == toSet xs m)} / [m] @-}
+      -> {(toBagLeft (set xs n x) m == toBagLeft xs m)} / [m] @-}
 lma_set_equal :: Ord a => Array a -> a -> Int -> Int -> Proof
 lma_set_equal xs x n 0 = ()
 lma_set_equal xs x n m
-  = toSet (A.set xs n x) m
+  = toBagLeft (A.set xs n x) m
   -- === S.union (S.singleton (get (set xs n x) (m-1))) (toSet (set xs n x) (m-1))
     ? (lma_gns xs n (m-1) x)
   -- === S.union (S.singleton (get xs (m-1))) (toSet (set xs n x) (m-1))
     ? (lma_set_equal xs x n (m-1))
   -- === S.union (S.singleton (get xs (m-1))) (toSet xs (m-1))
-  === toSet xs m
+  === toBagLeft xs m
   *** QED
