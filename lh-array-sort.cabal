@@ -20,6 +20,8 @@ library
       LinearMerge
       Insertion
       Equivalence
+      Properties
+      QuickSort
   hs-source-dirs:
       src
   build-depends:
