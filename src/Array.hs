@@ -26,11 +26,17 @@ size :: Array a -> Int
 size [] = 0
 size (_:xs) = 1 + (size xs)
 
+size2 :: Array a -> (Ur Int, Array a)
+size2 xs = (Ur (size xs), xs)
+
 {-@ reflect get @-}
 {-@ get :: xs:_ -> {n:Nat | n < size xs } -> x:_ @-}
 get :: Array a -> Int -> a
 get (x:_) 0 = x
 get (_:xs) n = get xs (n-1)
+
+get2 :: Array a -> Int -> (Ur a, Array a)
+get2 xs i = (Ur (get xs i), xs)
 
 {-@ reflect set @-}
 {-@ set :: xs:_ -> {n:Nat | n < size xs } -> x:_ -> nxs:{(size nxs) = (size xs)} @-}
@@ -43,6 +49,9 @@ set (x:xs) n y = x:(set xs (n-1) y)
 insert :: Array a -> Int -> a -> Array a
 insert (x:xs) 0 y = (y:x:xs)
 insert (x:xs) n y = x:(insert xs (n-1) y)
+
+append :: Array a -> Array a -> Array a
+append = (++)
 
 -- proof
 

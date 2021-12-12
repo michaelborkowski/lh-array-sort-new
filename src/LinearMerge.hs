@@ -17,8 +17,17 @@ import           Array as A
 import           Order
 import           Equivalence
 import           Language.Haskell.Liquid.Bag as B
+--import           Control.Parallel (par, pseq)
 
 -- 11 min compilation
+
+{-@ reflect par @-}
+par :: a -> b -> b
+par x y = y
+
+{-@ reflect pseq @-}
+pseq :: a -> b -> b
+pseq x y = y
 
 --------------------------------------------------------------------------------
 -- | Implementations
@@ -53,8 +62,8 @@ merge xs ys zs n m | xs_n <= ys_m = let zs' = set zs (m+n-1) ys_m
 -- [-1,0,1,2,2,3,5,6,9,10]
 -- TODO: Inefficient implementation 
 -- need to show xs == ys 
-{-@ reflect msort @-}
 {-@ msort :: xs:_ -> ys:{(A.size ys == A.size xs)} -> zs:{(A.size ys == A.size zs)} / [A.size xs] @-}
+
 msort :: Ord a => Array a -> Array a -> Array a
 msort xs ys | (A.size xs) == 0 = xs
             | (A.size xs) == 1 = xs
@@ -63,7 +72,7 @@ msort xs ys | (A.size xs) == 0 = xs
                                   yrs' = (msort xrs yrs)
                                   (xls, xrs) = splitMid xs
                                   (yls, yrs) = splitMid ys
-                                in merge yls' yrs' xs (A.size yls') (A.size yrs')
+                                in yls' `par` yrs' `pseq` merge yls' yrs' xs (A.size yls') (A.size yrs')
 
 {-@ reflect topMSort @-}
 {-@ topMSort :: xs:_ -> ys:{(A.size ys == A.size xs)} @-}

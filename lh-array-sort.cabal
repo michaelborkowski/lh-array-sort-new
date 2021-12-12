@@ -27,6 +27,7 @@ library
       liquid-base,
       liquid-containers,
       liquid-prelude,
-      liquidhaskell
+      liquidhaskell,
+      parallel
   default-language: Haskell2010
   ghc-options: -fplugin=LiquidHaskell
