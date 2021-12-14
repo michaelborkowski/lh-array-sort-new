@@ -11,21 +11,39 @@ module Array (Array, make, get, set, size, lma_gs, lma_gns, swap, lma_swap, lma_
 
 import           Language.Haskell.Liquid.ProofCombinators
 
-type Array a = [a]
+{-@ data Array a = Arr {  lst   :: _
+                        , left  :: {v: Nat | v <= (len lst) }
+                        , right :: {v: Nat | v >= left && v <= (len lst)}
+                        }
+  @-}
+
+data Array a = Arr { lst   :: [a] 
+                   , left  :: Int 
+                   , right :: Int}
+
+-- basic API
 
 -- basic API
 
 {-@ reflect make @-}
 {-@ make :: n:Nat -> x:_ -> xs:{(size xs) = n} @-}
 make :: Int -> a -> Array a
-make 0 x = []
-make n x = (x:(make (n-1) x))
+make 0 x = Arr [] 0 0
+make n x = let Arr lst l r = make (n-1) x in Arr (x:lst) l (r+1)
 
 {-@ measure size @-}
 {-@ size :: xs:_ -> Nat @-}
 size :: Array a -> Int
-size [] = 0
-size (_:xs) = 1 + (size xs)
+size (Arr _ l r) = r-l
+
+{-@ reflect getList @-}
+{-@ getList :: xs:_ -> {n:Nat | n < len xs } -> x:_ @-}
+getList :: [a] -> Int -> a
+getList (x:_) 0 = x
+getList (_:xs) n = getList xs (n-1)
+
+--size2 :: Array a -> (Ur Int, Array a)
+--size2 xs = (Ur (size xs), xs)
 
 size2 :: Array a -> (Ur Int, Array a)
 size2 xs = (Ur (size xs), xs)
@@ -33,8 +51,16 @@ size2 xs = (Ur (size xs), xs)
 {-@ reflect get @-}
 {-@ get :: xs:_ -> {n:Nat | n < size xs } -> x:_ @-}
 get :: Array a -> Int -> a
-get (x:_) 0 = x
-get (_:xs) n = get xs (n-1)
+get (Arr lst l r) n = getList lst (l+n)
+
+{-@ reflect setList @-}
+{-@ setList :: xs:_ -> {n:Nat | n < len xs } -> x:_ -> nxs:{(len nxs) = (len xs)} @-}
+setList :: [a] -> Int -> a -> [a]
+setList (x:xs) 0 y = (y:xs)
+setList (x:xs) n y = x:(setList xs (n-1) y)
+
+--get2 :: Array a -> Int -> (Ur a, Array a)
+--get2 xs i = (Ur (get xs i), xs)
 
 get2 :: Array a -> Int -> (Ur a, Array a)
 get2 xs i = (Ur (get xs i), xs)
@@ -42,63 +68,73 @@ get2 xs i = (Ur (get xs i), xs)
 {-@ reflect set @-}
 {-@ set :: xs:_ -> {n:Nat | n < size xs } -> x:_ -> nxs:{(size nxs) = (size xs)} @-}
 set :: Array a -> Int -> a -> Array a
-set (x:xs) 0 y = (y:xs)
-set (x:xs) n y = x:(set xs (n-1) y)
+set (Arr lst l r) n y = Arr (setList lst (l+n) y) l r
 
-{-@ reflect insert @-}
-{-@ insert :: xs:_ -> {n:Nat | n < size xs } -> x:_ -> nxs:_ @-}
-insert :: Array a -> Int -> a -> Array a
-insert (x:xs) 0 y = (y:x:xs)
-insert (x:xs) n y = x:(insert xs (n-1) y)
+{-@ reflect slice @-}
+{-@ slice :: xs:_ -> {l:Nat | l <= size xs } -> {r:Nat | r <= size xs && l <= r} -> ys:{size ys = r-l} @-}
+slice :: Array a -> Int -> Int -> Array a 
+slice (Arr lst l r) l' r' = Arr lst (l+l') (l+r')
 
 append :: Array a -> Array a -> Array a
 append = (++)
 
--- basic proofs
+--------------------------------------------------------------------------------
+-- | Proofs
+--------------------------------------------------------------------------------
 
 -- lemma showing that get n from set n xs x is x
-{-@ lma_gs :: xs:_ -> {n:Nat | n < size xs } -> x:_ 
-      -> { pf:_ | get (set xs n x) n == x } @-}
+{-@ lma_gs_list :: xs:_ -> n:{v:Nat | v < len xs } -> x:_ 
+      -> {getList (setList xs n x) n = x} @-}
+lma_gs_list :: [a] -> Int -> a -> Proof
+lma_gs_list (x:xs) 0 x' 
+  = getList (setList (x:xs) 0 x') 0 
+  -- === getList (x':xs) 0
+  === x'
+  *** QED
+lma_gs_list (x:xs) n x' 
+  =  getList (setList (x:xs) n x') n
+  -- === getList (x:(setList xs (n-1) x')) n
+  -- === getList (setList xs (n-1) x') (n-1)
+    ? lma_gs_list xs (n-1) x'
+  === x'
+  *** QED
+
+{-@ lma_gs :: xs:_ -> n:{v:Nat | v < size xs } -> x:_ 
+      -> {get (set xs n x) n = x} @-}
 lma_gs :: Array a -> Int -> a -> Proof
-lma_gs (x:xs) 0 x' 
-  = get (set (x:xs) 0 x') 0 
-  -- === get (x':xs) 0
-  === x'
-  *** QED
-lma_gs (x:xs) n x' 
-  =  get (set (x:xs) n x') n
-  -- === get (x:(set xs (n-1) x')) n
-  -- === get (set xs (n-1) x') (n-1)
-    ? lma_gs xs (n-1) x'
-  === x'
-  *** QED
+lma_gs (Arr lst l r) n x = lma_gs_list lst (l+n) x
 
 -- lemma showing that get n from set m xs x is 
-{-@ lma_gns :: xs:_ -> { n:Nat | n < size xs } -> {m:Nat | m /= n && m < size xs} -> x:_ 
-      -> {pf:_ | get (set xs n x) m = get xs m} @-}
-lma_gns :: Array a -> Int -> Int -> a -> Proof
-lma_gns (x:xs) 0 m x'
-  = get (set (x:xs) 0 x') m
-  -- === get (x':xs) m
-  -- === get xs (m-1)
-  === get (x:xs) m
+{-@ lma_gns_list :: xs:_ -> n:{v:Nat | v < len xs } -> m:{v:Nat | v /= n && v < len xs} -> x:_ 
+      -> {getList (setList xs n x) m = getList xs m} @-}
+lma_gns_list :: [a] -> Int -> Int -> a -> Proof
+lma_gns_list (x:xs) 0 m x'
+  = getList (setList (x:xs) 0 x') m
+  -- === getList (x':xs) m
+  -- === getList xs (m-1)
+  === getList (x:xs) m
   *** QED
 
-lma_gns (x:xs) n 0 x'
-  = get (set (x:xs) n x') 0
-  -- === get (x:(set xs (n-1) x')) 0
+lma_gns_list (x:xs) n 0 x'
+  = getList (setList (x:xs) n x') 0
+  -- === getList (x:(setList xs (n-1) x')) 0
   -- === x
-  === get (x:xs) 0
+  === getList (x:xs) 0
   *** QED
 
-lma_gns (x:xs) n m x'
-  = get (set (x:xs) n x') m
-  -- === get (x:(set xs (n-1) x')) m
-  -- === get (set xs (n-1) x') (m-1)
-    ? lma_gns xs (n-1) (m-1) x'
-  -- === get xs (m-1)
-  === get (x:xs) m
+lma_gns_list (x:xs) n m x'
+  = getList (setList (x:xs) n x') m
+  -- === getList (x:(setList xs (n-1) x')) m
+  -- === getList (setList xs (n-1) x') (m-1)
+    ? lma_gns_list xs (n-1) (m-1) x'
+  -- === getList xs (m-1)
+  === getList (x:xs) m
   *** QED
+
+{-@ lma_gns :: xs:_ -> n:{v:Nat | v < size xs } -> m:{v:Nat | v /= n && v < size xs} -> x:_ 
+      -> {get (set xs n x) m = get xs m} @-}
+lma_gns :: Array a -> Int -> Int -> a -> Proof
+lma_gns (Arr lst l r) n m x = lma_gns_list lst (l+n) (l+m) x
 
 -- advanced operations
 

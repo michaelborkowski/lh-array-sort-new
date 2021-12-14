@@ -2,7 +2,6 @@
 {-@ LIQUID "--ple"         @-}
 {-@ LIQUID "--short-names" @-}
 
-
 {-# LANGUAGE GADTs #-}
 
 module Equivalence where
@@ -242,4 +241,4 @@ lma_set_equal xs x n m
     ? (lma_set_equal xs x n (m-1))
   -- === S.union (S.singleton (get xs (m-1))) (toSet xs (m-1))
   === toBagLeft xs m
-  *** QED
+  *** QED-- {-@ reflect tri @-}

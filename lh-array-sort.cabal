@@ -16,10 +16,10 @@ library
   exposed-modules: 
       Array
       Order
-      Merge
-      LinearMerge
-      Insertion
       Equivalence
+      Merge
+      Insertion
+      LinearMerge
       Properties
       QuickSort
   hs-source-dirs:
