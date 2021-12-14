@@ -8,7 +8,7 @@
 
 module Merge where
 
-import           Prelude
+import           Prelude hiding ((++)) 
 import           Language.Haskell.Liquid.ProofCombinators
 import qualified Array as A
 import           Order
