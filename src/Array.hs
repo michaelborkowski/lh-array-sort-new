@@ -69,8 +69,8 @@ set (Arr lst l r) n y = Arr (setList lst (l+n) y) l r
 slice :: Array a -> Int -> Int -> Array a 
 slice (Arr lst l r) l' r' = Arr lst (l+l') (l+r')
 
-append :: Array a -> Array a -> Array a
-append = (++)
+--append :: Array a -> Array a -> Array a
+--append = (++)
 
 --------------------------------------------------------------------------------
 -- | Proofs
