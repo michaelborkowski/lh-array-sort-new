@@ -45,9 +45,6 @@ getList (_:xs) n = getList xs (n-1)
 --size2 :: Array a -> (Ur Int, Array a)
 --size2 xs = (Ur (size xs), xs)
 
-size2 :: Array a -> (Ur Int, Array a)
-size2 xs = (Ur (size xs), xs)
-
 {-@ reflect get @-}
 {-@ get :: xs:_ -> {n:Nat | n < size xs } -> x:_ @-}
 get :: Array a -> Int -> a
@@ -61,9 +58,6 @@ setList (x:xs) n y = x:(setList xs (n-1) y)
 
 --get2 :: Array a -> Int -> (Ur a, Array a)
 --get2 xs i = (Ur (get xs i), xs)
-
-get2 :: Array a -> Int -> (Ur a, Array a)
-get2 xs i = (Ur (get xs i), xs)
 
 {-@ reflect set @-}
 {-@ set :: xs:_ -> {n:Nat | n < size xs } -> x:_ -> nxs:{(size nxs) = (size xs)} @-}
