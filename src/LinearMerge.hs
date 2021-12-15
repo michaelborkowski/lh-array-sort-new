@@ -56,6 +56,7 @@ merge xs ys zs n m | xs_n <= ys_m = let zs' = set zs (m+n-1) ys_m
 -- [-1,0,1,2,2,3,5,6,9,10]
 -- TODO: Inefficient implementation 
 -- need to show xs == ys 
+{-@ reflect msort @-}
 {-@ msort :: xs:_ -> ys:{(A.size ys == A.size xs)} -> zs:{(A.size ys == A.size zs)} / [A.size xs] @-}
 
 msort :: Ord a => Array a -> Array a -> Array a

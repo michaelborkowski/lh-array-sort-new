@@ -61,13 +61,6 @@ lem_isSortedBtw_compose xs i j k | i == j      = ()
                                  | otherwise   = () ? lem_isSortedBtw_right   xs i j
                                                     ? lem_isSortedBtw_compose xs i (j-1) k
 
-{-@ reflect isSortedFstN @-}
-{-@ isSortedFstN :: xs:_ -> m:{n:Nat | n <= size xs} -> b:_ / [m] @-}
-isSortedFstN :: Ord a => Array a -> Int -> Bool
-isSortedFstN xs 0 = True
-isSortedFstN xs 1 = True
-isSortedFstN xs n = ((get xs (n-2)) <= (get xs (n-1))) && (isSortedFstN xs (n-1))
-
 -- lemma showing set preserves sortedness of indices before n, and if the new 
 -- element is greater than the previous, xs is sorted up to n+1
 {-@ lma_set_ps :: xs:_ -> n:{m:Nat | m < size xs && m > 0 } -> x:{(isSortedFstN xs n) && ((x >= (get xs (n-1))))} 

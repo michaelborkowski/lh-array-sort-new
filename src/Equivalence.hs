@@ -11,7 +11,7 @@ import           Language.Haskell.Liquid.ProofCombinators
 import qualified Data.Set as S
 import qualified Language.Haskell.Liquid.Bag as B
 import           Array as A
-import		 Order
+import           Order
 
   -- | Key Lemma about Bags in general
 

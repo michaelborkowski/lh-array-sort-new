@@ -7,7 +7,8 @@
 
 {-# LANGUAGE GADTs #-}
 
-module Array (Array, make, get, set, size, lma_gs, lma_gns, swap, lma_swap, lma_swap_eql) where
+--module Array (Array(..), make, get, set, size, lma_gs, lma_gns, swap, lma_swap, lma_swap_eql) where
+module Array where
 
 import           Language.Haskell.Liquid.ProofCombinators
 
