@@ -21,6 +21,7 @@ import           Language.Haskell.Liquid.ProofCombinators
 data Array a = Arr { lst   :: [a] 
                    , left  :: Int 
                    , right :: Int}
+               deriving Show
 
 -- basic API
 
