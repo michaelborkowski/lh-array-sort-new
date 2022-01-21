@@ -18,8 +18,8 @@ import           Language.Haskell.Liquid.ProofCombinators
                         }
   @-}
 
-data Array a = Arr { lst   :: [a] 
-                   , left  :: Int 
+data Array a = Arr { lst   :: [a]
+                   , left  :: Int
                    , right :: Int}
                deriving Show
 
@@ -68,26 +68,29 @@ set (Arr lst l r) n y = Arr (setList lst (l+n) y) l r
 
 {-@ reflect slice @-}
 {-@ slice :: xs:_ -> {l:Nat | l <= size xs } -> {r:Nat | r <= size xs && l <= r} -> ys:{size ys = r-l} @-}
-slice :: Array a -> Int -> Int -> Array a 
+slice :: Array a -> Int -> Int -> Array a
 slice (Arr lst l r) l' r' = Arr lst (l+l') (l+r')
 
 --append :: Array a -> Array a -> Array a
 --append = (++)
+
+fromList :: [a] -> Array a
+fromList ls = Arr ls 0 (length ls)
 
 --------------------------------------------------------------------------------
 -- | Proofs
 --------------------------------------------------------------------------------
 
 -- lemma showing that get n from set n xs x is x
-{-@ lma_gs_list :: xs:_ -> n:{v:Nat | v < len xs } -> x:_ 
+{-@ lma_gs_list :: xs:_ -> n:{v:Nat | v < len xs } -> x:_
       -> {getList (setList xs n x) n = x} @-}
 lma_gs_list :: [a] -> Int -> a -> Proof
-lma_gs_list (x:xs) 0 x' 
-  = getList (setList (x:xs) 0 x') 0 
+lma_gs_list (x:xs) 0 x'
+  = getList (setList (x:xs) 0 x') 0
   -- === getList (x':xs) 0
   === x'
   *** QED
-lma_gs_list (x:xs) n x' 
+lma_gs_list (x:xs) n x'
   =  getList (setList (x:xs) n x') n
   -- === getList (x:(setList xs (n-1) x')) n
   -- === getList (setList xs (n-1) x') (n-1)
@@ -95,13 +98,13 @@ lma_gs_list (x:xs) n x'
   === x'
   *** QED
 
-{-@ lma_gs :: xs:_ -> n:{v:Nat | v < size xs } -> x:_ 
+{-@ lma_gs :: xs:_ -> n:{v:Nat | v < size xs } -> x:_
       -> {get (set xs n x) n = x} @-}
 lma_gs :: Array a -> Int -> a -> Proof
 lma_gs (Arr lst l r) n x = lma_gs_list lst (l+n) x
 
--- lemma showing that get n from set m xs x is 
-{-@ lma_gns_list :: xs:_ -> n:{v:Nat | v < len xs } -> m:{v:Nat | v /= n && v < len xs} -> x:_ 
+-- lemma showing that get n from set m xs x is
+{-@ lma_gns_list :: xs:_ -> n:{v:Nat | v < len xs } -> m:{v:Nat | v /= n && v < len xs} -> x:_
       -> {getList (setList xs n x) m = getList xs m} @-}
 lma_gns_list :: [a] -> Int -> Int -> a -> Proof
 lma_gns_list (x:xs) 0 m x'
@@ -127,7 +130,7 @@ lma_gns_list (x:xs) n m x'
   === getList (x:xs) m
   *** QED
 
-{-@ lma_gns :: xs:_ -> n:{v:Nat | v < size xs } -> m:{v:Nat | v /= n && v < size xs} -> x:_ 
+{-@ lma_gns :: xs:_ -> n:{v:Nat | v < size xs } -> m:{v:Nat | v /= n && v < size xs} -> x:_
       -> {get (set xs n x) m = get xs m} @-}
 lma_gns :: Array a -> Int -> Int -> a -> Proof
 lma_gns (Arr lst l r) n m x = lma_gns_list lst (l+n) (l+m) x
@@ -136,19 +139,19 @@ lma_gns (Arr lst l r) n m x = lma_gns_list lst (l+n) (l+m) x
 
 {-@ reflect swap @-}
 {-@ swap :: xs:(Array a) -> { i:Int | 0 <= i && i < size xs } -> { j:Int | 0 <= j && j < size xs }
-                         -> { ys:(Array a) | size xs == size ys } @-} 
+                         -> { ys:(Array a) | size xs == size ys } @-}
 swap :: Array a -> Int -> Int -> Array a
 swap xs i j = let xi  = get xs i
                   xs' = set xs i (get xs j)
                in set xs' j xi
 
-{-@ lma_swap :: xs:(Array a) -> { i:Int | 0 <= i && i < size xs } -> { j:Int | 0 <= j && j < size xs } 
-                             -> { pf:_  | get (swap xs i j) i == get xs j && 
+{-@ lma_swap :: xs:(Array a) -> { i:Int | 0 <= i && i < size xs } -> { j:Int | 0 <= j && j < size xs }
+                             -> { pf:_  | get (swap xs i j) i == get xs j &&
                                           get (swap xs i j) j == get xs i } @-}
 lma_swap :: Array a -> Int -> Int -> Proof
-lma_swap xs i j 
+lma_swap xs i j
    | i == j     = () ? lma_gs  xs' j xi
-   | i /= j     = () ? lma_gns xs' j i xi        --  
+   | i /= j     = () ? lma_gns xs' j i xi        --
                      ? lma_gs  xs  i (get xs j)  -- these two prove    get (swap xs i j) i == get xs j
                      ? lma_gs  xs' j xi          -- this proves        get (swap xs i j) j == get xs i
   where
