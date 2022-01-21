@@ -121,7 +121,7 @@ binarySearch ls query = go 0 (A.size ls)
         pivot = A.get ls mid
 
 -- DPS mergesort
-msortInplace :: Ord a => A.Array a -> A.Array a -> (A.Array a, A.Array a)
+msortInplace :: (Show a, Ord a) => A.Array a -> A.Array a -> (A.Array a, A.Array a)
 msortInplace src tmp =
   let (Ur len, src') = size2 src in
   if len <= 1
@@ -129,27 +129,14 @@ msortInplace src tmp =
   else
     let (src1, src2) = splitMid src'
         (tmp1, tmp2) = splitMid tmp
-        (src1', tmp1') = msortDst src1 tmp1
-        (src2', tmp2') = msortDst src2 tmp2
-        src'1 = append src1' src2'
-        (tmp', src'2) = merge tmp1' tmp2' src'1 in
-    (src'2, tmp')
+        (src1', _tmp1') = msortInplace src1 tmp1
+        (src2', _tmp2') = msortInplace src2 tmp2
+        tmp3 = append tmp1 tmp2
+        (_src'', tmp4) = merge src1' src2' tmp3
+    in (tmp4, _src'')
 
-msortDst :: Ord a => A.Array a -> A.Array a -> (A.Array a, A.Array a)
-msortDst src dst =
-  let (Ur len, src') = size2 src in
-  if len <= 1
-  then copy src' dst 0 0
-  else
-    let (src1, src2) = splitMid src'
-        (dst1, dst2) = splitMid dst
-        (src1', dst1') = msortInplace src1 dst1
-        (src2', dst2') = msortInplace src2 dst2
-        dst' = append dst1' dst2' in
-    merge src1' src2' dst'
-
-msort :: Ord a => A.Array a -> a -> A.Array a
+msort :: (Show a, Ord a) => A.Array a -> a -> A.Array a
 msort src anyVal =
   let (Ur len, src') = size2 src
-      (src'1, tmp) = msortInplace src (A.make len anyVal) in
-  tmp `seq` src'1
+      (src'', _tmp) = msortInplace src (A.make len anyVal) in
+  _tmp `seq` src''
