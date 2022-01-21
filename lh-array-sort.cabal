@@ -33,4 +33,6 @@ library
       liquidhaskell,
       parallel
   default-language: Haskell2010
-  ghc-options: -fplugin=LiquidHaskell
+  ghc-options: -Wall -Wcompat
+               -fdefer-typed-holes
+               -fplugin=LiquidHaskell
