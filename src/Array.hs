@@ -5,11 +5,14 @@
 
 {-@ infixr ++  @-}  -- TODO: Silly to have to rewrite this annotation!
 
-{-# LANGUAGE GADTs #-}
+{-# LANGUAGE GADTs         #-}
+{-# LANGUAGE DeriveGeneric #-}
 
 --module Array (Array(..), make, get, set, size, lma_gs, lma_gns, swap, lma_swap, lma_swap_eql) where
 module Array where
 
+import           GHC.Generics ( Generic )
+import           Control.DeepSeq ( NFData )
 import           Language.Haskell.Liquid.ProofCombinators
 
 {-@ data Array a = Arr {  lst   :: _
@@ -21,8 +24,9 @@ import           Language.Haskell.Liquid.ProofCombinators
 data Array a = Arr { lst   :: [a]
                    , left  :: Int
                    , right :: Int}
-               deriving Show
+               deriving (Show, Generic)
 
+instance NFData a => NFData (Array a)
 -- basic API
 
 -- basic API

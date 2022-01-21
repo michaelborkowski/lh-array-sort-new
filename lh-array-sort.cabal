@@ -26,6 +26,7 @@ library
   hs-source-dirs:
       src
   build-depends:
+      deepseq,
       -- Versions pinned in cabal.project.
       liquid-base,
       liquid-containers,
