@@ -4,6 +4,7 @@ import           Criterion          ( Benchmark, bench, bgroup, whnf, nf )
 import           Criterion.Main     ( defaultMain )
 import           Control.DeepSeq    ( NFData, force)
 import           Data.Proxy         ( Proxy(..) )
+import           Data.Int           ( Int64 )
 import           Data.List.Split    ( splitOn )
 import           System.Random      ( Random, newStdGen, randoms )
 import           System.Environment ( getArgs, withArgs )
@@ -27,9 +28,9 @@ benchSorts _input_ty input_size fns = do
     let ls :: [a]
         ls = take input_size $ randoms rng
         !input = force (A.fromList ls)
-    pure $ bgroup (show input_size) $ map (go input) fns
+    pure $ bgroup "" $ map (go input (show input_size)) fns
   where
-    go input (name,fn) = bench name (nf fn input)
+    go input str (name,fn) = bench (name ++ "/" ++ str) (nf fn input)
 
 main :: IO ()
 main = do
@@ -46,14 +47,12 @@ main = do
                             else (read sz :: Int, rst')
           _ -> error usage
   runbench <- benchSorts
-                (Proxy :: Proxy Int)
+                (Proxy :: Proxy Int64)
                 size
-                [ ("insertion", isort2)
-                , ("quick", Q.quickSort)
-                , ("merge", M.msort)
-                , ("dps_merge", msort2)
+                [ ("LH/insertion1", I.isort1)
+                , ("LH/insertion2", I.isort2)
+                , ("LH/quick", Q.quickSort)
+                , ("LH/merge", M.msort)
+                , ("LH/dps_merge", DM.msort')
                 ]
-  withArgs rst $ defaultMain [ runbench]
-  where
-    isort2 ls = I.isort ls (A.size ls - 1)
-    msort2 ls = DM.msort ls (A.get ls 0)
+  withArgs rst $ defaultMain [ runbench ]

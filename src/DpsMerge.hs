@@ -12,6 +12,12 @@ get2 xs i = (Ur (A.get xs i), xs)
 size2 :: A.Array a -> (Ur Int, A.Array a)
 size2 xs = (Ur (A.size xs), xs)
 
+-- This is more of a slice join operation than append.
+--
+-- ASSUMPTION: the two slices are backed by the same array.
+--
+-- TODO: marge arr1 and arr2 s.t. the result has elements from
+--       arr1 for indices l1 to r1 and from arr2 for indices l2 to r2.
 append :: A.Array a -> A.Array a -> A.Array a
 append (A.Arr arr1 l1 r1) (A.Arr arr2 l2 r2) =
   A.Arr arr1 l1 r2
@@ -64,14 +70,17 @@ goto_seqmerge = 4
 merge_par :: (Show a, Ord a) => A.Array a -> A.Array a -> A.Array a -> A.Array a
 merge_par src1 src2 dst =
     if A.size dst < goto_seqmerge
-    then snd $ merge src1 src2 dst
+    then let (_src', dst') = merge src1 src2 dst
+         in dst'
     else let n1 = A.size src1
              n2 = A.size src2
              n3 = A.size dst
              in if n1 == 0
-                then snd $ copy src2 dst 0 0
+                then let (_src2', dst') = copy src2 dst 0 0
+                     in dst'
                 else if n2 == 0
-                     then snd $ copy src1 dst 0 0
+                     then let (_src1', dst') = copy src1 dst 0 0
+                          in dst'
                      else let mid1 = n1 `div` 2
                               pivot = A.get src1 mid1
                               mid2 = binarySearch src2 pivot
@@ -85,6 +94,8 @@ merge_par src1 src2 dst =
                               -- should reflect in the other after they're merged.
                               -- The slices backed by lists don't work here since
                               -- each slice is backed by it's own list...
+                              --
+                              -- Maybe we can make append do this work.
                               dst_l = slice2 0 (mid1+mid2) dst1
                               dst_r = slice2 (mid1+mid2+1) (n3 - (mid1+mid2+1)) dst1
                               dst2 = merge_par src1_l src2_l dst_l
@@ -140,3 +151,10 @@ msort src anyVal =
   let (Ur len, src') = size2 src
       (src'', _tmp) = msortInplace src (A.make len anyVal) in
   _tmp `seq` src''
+
+
+msort' :: (Show a, Ord a) => A.Array a -> A.Array a
+msort' src =
+  if A.size src == 0
+  then A.Arr [] 0 0
+  else msort src (A.get src 0)

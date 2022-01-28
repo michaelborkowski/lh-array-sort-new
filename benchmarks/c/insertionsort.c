@@ -29,20 +29,17 @@ void insertionsort (void *const pbase, size_t total_elems, size_t size,
 
     // run_ptr = base_ptr + size;
     run_ptr = base_ptr;
-    while ((run_ptr += size) <= end_ptr)
-    {
+    while ((run_ptr += size) <= end_ptr) {
         tmp_ptr = run_ptr - size;
         while ((*cmp) ((void *) run_ptr, (void *) tmp_ptr) < 0)
             tmp_ptr -= size;
 
         tmp_ptr += size;
-        if (tmp_ptr != run_ptr)
-        {
+        if (tmp_ptr != run_ptr) {
             char *trav;
 
             trav = run_ptr + size;
-            while (--trav >= run_ptr)
-            {
+            while (--trav >= run_ptr) {
                 char c = *trav;
                 char *hi, *lo;
 

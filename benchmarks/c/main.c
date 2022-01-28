@@ -10,8 +10,21 @@
 
 int compare_int64s(const void* a, const void* b)
 {
-    uint64_t arg1 = *(const uint64_t*)a;
-    uint64_t arg2 = *(const uint64_t*)b;
+    int64_t arg1 = *(const int64_t*)a;
+    int64_t arg2 = *(const int64_t*)b;
+
+    if (arg1 < arg2) return -1;
+    if (arg1 > arg2) return 1;
+    return 0;
+
+    // return (arg1 > arg2) - (arg1 < arg2); // possible shortcut
+    // return arg1 - arg2; // erroneous shortcut (fails if INT_MIN is present)
+}
+
+int compare_ints(const void* a, const void* b)
+{
+    int arg1 = *(const int*)a;
+    int arg2 = *(const int*)b;
 
     if (arg1 < arg2) return -1;
     if (arg1 > arg2) return 1;
@@ -52,7 +65,7 @@ int bench_sort1(int argc, char** argv)
 
     if (strcmp(elt_type,"int64") == 0) {
         // Set params.
-        array = (uint64_t*) malloc(N * sizeof(uint64_t));
+        array = (int64_t*) malloc(N * sizeof(int64_t));
         if (array == NULL) {
             fprintf(stderr, "Couldn't allocate memory for input array.\n");
         }
@@ -60,9 +73,9 @@ int bench_sort1(int argc, char** argv)
         cmp_fn = compare_int64s;
         // Initialize input.
         srand(time(NULL));
-        uint64_t *elt = array;
+        int64_t *elt = array;
         for (uint32_t i = 0; i <= N-1; i++) {
-            elt = (uint64_t*) array + i;
+            elt = (int64_t*) array + i;
             *elt = rand();
         }
     } else {
@@ -134,13 +147,25 @@ int bench_sort2(int argc, char** argv)
         print_usage_and_exit();
     }
 
-    int N = atol(argv[1]);
+    uint32_t N = atol(argv[1]);
     int rounds = atol(argv[2]);
 
-    int *array = malloc(N * sizeof(int));
-    for (int i = 0; i <= N-1; i++) {
-        array[i] = rand();
+    int64_t *array = malloc(N * sizeof(int64_t));
+    int64_t *elt;
+    srand(time(NULL));
+    for (uint32_t i = 0; i < N; i++) {
+        elt = (int64_t*) array + i;
+        *elt = rand();
     }
+
+#ifdef CBENCH_DEBUG
+    printf("input:\n");
+    for (uint32_t i = 0; i < N; i++) {
+        elt = (int64_t*) array + i;
+        printf("%ld ", *elt);
+    }
+    printf("\n");
+#endif
 
     struct timespec begin_timed;
     struct timespec end_timed;
@@ -150,21 +175,31 @@ int bench_sort2(int argc, char** argv)
 
     for (int i = 0; i < rounds; i++) {
         clock_gettime(CLOCK_MONOTONIC_RAW, &begin_timed);
-        insertionsort(array, N, sizeof(int), compare_int64s);
+        insertionsort(array, N, sizeof(int64_t), compare_int64s);
         clock_gettime(CLOCK_MONOTONIC_RAW, &end_timed);
         round_time = gib_difftimespecs(&begin_timed, &end_timed);
         round_timings[j] = round_time;
         printf("iter time: %e\n", round_time);
         j++;
     }
-    qsort(round_timings, 9, sizeof(double), compare_doubles);
+    qsort(round_timings, rounds, sizeof(double), compare_doubles);
     printf("median time: %e\n", round_timings[(rounds/2)+1]);
+
+#ifdef CBENCH_DEBUG
+    printf("sorted:\n");
+    for (uint32_t i = 0; i < N; i++) {
+        elt = (int64_t*) array + i;
+        printf("%ld ", *elt);
+    }
+    printf("\n");
+#endif
+
     return 0;
 }
 
 int main(int argc, char** argv)
 {
-    // bench_sort1(argc,argv);
-    bench_sort2(argc,argv);
+    bench_sort1(argc,argv);
+    // bench_sort2(argc,argv);
     return 0;
 }
