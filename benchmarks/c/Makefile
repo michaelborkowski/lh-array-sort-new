@@ -4,7 +4,7 @@ OUT      = cbench.exe
 
 CC = gcc
 CFLAGS = -Wall -Wextra -Wpedantic -O3 -flto -lm
-CDEBUG = -DCBENCH_DEBUG
+CDEBUG = -DCBENCH_DEBUG -O0 -g
 
 $(OUT): $(OBJFILES)
 ifdef DEBUG

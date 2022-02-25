@@ -16,9 +16,6 @@ int compare_int64s(const void* a, const void* b)
     if (arg1 < arg2) return -1;
     if (arg1 > arg2) return 1;
     return 0;
-
-    // return (arg1 > arg2) - (arg1 < arg2); // possible shortcut
-    // return arg1 - arg2; // erroneous shortcut (fails if INT_MIN is present)
 }
 
 int compare_ints(const void* a, const void* b)
@@ -29,9 +26,6 @@ int compare_ints(const void* a, const void* b)
     if (arg1 < arg2) return -1;
     if (arg1 > arg2) return 1;
     return 0;
-
-    // return (arg1 > arg2) - (arg1 < arg2); // possible shortcut
-    // return arg1 - arg2; // erroneous shortcut (fails if INT_MIN is present)
 }
 
 int compare_doubles(const void* a, const void* b)
@@ -42,12 +36,9 @@ int compare_doubles(const void* a, const void* b)
     if (arg1 < arg2) return -1;
     if (arg1 > arg2) return 1;
     return 0;
-
-    // return (arg1 > arg2) - (arg1 < arg2); // possible shortcut
-    // return arg1 - arg2; // erroneous shortcut (fails if INT_MIN is present)
 }
 
-int bench_sort1(int argc, char** argv)
+int bench_insertion_glibc(int argc, char** argv)
 {
     char *algo = argv[1];
     char *elt_type = argv[2];
@@ -69,7 +60,7 @@ int bench_sort1(int argc, char** argv)
         if (array == NULL) {
             fprintf(stderr, "Couldn't allocate memory for input array.\n");
         }
-        elt_size = sizeof(int);
+        elt_size = sizeof(int64_t);
         cmp_fn = compare_int64s;
         // Initialize input.
         srand(time(NULL));
@@ -93,6 +84,8 @@ int bench_sort1(int argc, char** argv)
     uint32_t rounds;
     uint32_t i;
 
+    void *sorted;
+
     // Wait for criterion-interactive to send a command.
     read = getline(&criterion_cmd, &len, stdin);
     while (strcmp(criterion_cmd,"EXIT") != 0) {
@@ -111,8 +104,9 @@ int bench_sort1(int argc, char** argv)
 #endif
 
             // The main event.
-            for (i = 0; i <= rounds; i++)
+            for (i = 0; i <= rounds; i++) {
                 (*sort_fn)(array, N, elt_size, cmp_fn);
+            }
 
             printf("END_BENCH\n");
             fflush(stdout);
@@ -141,65 +135,19 @@ void print_usage_and_exit(void)
     exit(1);
 }
 
-int bench_sort2(int argc, char** argv)
-{
-    if (argc < 3) {
-        print_usage_and_exit();
-    }
-
-    uint32_t N = atol(argv[1]);
-    int rounds = atol(argv[2]);
-
-    int64_t *array = malloc(N * sizeof(int64_t));
-    int64_t *elt;
-    srand(time(NULL));
-    for (uint32_t i = 0; i < N; i++) {
-        elt = (int64_t*) array + i;
-        *elt = rand();
-    }
-
-#ifdef CBENCH_DEBUG
-    printf("input:\n");
-    for (uint32_t i = 0; i < N; i++) {
-        elt = (int64_t*) array + i;
-        printf("%ld ", *elt);
-    }
-    printf("\n");
-#endif
-
-    struct timespec begin_timed;
-    struct timespec end_timed;
-    double round_timings[rounds];
-    double round_time;
-    int j = 0;
-
-    for (int i = 0; i < rounds; i++) {
-        clock_gettime(CLOCK_MONOTONIC_RAW, &begin_timed);
-        insertionsort(array, N, sizeof(int64_t), compare_int64s);
-        clock_gettime(CLOCK_MONOTONIC_RAW, &end_timed);
-        round_time = gib_difftimespecs(&begin_timed, &end_timed);
-        round_timings[j] = round_time;
-        printf("iter time: %e\n", round_time);
-        j++;
-    }
-    qsort(round_timings, rounds, sizeof(double), compare_doubles);
-    printf("median time: %e\n", round_timings[(rounds/2)+1]);
-
-#ifdef CBENCH_DEBUG
-    printf("sorted:\n");
-    for (uint32_t i = 0; i < N; i++) {
-        elt = (int64_t*) array + i;
-        printf("%ld ", *elt);
-    }
-    printf("\n");
-#endif
-
-    return 0;
-}
+int bench_gibbon_insertion1(int argc, char** argv);
+int bench_gibbon_insertion2(int argc, char** argv);
 
 int main(int argc, char** argv)
 {
-    bench_sort1(argc,argv);
-    // bench_sort2(argc,argv);
+    printf("glibc:\n");
+    bench_insertion_glibc(argc,argv);
+
+    // printf("gibbon (1):\n");
+    // bench_gibbon_insertion1(argc,argv);
+
+    // printf("gibbon (2):\n");
+    // bench_gibbon_insertion2(argc,argv);
+
     return 0;
 }
