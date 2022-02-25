@@ -1,0 +1,25 @@
+cabal-version:      >=1.10
+
+name:               prof
+version:            0.1
+build-type:         Simple
+
+executable prof
+    build-depends:       base >= 4.14 && <4.17
+                       , deepseq
+                       , criterion
+                       , split
+                       , random
+                       , vector
+    main-is:             Main.hs
+    other-modules:       Array
+                         Sort
+    default-language:    Haskell2010
+    default-extensions:  TupleSections
+                         BangPatterns
+                         NamedFieldPuns
+                         RecordWildCards
+                         ScopedTypeVariables
+                         DeriveGeneric
+    ghc-options:         -Wall -Wcompat
+    ghc-options:         -O2 -ddump-simpl -ddump-to-file -dsuppress-all
