@@ -44,7 +44,12 @@ isort xs n
   | otherwise      = insert (isort xs (n-1)) (A.get xs n) n
 
 isort1 :: Ord a => A.Array a -> A.Array a
-isort1 xs = isort xs (A.size xs - 1)
+isort1 xs =
+    if n <= 1
+    then xs
+    else isort xs (n-1)
+  where
+    n = A.size xs
 
 
 {-|
@@ -60,28 +65,36 @@ for (i = 1 ; i <= n - 1; i++) {
 }
 
 -}
+{-@ reflect isort2 @-}
+{-@ isort2 :: xs:_ -> ys:{A.size ys == A.size xs} @-}
 isort2 :: Ord a => A.Array a -> A.Array a
-isort2 xs = go 1 (copy xs)
-  where
-    !n = A.size xs
-    copy xs = xs
-    go i ys =
-      if i == n
-      then ys
-      else go (i+1) (shift i ys)
+isort2 xs =
+    if A.size xs <= 1
+    then xs
+    else isort2' xs 1
+  -- where
+    -- copy xs = xs
 
-    -- shift j ys@(A.Arr ls s e) =
-    shift !j ys =
-      if j == 0
-      -- then (A.Arr ls s e)
-      then ys
-      else let a = A.get ys j
-               b = A.get ys (j-1)
-           in if a > b
-              -- then (A.Arr ls s e)
-              then ys
-              else let ys' = A.set (A.set ys j b) (j-1) a
-                   in shift (j-1) ys'
+{-@ reflect isort2' @-}
+{-@ isort2' :: xs:_ -> {i:Nat | i < size xs } -> ys:{A.size ys == A.size xs} @-}
+isort2' :: Ord a => A.Array a -> Int -> A.Array a
+isort2' xs i =
+  if i < A.size xs
+  then isort2' (shift xs i) (i+1)
+  else xs
+
+{-@ reflect shift @-}
+{-@ shift :: xs:_ -> {j:Nat | j < size xs } -> ys:{A.size ys == A.size xs} @-}
+shift :: Ord a => A.Array a -> Int -> A.Array a
+shift xs !j =
+  if j == 0
+  then xs
+  else let a = A.get xs j
+           b = A.get xs (j-1)
+       in if a > b
+          then xs
+          else let xs' = A.set (A.set xs j b) (j-1) a
+               in shift xs' (j-1)
 
 --------------------------------------------------------------------------------
 -- | Proofs for Sortedness

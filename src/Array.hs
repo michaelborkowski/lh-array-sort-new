@@ -12,7 +12,7 @@
 module Array where
 
 import           GHC.Generics ( Generic )
-import           Control.DeepSeq ( NFData )
+import           Control.DeepSeq ( NFData(..) )
 import           Language.Haskell.Liquid.ProofCombinators
 
 {-@ data Array a = Arr {  lst   :: _
@@ -24,9 +24,11 @@ import           Language.Haskell.Liquid.ProofCombinators
 data Array a = Arr { lst   :: [a]
                    , left  :: Int
                    , right :: Int}
-               deriving (Show, Generic)
+               deriving Show
 
-instance NFData a => NFData (Array a)
+instance NFData a => NFData (Array a) where
+  rnf (Arr ls l r) = rnf ls `seq` rnf l `seq` rnf r
+
 -- basic API
 
 -- basic API

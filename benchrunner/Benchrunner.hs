@@ -12,7 +12,7 @@ import           System.Environment ( getArgs, withArgs )
 import qualified Insertion as I
 import qualified QuickSort as Q
 import qualified Merge as M
-import qualified DpsMerge as DM
+-- import qualified DpsMerge as DM
 import qualified Array as A
 
 --------------------------------------------------------------------------------
@@ -53,6 +53,6 @@ main = do
                 , ("LH/insertion2", I.isort2)
                 , ("LH/quick", Q.quickSort)
                 , ("LH/merge", M.msort)
-                , ("LH/dps_merge", DM.msort')
+                -- , ("LH/dps_merge", DM.msort')
                 ]
   withArgs rst $ defaultMain [ runbench ]

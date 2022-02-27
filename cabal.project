@@ -3,8 +3,8 @@ packages: .
           ./benchmarks/haskell
           ./prof
 
-package lh-array-sort
-    ghc-options: -O2 -ddump-simpl -ddump-to-file -dsuppress-all
+-- package lh-array-sort
+--     ghc-options: -O2 -ddump-simpl -ddump-to-file -dsuppress-all
 
 package prof
     ghc-options: -O2 -ddump-simpl -ddump-to-file -dsuppress-all

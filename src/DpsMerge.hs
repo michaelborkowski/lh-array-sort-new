@@ -1,3 +1,5 @@
+{-@ LIQUID "--prune-unsorted" @-}
+
 module DpsMerge where
 
 import qualified Array as A
