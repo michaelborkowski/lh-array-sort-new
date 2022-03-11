@@ -50,7 +50,7 @@ main = do
                 (Proxy :: Proxy Int64)
                 size
                 [ ("LH/insertion1", I.isort1)
-                , ("LH/insertion2", I.isort2)
+                -- , ("LH/insertion2", I.isort2)
                 , ("LH/quick", Q.quickSort)
                 , ("LH/merge", M.msort)
                 -- , ("LH/dps_merge", DM.msort')

@@ -64,7 +64,6 @@ for (i = 1 ; i <= n - 1; i++) {
     }
 }
 
--}
 {-@ reflect isort2 @-}
 {-@ isort2 :: xs:_ -> ys:{A.size ys == A.size xs} @-}
 isort2 :: Ord a => A.Array a -> A.Array a
@@ -95,6 +94,9 @@ shift xs !j =
           then xs
           else let xs' = A.set (A.set xs j b) (j-1) a
                in shift xs' (j-1)
+
+-}
+
 
 --------------------------------------------------------------------------------
 -- | Proofs for Sortedness
