@@ -29,7 +29,8 @@ data Array a = Arr { lst   :: [a]
 instance NFData a => NFData (Array a) where
   rnf (Arr ls l r) = rnf ls `seq` rnf l `seq` rnf r
 
--- basic API
+{-@ measure token :: [a] -> Nat @-}
+{-@ predicate Token X  =  token (lst X) @-} 
 
 -- basic API
 
@@ -44,9 +45,16 @@ make n x = let Arr lst l r = make (n-1) x in Arr (x:lst) l (r+1)
 size :: Array a -> Int
 size (Arr _ l r) = r-l
 
+{-@ reflect listSize @-}
+{-@ listSize :: xs:_ -> Nat @-}
+listSize :: [a] -> Int
+listSize []     = 0
+listSize (_:xs) = 1 + (listSize xs)
+
 {-@ reflect getList @-}
 {-@ getList :: xs:_ -> {n:Nat | n < len xs } -> x:_ @-}
 getList :: [a] -> Int -> a
+--getList []    n = undefined
 getList (x:_) 0 = x
 getList (_:xs) n = getList xs (n-1)
 
@@ -58,22 +66,32 @@ getList (_:xs) n = getList xs (n-1)
 get :: Array a -> Int -> a
 get (Arr lst l r) n = getList lst (l+n)
 
-{-@ reflect setList @-}
-{-@ setList :: xs:_ -> {n:Nat | n < len xs } -> x:_ -> nxs:{(len nxs) = (len xs)} @-}
+{-@ reflect setList @-}  -- the assume needed to tell LH that it's the same array
+{- @ assume setList :: xs:_ -> n:Nat -> x:_
+                         -> { nxs:_ | tok xs == tok nxs } @-}
+{-@ setList :: xs:_ -> {n:Nat | n < len xs } -> x:_ 
+                           -> { nxs:_ | (len nxs) == (len xs) && token xs == token nxs} @-}
 setList :: [a] -> Int -> a -> [a]
+setList []     n _ = []                     -- needed b/c refinements aren't checked
 setList (x:xs) 0 y = (y:xs)
 setList (x:xs) n y = x:(setList xs (n-1) y)
+
+{-@ reflect arrayWithProof @-}
+arrayWithProof :: [a] -> Proof -> [a]
+arrayWithProof a _ = a
 
 --get2 :: Array a -> Int -> (Ur a, Array a)
 --get2 xs i = (Ur (get xs i), xs)
 
 {-@ reflect set @-}
-{-@ set :: xs:_ -> {n:Nat | n < size xs } -> x:_ -> nxs:{(size nxs) = (size xs)} @-}
+{-@ set :: xs:_ -> {n:Nat | n < size xs } -> x:_ 
+                -> nxs:{(size nxs) = (size xs) && Token xs == Token nxs } @-}
 set :: Array a -> Int -> a -> Array a
-set (Arr lst l r) n y = Arr (setList lst (l+n) y) l r
+set (Arr arr l r) n y = Arr (setList arr (l+n) y) l r --  `arrayWithProof` setListToken arr (l+n) y
 
 {-@ reflect slice @-}
-{-@ slice :: xs:_ -> {l:Nat | l <= size xs } -> {r:Nat | r <= size xs && l <= r} -> ys:{size ys = r-l} @-}
+{-@ slice :: xs:_ -> {l:Nat | l <= size xs } -> {r:Nat | r <= size xs && l <= r} 
+                  -> { ys:_ | size ys == r-l && Token xs == Token ys } @-}
 slice :: Array a -> Int -> Int -> Array a
 slice (Arr lst l r) l' r' = Arr lst (l+l') (l+r')
 

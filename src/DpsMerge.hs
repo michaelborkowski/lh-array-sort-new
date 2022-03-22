@@ -1,36 +1,64 @@
-{-@ LIQUID "--prune-unsorted" @-}
+{-@ LIQUID "--ple" @-}
+{-@ LIQUID "--reflection"  @-}
+{-@ LIQUID "--no-termination"  @-}
 
 module DpsMerge where
 
 import qualified Array as A
 import Debug.Trace
 
-data Ur a = Ur a
+-- Proof Objectives
+-- [ ] Prove size, Token conversvation, basic props 
+-- [ ] Prove Termination
+-- [ ] Prove Equivalence
+-- [ ] Prove Sortedness
+
+newtype Ur a = Ur a
 
 -- Trusted base
+{-@ get2 :: xs:Array a -> {n:Nat | n < size xs } 
+              -> (Ur a, Array a)<{\ x zs -> A.size xs == A.size zs && Token xs == Token zs }> @-}
 get2 :: A.Array a -> Int -> (Ur a, A.Array a)
 get2 xs i = (Ur (A.get xs i), xs)
 
+{-@ reflect size2 @-}
+{-@ size2 :: xs:(Array a) 
+               -> (Ur Int, Array a)<{\n zs -> n == A.size xs && 
+                                              A.size xs == A.size zs && Token xs == Token zs }> @-}
 size2 :: A.Array a -> (Ur Int, A.Array a)
 size2 xs = (Ur (A.size xs), xs)
 
 -- This is more of a slice join operation than append.
---
--- ASSUMPTION: the two slices are backed by the same array.
---
--- TODO: marge arr1 and arr2 s.t. the result has elements from
---       arr1 for indices l1 to r1 and from arr2 for indices l2 to r2.
+-- PRE-CONDITION: the two slices are backed by the same array.
+{-@ reflect append @-}
+{-@ append :: xs:Array a 
+       -> { ys:Array a | Token xs == Token ys && right xs == left ys } 
+       -> { zs:Array a | Token xs == Token zs &&
+                         A.size zs == A.size xs + A.size ys &&
+                         left xs == left zs && right ys == right zs } @-}
 append :: A.Array a -> A.Array a -> A.Array a
 append (A.Arr arr1 l1 r1) (A.Arr arr2 l2 r2) =
-  A.Arr arr1 l1 r2
+  A.Arr arr2 l1 r2
 
 -- Helper functions
+                -- ((A.size (fst t)) = (mydiv (A.size xs)))} @-}
+{-@ reflect splitMid @-}
+{-@ splitMid :: xs:{A.size xs >= 2} 
+      -> {t:_ | Token (fst t) == Token xs && Token (snd t) == Token xs &&
+                (A.size (fst t)) < (A.size xs) && 
+                (A.size (snd t)) < (A.size xs) && 
+                (A.size xs = (A.size (fst t)) + (A.size (snd t))) } @-}
 splitMid :: A.Array a -> (A.Array a, A.Array a)
 splitMid xs = (A.slice xs 0 m, A.slice xs m n)
   where
     n = A.size xs
     m = n `div` 2
 
+-- more TODO here
+{-@ copy :: src:(Array a) -> dst:(Array a) -> i:Nat -> j:Nat 
+         -> {t:_ | Token (fst t) == Token src && Token (snd t) == Token dst &&
+                   A.size (fst t) == A.size src &&
+                   A.size (snd t) == A.size dst } @-}
 copy :: A.Array a -> A.Array a -> Int -> Int -> (A.Array a, A.Array a)
 copy src dst i j =
   let (Ur len, src') = size2 src in
@@ -41,6 +69,12 @@ copy src dst i j =
   else (src, dst)
 
 -- DPS merge
+{-@ merge' :: xs1:(Array a)
+         -> { xs2:(Array a) | Token xs1 == Token xs2 }
+         ->   zs:(Array a)
+         -> i1:Nat  -> i2:Nat   -> { j:Nat | i1 + i2 == j }
+         -> { t:_           | Token xs1 == Token (fst t) && Token xs2 == Token (fst t) &&
+                             Token zs  == Token (snd t) } @-}
 merge' :: Ord a =>
   A.Array a -> A.Array a -> A.Array a ->
   Int -> Int -> Int ->
@@ -63,8 +97,59 @@ merge' src1 src2 dst i1 i2 j =
     then merge' src1'1 src2'1 (A.set dst j v1) (i1 + 1) i2 (j + 1)
     else merge' src1'1 src2'1 (A.set dst j v2) i1 (i2 + 1) (j + 1)
 
+-- Possible: (right xs1 == left xs2) => (left xs1 == left (fst t) && right xs2 == right (fst t))
+{-@ merge :: xs1:(Array a)
+        -> { xs2:(Array a) | Token xs1 == Token xs2 }
+        ->   zs:(Array a)  
+        -> { t:_           | Token xs1 == Token (fst t) && Token xs2 == Token (fst t) &&
+                             Token zs  == Token (snd t) } @-}
 merge :: Ord a => A.Array a -> A.Array a -> A.Array a -> (A.Array a, A.Array a)
 merge src1 src2 dst = merge' src1 src2 dst 0 0 0
+
+-- DPS mergesort
+{-@ msortInplace :: xs:Array a -> { ys:(Array a ) | A.size ys == A.size xs }
+      -> (Array a, Array a)<{\zs ts -> Token xs == Token zs && Token ys == Token ts &&
+                                       A.size xs == A.size zs && A.size xs == A.size ts }> 
+       / [A.size xs] @-}
+msortInplace :: (Show a, Ord a) => A.Array a -> A.Array a -> (A.Array a, A.Array a)
+msortInplace src tmp =
+  let (Ur len, src') = size2 src in
+  if len <= 1
+  then (src', tmp)
+  else
+    let (src1, src2) = splitMid src'
+        (tmp1, tmp2) = splitMid tmp
+        (src1', _tmp1') = msortInplace src1 tmp1
+        (src2', _tmp2') = msortInplace src2 tmp2
+        tmp3 = append tmp1 tmp2
+        (_src'', tmp4) = merge src1' src2' tmp3
+    in (tmp4, _src'')
+
+{-@ msort :: { xs:(Array a) | A.size xs > 0 }
+          -> { y:a | y == A.get xs 0 }
+          -> { zs:(Array a) | A.size xs == A.size zs } @-}
+msort :: (Show a, Ord a) => A.Array a -> a -> A.Array a
+msort src anyVal =
+  let (Ur len, src') = size2 src
+      (src'', _tmp) = msortInplace src (A.make len anyVal) in
+  _tmp `seq` src''
+
+-- finally, the top-level merge sort function -- TODO: use get2/size2 for linearity
+{-@ msort' :: xs:(A.Array a)
+           -> { ys:(Array a) | A.size xs == A.size ys } @-}
+msort' :: (Show a, Ord a) => A.Array a -> A.Array a
+msort' src =
+  if A.size src == 0
+  then A.Arr [] 0 0
+  else msort src (A.get src 0)
+
+
+
+
+
+
+
+{- CODE SECTION NOT IN USE YET
 
 goto_seqmerge :: Int
 goto_seqmerge = 4
@@ -133,30 +218,5 @@ binarySearch ls query = go 0 (A.size ls)
         mid = lo + n `div` 2
         pivot = A.get ls mid
 
--- DPS mergesort
-msortInplace :: (Show a, Ord a) => A.Array a -> A.Array a -> (A.Array a, A.Array a)
-msortInplace src tmp =
-  let (Ur len, src') = size2 src in
-  if len <= 1
-  then (src', tmp)
-  else
-    let (src1, src2) = splitMid src'
-        (tmp1, tmp2) = splitMid tmp
-        (src1', _tmp1') = msortInplace src1 tmp1
-        (src2', _tmp2') = msortInplace src2 tmp2
-        tmp3 = append tmp1 tmp2
-        (_src'', tmp4) = merge src1' src2' tmp3
-    in (tmp4, _src'')
+END UNUSED SECTION -}
 
-msort :: (Show a, Ord a) => A.Array a -> a -> A.Array a
-msort src anyVal =
-  let (Ur len, src') = size2 src
-      (src'', _tmp) = msortInplace src (A.make len anyVal) in
-  _tmp `seq` src''
-
-
-msort' :: (Show a, Ord a) => A.Array a -> A.Array a
-msort' src =
-  if A.size src == 0
-  then A.Arr [] 0 0
-  else msort src (A.get src 0)

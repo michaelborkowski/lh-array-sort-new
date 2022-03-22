@@ -20,7 +20,7 @@ library
       Merge
       Insertion
       LinearMerge
-      -- DpsMerge
+      DpsMerge
       Properties
       QuickSort
   hs-source-dirs:
