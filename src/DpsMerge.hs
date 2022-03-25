@@ -1,11 +1,12 @@
 {-@ LIQUID "--ple" @-}
 {-@ LIQUID "--reflection"  @-}
 {-@ LIQUID "--no-termination"  @-}
+{-@ LIQUID "--no-totality"  @-}
 
 module DpsMerge where
 
 import qualified Array as A
-import Debug.Trace
+--import Debug.Trace
 
 -- Proof Objectives
 -- [ ] Prove size, Token conversvation, basic props 
@@ -17,13 +18,16 @@ newtype Ur a = Ur a
 
 -- Trusted base
 {-@ get2 :: xs:Array a -> {n:Nat | n < size xs } 
-              -> (Ur a, Array a)<{\ x zs -> A.size xs == A.size zs && Token xs == Token zs }> @-}
+              -> (Ur a, Array a)<{\ x zs -> A.size xs == A.size zs && 
+                                            left xs == left zs && right xs == right zs &&
+                                            Token xs == Token zs }> @-}
 get2 :: A.Array a -> Int -> (Ur a, A.Array a)
 get2 xs i = (Ur (A.get xs i), xs)
 
 {-@ reflect size2 @-}
 {-@ size2 :: xs:(Array a) 
                -> (Ur Int, Array a)<{\n zs -> n == A.size xs && 
+                                              left xs == left zs && right xs == right zs &&
                                               A.size xs == A.size zs && Token xs == Token zs }> @-}
 size2 :: A.Array a -> (Ur Int, A.Array a)
 size2 xs = (Ur (A.size xs), xs)
@@ -37,14 +41,18 @@ size2 xs = (Ur (A.size xs), xs)
                          A.size zs == A.size xs + A.size ys &&
                          left xs == left zs && right ys == right zs } @-}
 append :: A.Array a -> A.Array a -> A.Array a
-append (A.Arr arr1 l1 r1) (A.Arr arr2 l2 r2) =
+append (A.Arr _arr1 l1 _r1) (A.Arr arr2 _l2 r2) =
   A.Arr arr2 l1 r2
+--    A.Arr arr' l1 r2       -- code when the backing arrays could be inconsistent
+--      where
+--        arr' = (take r1 arr1) ++ (drop r1 arr2)
 
 -- Helper functions
                 -- ((A.size (fst t)) = (mydiv (A.size xs)))} @-}
 {-@ reflect splitMid @-}
 {-@ splitMid :: xs:{A.size xs >= 2} 
       -> {t:_ | Token (fst t) == Token xs && Token (snd t) == Token xs &&
+                right (fst t) == left (snd t) &&
                 (A.size (fst t)) < (A.size xs) && 
                 (A.size (snd t)) < (A.size xs) && 
                 (A.size xs = (A.size (fst t)) + (A.size (snd t))) } @-}
@@ -54,27 +62,31 @@ splitMid xs = (A.slice xs 0 m, A.slice xs m n)
     n = A.size xs
     m = n `div` 2
 
--- more TODO here
-{-@ copy :: src:(Array a) -> dst:(Array a) -> i:Nat -> j:Nat 
-         -> {t:_ | Token (fst t) == Token src && Token (snd t) == Token dst &&
-                   A.size (fst t) == A.size src &&
-                   A.size (snd t) == A.size dst } @-}
+-- copy sets dst[j..] <- src[i..]
+{-@ copy :: src:(Array a) -> { dst:(Array a) | size dst >= size src }
+         -> { i:Nat | i >= 0 && i <= size src }
+         -> { j:Nat | j >= 0 && j <= size dst && (size dst) - j == (size src) - i }
+         -> { t:_ | Token (fst t) == Token src &&
+                    left (fst t) == left src && right (fst t) == right src &&
+                    A.size (fst t) == A.size src &&
+                    A.size (snd t) == A.size dst } @-}
 copy :: A.Array a -> A.Array a -> Int -> Int -> (A.Array a, A.Array a)
 copy src dst i j =
   let (Ur len, src') = size2 src in
   if i < len
   then
     let (Ur v, src'1) = get2 src' i in
-    copy src (A.set dst j v) (i + 1) (j + 1)
-  else (src, dst)
+    copy src'1 (A.set dst j v) (i + 1) (j + 1)
+  else (src', dst)
 
 -- DPS merge
 {-@ merge' :: xs1:(Array a)
-         -> { xs2:(Array a) | Token xs1 == Token xs2 }
-         ->   zs:(Array a)
-         -> i1:Nat  -> i2:Nat   -> { j:Nat | i1 + i2 == j }
-         -> { t:_           | Token xs1 == Token (fst t) && Token xs2 == Token (fst t) &&
-                             Token zs  == Token (snd t) } @-}
+         -> { xs2:(Array a) | Token xs1 == Token xs2 && right xs1 == left xs2 }
+         -> {  zs:(Array a) | size xs1 + size xs2 == size zs }
+         -> { i1:Nat | i1 <= size xs1 } -> { i2:Nat | i2 <= size xs2 }   
+         -> { j:Nat  | i1 + i2 == j && j <= size zs }
+         -> { t:_           | Token xs1 == Token (fst t) && Token xs2 == Token (fst t) } @-}
+--                             Token zs  == Token (snd t) } @-}
 merge' :: Ord a =>
   A.Array a -> A.Array a -> A.Array a ->
   Int -> Int -> Int ->
@@ -98,18 +110,22 @@ merge' src1 src2 dst i1 i2 j =
     else merge' src1'1 src2'1 (A.set dst j v2) i1 (i2 + 1) (j + 1)
 
 -- Possible: (right xs1 == left xs2) => (left xs1 == left (fst t) && right xs2 == right (fst t))
+{- @ ignore merge @-}
 {-@ merge :: xs1:(Array a)
-        -> { xs2:(Array a) | Token xs1 == Token xs2 }
-        ->   zs:(Array a)  
-        -> { t:_           | Token xs1 == Token (fst t) && Token xs2 == Token (fst t) &&
-                             Token zs  == Token (snd t) } @-}
+        -> { xs2:(Array a) | Token xs1 == Token xs2 && right xs1 == left xs2 }
+        -> {  zs:(Array a) | size xs1 + size xs2 == size zs }
+        -> { t:_           | Token xs1 == Token (fst t) && Token xs2 == Token (fst t) } @-}
+--                             Token zs  == Token (snd t) } @-}
 merge :: Ord a => A.Array a -> A.Array a -> A.Array a -> (A.Array a, A.Array a)
 merge src1 src2 dst = merge' src1 src2 dst 0 0 0
 
 -- DPS mergesort
-{-@ msortInplace :: xs:Array a -> { ys:(Array a ) | A.size ys == A.size xs }
-      -> (Array a, Array a)<{\zs ts -> Token xs == Token zs && Token ys == Token ts &&
-                                       A.size xs == A.size zs && A.size xs == A.size ts }> 
+{-@ ignore msortInplace @-}
+{- @ msortInplace :: xs:Array a 
+      -> { ys:(Array a ) | A.size ys == A.size xs && left xs == left ys && right xs == right ys }
+      -> (Array a, Array a)<{\zs ts -> A.size xs == A.size zs && A.size xs == A.size ts &&
+                                       left zs == left xs && right zs == right xs &&
+                                       left ts == left xs && right ts == right xs }> 
        / [A.size xs] @-}
 msortInplace :: (Show a, Ord a) => A.Array a -> A.Array a -> (A.Array a, A.Array a)
 msortInplace src tmp =
@@ -125,7 +141,8 @@ msortInplace src tmp =
         (_src'', tmp4) = merge src1' src2' tmp3
     in (tmp4, _src'')
 
-{-@ msort :: { xs:(Array a) | A.size xs > 0 }
+{-@ ignore msort @-}
+{- @ msort :: { xs:(Array a) | A.size xs > 0 }
           -> { y:a | y == A.get xs 0 }
           -> { zs:(Array a) | A.size xs == A.size zs } @-}
 msort :: (Show a, Ord a) => A.Array a -> a -> A.Array a
@@ -135,7 +152,8 @@ msort src anyVal =
   _tmp `seq` src''
 
 -- finally, the top-level merge sort function -- TODO: use get2/size2 for linearity
-{-@ msort' :: xs:(A.Array a)
+{-@ ignore msort' @-}
+{- @ msort' :: xs:(A.Array a)
            -> { ys:(Array a) | A.size xs == A.size ys } @-}
 msort' :: (Show a, Ord a) => A.Array a -> A.Array a
 msort' src =

@@ -29,6 +29,9 @@ data Array a = Arr { lst   :: [a]
 instance NFData a => NFData (Array a) where
   rnf (Arr ls l r) = rnf ls `seq` rnf l `seq` rnf r
 
+-- The Token measure is intended to track when two Arrays have the same 
+--   backing data structure. In the fake functional style, this is NOT
+--   preserved under `set` operations
 {-@ measure token :: [a] -> Nat @-}
 {-@ predicate Token X  =  token (lst X) @-} 
 
@@ -67,12 +70,11 @@ get :: Array a -> Int -> a
 get (Arr lst l r) n = getList lst (l+n)
 
 {-@ reflect setList @-}  -- the assume needed to tell LH that it's the same array
-{- @ assume setList :: xs:_ -> n:Nat -> x:_
-                         -> { nxs:_ | tok xs == tok nxs } @-}
 {-@ setList :: xs:_ -> {n:Nat | n < len xs } -> x:_ 
-                           -> { nxs:_ | (len nxs) == (len xs) && token xs == token nxs} @-}
+                           -> { nxs:_ | (len nxs) == (len xs) } @-}
+--                           -> { nxs:_ | (len nxs) == (len xs) && token xs == token nxs} @-}
 setList :: [a] -> Int -> a -> [a]
-setList []     n _ = []                     -- needed b/c refinements aren't checked
+--setList []     n _ = []                     -- needed if refinements aren't checked
 setList (x:xs) 0 y = (y:xs)
 setList (x:xs) n y = x:(setList xs (n-1) y)
 
@@ -85,13 +87,15 @@ arrayWithProof a _ = a
 
 {-@ reflect set @-}
 {-@ set :: xs:_ -> {n:Nat | n < size xs } -> x:_ 
-                -> nxs:{(size nxs) = (size xs) && Token xs == Token nxs } @-}
+                -> nxs:{(size nxs) = (size xs) } @-}
+--                -> nxs:{(size nxs) = (size xs) && Token xs == Token nxs } @-}
 set :: Array a -> Int -> a -> Array a
 set (Arr arr l r) n y = Arr (setList arr (l+n) y) l r --  `arrayWithProof` setListToken arr (l+n) y
 
 {-@ reflect slice @-}
 {-@ slice :: xs:_ -> {l:Nat | l <= size xs } -> {r:Nat | r <= size xs && l <= r} 
                   -> { ys:_ | size ys == r-l && Token xs == Token ys } @-}
+--                  -> { ys:_ | size ys == r-l } @-}
 slice :: Array a -> Int -> Int -> Array a
 slice (Arr lst l r) l' r' = Arr lst (l+l') (l+r')
 
