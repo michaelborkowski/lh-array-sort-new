@@ -18,8 +18,8 @@ import           Language.Haskell.Liquid.ProofCombinators
 
 
 {-@ data Array a = Arr {  lst   :: [a]
-                       ,  left  :: Nat
-                       ,  right :: { v: Nat | v >= left && len lst == right - left }
+                       ,  left  :: {v: Nat | v <= (len lst) }
+                       ,  right :: {v: Nat | v >= left && v <= (len lst)}
                        }
   @-}
 
@@ -56,11 +56,11 @@ size (Arr _ l r) = r-l
 {-@ reflect size2 @-}
 {-@ size2 :: xs:(Array a)
                -> (Ur Int, Array a)<{
-                      \n zs -> n == A.size xs &&
+                      \n zs -> n == size xs &&
                                left xs == left zs && right xs == right zs &&
-                               A.size xs == A.size zs && token xs == token zs }> @-}
-size2 :: A.Array a -> (Ur Int, A.Array a)
-size2 xs = (Ur (A.size xs), xs)
+                               size xs == size zs && token xs == token zs }> @-}
+size2 :: Array a -> (Ur Int, Array a)
+size2 xs = (Ur (size xs), xs)
 
 {-@ reflect listSize @-}
 {-@ listSize :: xs:_ -> Nat @-}
@@ -80,16 +80,16 @@ getList (x:_) 0 = x
 getList (_:xs) n = getList xs (n-1)
 
 {-@ reflect get @-}
-{-@ get :: xs:_ -> {n:Nat | n >= left xs && n < right xs } -> x:_ @-}
+{-@ get :: xs:_ -> {n:Nat | n < size xs } -> x:_ @-}
 get :: Array a -> Int -> a
-get (Arr lst l r) n = getList lst (n-l)
+get (Arr lst l r) n = getList lst (l+n)
 
-{-@ get2 :: xs:Array a -> {n:Nat | n >= left xs && n < right xs }
-              -> (Ur a, Array a)<{\ x zs -> A.size xs == A.size zs &&
+{-@ get2 :: xs:Array a -> {n:Nat | n < size xs }
+              -> (Ur a, Array a)<{\ x zs -> size xs == size zs &&
                                             left xs == left zs && right xs == right zs &&
                                             token xs == token zs }> @-}
-get2 :: A.Array a -> Int -> (Ur a, A.Array a)
-get2 xs i = (Ur (A.get xs i), xs)
+get2 :: Array a -> Int -> (Ur a, Array a)
+get2 xs i = (Ur (get xs i), xs)
 
   -- set
 
@@ -101,13 +101,13 @@ setList (x:xs) 0 y = (y:xs)
 setList (x:xs) n y = x:(setList xs (n-1) y)
 
 {-@ reflect set @-}
-{-@ set :: xs:_ -> { n:Nat | n >= left xs && n < right xs } -> x:_ 
+{-@ set :: xs:_ -> { n:Nat | n < size xs } -> x:_ 
                 -> { nxs:(Array a) | left xs == left nxs && right xs == right nxs &&
                                      (size nxs) = (size xs) } @-}
 set :: Array a -> Int -> a -> Array a
-set (Arr arr l r) n y = Arr (setList arr (n-l) y) l r 
+set (Arr arr l r) n y = Arr (setList arr (l+n) y) l r 
 
-{-@ assume axm_set_token :: xs:_ -> { n:Nat | n >= left xs && n < right xs } -> x:_
+{-@ assume axm_set_token :: xs:_ -> { n:Nat | n < size xs } -> x:_
                                  -> { pf:_  | token xs == token (set xs n x) } @-}
 axm_set_token :: Array a -> Int -> a -> Proof
 axm_set_token xs n x = ()
@@ -118,43 +118,26 @@ withAxiom a _ = a
 
   -- slices, splits, and appends
 
-{-@ reflect slice @-}
-{-@ slice :: xs:_ -> { l:Nat | l >= left xs } -> { r:Nat | r <= right xs && l <= r } 
-                  -> { ys:_ | size ys == r-l && token xs == token ys &&
-                              left ys == l && right ys == r } @-}
+{- @ reflect slice @-} -- need axiom for the token being the same 
+{-@ slice :: xs:_ -> { l:Nat | l <= size xs } -> { r:Nat | l <= r && r <= size xs } 
+                  -> { ys:_ | size ys == r-l &&
+                              left ys == left xs + l && right ys == left xs + r } @-}
 slice :: Array a -> Int -> Int -> Array a
-slice (Arr lst l r) l' r' = Arr lst' l' r'
-  where
-    lst' = take (r' - l') (drop l' lst)
+slice (Arr lst l r) l' r' = Arr lst l' r'  
+--  where
+--    lst' = take (r' - l') (drop l' lst)
 
-{-@ reflect conc @-}
-{-@ conc :: xs:_ -> ys:_ -> { zs:_ | len zs == len xs + len ys } @-}
-conc :: [a] -> [a] -> [a]
-conc []     ys = ys
-conc (x:xs) ys = x:(conc xs ys)
-
-{-@ reflect take @-}
-{-@ take :: n:Nat -> { xs:_ | n <= len xs } -> { ys:_ | len ys == n } @-}
-take :: Int -> [a] -> [a]
-take 0 xs     = []
-take n (x:xs) = x:(take (n-1) xs)
-
-{-@ reflect drop @-}
-{-@ drop :: n:Nat -> { xs:_ | n <= len xs } -> { ys:_ | len ys == len xs - n } @-}
-drop :: Int -> [a] -> [a]
-drop 0 xs     = xs
-drop n (x:xs) = drop (n-1) xs
 
 
 -- PRE-CONDITION: the two slices are backed by the same array.
 {-@ reflect append @-}
 {-@ append :: xs:Array a
-        -> { ys:Array a | Token xs == Token ys && right xs == left ys }
-        -> { zs:Array a | Token xs == Token zs &&
-                          A.size zs == A.size xs + A.size ys &&
+        -> { ys:Array a | token xs == token ys && right xs == left ys }
+        -> { zs:Array a | token xs == token zs &&
+                          size zs == size xs + size ys &&
                           left xs == left zs && right ys == right zs } @-}
-append :: A.Array a -> A.Array a -> A.Array a
-append (A.Arr arr1 l1 _r1) (A.Arr arr2 _l2 r2) = A.Arr (conc arr1 arr2) l1 r2
+append :: Array a -> Array a -> Array a
+append (Arr arr1 l1 _r1) (Arr arr2 _l2 r2) = undefined -- Arr (conc arr1 arr2) l1 r2
 
 
 --------------------------------------------------------------------------------
