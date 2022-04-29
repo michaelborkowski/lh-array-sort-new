@@ -43,7 +43,7 @@ instance NFData a => NFData (Array a) where
   -- make and size
 
 {-@ reflect make @-}
-{-@ make :: n:Nat -> x:_ -> xs:{(size xs) = n} @-}
+{-@ make :: n:Nat -> x:_ -> xs:{(size xs) = n && left xs == 0 && right xs == n} @-}
 make :: Int -> a -> Array a
 make 0 x = Arr [] 0 0
 make n x = let Arr lst l r = make (n-1) x in Arr (x:lst) l (r+1)
@@ -121,7 +121,8 @@ withAxiom a _ = a
 {-@ reflect slice @-} -- need axiom for the token being the same 
 {-@ slice :: xs:_ -> { l:Nat | l <= size xs } -> { r:Nat | l <= r && r <= size xs } 
                   -> { ys:_ | size ys == r-l &&
-                              left ys == left xs + l && right ys == left xs + r } @-}
+                              left ys == left xs + l && right ys == left xs + r &&
+                                                        right ys == right xs - size xs + r } @-}
 slice :: Array a -> Int -> Int -> Array a
 slice (Arr lst l r) l' r' = Arr lst' (l+l') (l+r')  
   where
