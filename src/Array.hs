@@ -18,8 +18,8 @@ import           Language.Haskell.Liquid.ProofCombinators
 
 
 {-@ data Array a = Arr {  lst   :: [a]
-                       ,  left  :: {v: Nat | v <= (len lst) }
-                       ,  right :: {v: Nat | v >= left && v <= (len lst)}
+                       ,  left  :: { v: Nat | v >= 0 }
+                       ,  right :: { v: Nat | v >= left && v - left == len lst }
                        }
   @-}
 
@@ -76,13 +76,13 @@ fromList ls = Arr ls 0 (length ls)
 {-@ reflect getList @-}
 {-@ getList :: xs:_ -> {n:Nat | n < len xs } -> x:_ @-}
 getList :: [a] -> Int -> a
-getList (x:_) 0 = x
+getList (x:_)  0 = x
 getList (_:xs) n = getList xs (n-1)
 
 {-@ reflect get @-}
 {-@ get :: xs:_ -> {n:Nat | n < size xs } -> x:_ @-}
 get :: Array a -> Int -> a
-get (Arr lst l r) n = getList lst (l+n)
+get (Arr lst _ _) n = getList lst n
 
 {-@ get2 :: xs:Array a -> {n:Nat | n < size xs }
               -> (Ur a, Array a)<{\ x zs -> size xs == size zs &&
@@ -105,7 +105,7 @@ setList (x:xs) n y = x:(setList xs (n-1) y)
                 -> { nxs:(Array a) | left xs == left nxs && right xs == right nxs &&
                                      (size nxs) = (size xs) } @-}
 set :: Array a -> Int -> a -> Array a
-set (Arr arr l r) n y = Arr (setList arr (l+n) y) l r 
+set (Arr arr l r) n y = Arr (setList arr n y) l r 
 
 {-@ assume axm_set_token :: xs:_ -> { n:Nat | n < size xs } -> x:_
                                  -> { pf:_  | token xs == token (set xs n x) } @-}
@@ -118,27 +118,53 @@ withAxiom a _ = a
 
   -- slices, splits, and appends
 
-{- @ reflect slice @-} -- need axiom for the token being the same 
+{-@ reflect slice @-} -- need axiom for the token being the same 
 {-@ slice :: xs:_ -> { l:Nat | l <= size xs } -> { r:Nat | l <= r && r <= size xs } 
                   -> { ys:_ | size ys == r-l &&
                               left ys == left xs + l && right ys == left xs + r } @-}
 slice :: Array a -> Int -> Int -> Array a
-slice (Arr lst l r) l' r' = Arr lst l' r'  
---  where
---    lst' = take (r' - l') (drop l' lst)
+slice (Arr lst l r) l' r' = Arr lst' (l+l') (l+r')  
+  where
+    lst' = take (r' - l') (drop l' lst)
 
+{-@ assume axm_slice_token :: xs:_ -> { l:Nat | l <= size xs } 
+               -> { r:Nat | l <= r && r <= size xs }
+               -> { pf:_ | token xs == token (slice xs l r) } @-}
+axm_slice_token :: Array a -> Int -> Int -> Proof
+axm_slice_token xs l r = ()
 
+{-@ reflect conc @-}
+{-@ conc :: xs:_ -> ys:_ -> { zs:_ | len zs == len xs + len ys } @-}
+conc :: [a] -> [a] -> [a]
+conc []     ys = ys
+conc (x:xs) ys = x:(conc xs ys)
+
+{-@ reflect take @-}
+{-@ take :: n:Nat -> { xs:_ | n <= len xs } -> { zs:_ | len zs == n } @-}
+take :: Int -> [a] -> [a]
+take 0 _      = []
+take n (x:xs) = x:(take (n-1) xs)
+
+{-@ reflect drop @-}
+{-@ drop :: n:Nat -> { xs:_ | n <= len xs } -> { zs:_ | len zs == len xs - n } @-}
+drop :: Int -> [a] -> [a]
+drop 0 xs     = xs
+drop n (x:xs) = drop (n-1) xs
 
 -- PRE-CONDITION: the two slices are backed by the same array.
 {-@ reflect append @-}
-{-@ append :: xs:Array a
+{-@ append :: xs:Array a 
         -> { ys:Array a | token xs == token ys && right xs == left ys }
-        -> { zs:Array a | token xs == token zs &&
-                          size zs == size xs + size ys &&
+        -> { zs:Array a | size zs == size xs + size ys &&
                           left xs == left zs && right ys == right zs } @-}
 append :: Array a -> Array a -> Array a
-append (Arr arr1 l1 _r1) (Arr arr2 _l2 r2) = undefined -- Arr (conc arr1 arr2) l1 r2
+append (Arr arr1 l1 _r1) (Arr arr2 _l2 r2) = Arr (conc arr1 arr2) l1 r2
 
+{-@ assume axm_append_token :: xs:Array a
+        -> { ys:Array a | token xs == token ys && right xs == left ys }
+        -> { pf:_ | token xs == token (append xs ys) } @-}
+axm_append_token :: Array a -> Array a -> Proof
+axm_append_token xs ys = ()
 
 --------------------------------------------------------------------------------
 -- | Proofs
@@ -161,10 +187,10 @@ lma_gs_list (x:xs) n x'
   === x'
   *** QED
 
-{-@ lma_gs :: xs:_ -> n:{v:Nat | v >= left xs && v < right xs } -> x:_
+{-@ lma_gs :: xs:_ -> n:{v:Nat | v < size xs } -> x:_
       -> {pf:_ | get (set xs n x) n = x} @-}
 lma_gs :: Array a -> Int -> a -> Proof
-lma_gs (Arr lst l r) n x = lma_gs_list lst (n-l) x
+lma_gs (Arr lst l r) n x = lma_gs_list lst n x
 
 -- lemma showing that get n from set m xs x is
 {-@ lma_gns_list :: xs:_ -> n:{v:Nat | v < len xs } -> m:{v:Nat | v /= n && v < len xs} -> x:_
@@ -193,25 +219,25 @@ lma_gns_list (x:xs) n m x'
   === getList (x:xs) m
   *** QED
 
-{-@ lma_gns :: xs:_ -> n:{v:Nat | v >= left xs && v < right xs } 
-          -> m:{v:Nat | v /= n && v >= left xs && v < right xs } -> x:_
+{-@ lma_gns :: xs:_ -> n:{v:Nat | v < size xs } 
+          -> m:{v:Nat | v /= n && v < size xs } -> x:_
           -> { pf:_ | get (set xs n x) m = get xs m} @-}
 lma_gns :: Array a -> Int -> Int -> a -> Proof
-lma_gns (Arr lst l r) n m x = lma_gns_list lst (n-l) (m-l) x
+lma_gns (Arr lst l r) n m x = lma_gns_list lst n m x
 
-{-
- -
 -- advanced operations
 
 {-@ reflect swap @-}
-{-@ swap :: xs:(Array a) -> { i:Int | 0 <= i && i < size xs } -> { j:Int | 0 <= j && j < size xs }
+{-@ swap :: xs:(Array a) -> { i:Int | 0 <= i && i < size xs } 
+                         -> { j:Int | 0 <= j && j < size xs }
                          -> { ys:(Array a) | size xs == size ys } @-}
 swap :: Array a -> Int -> Int -> Array a
 swap xs i j = let xi  = get xs i
                   xs' = set xs i (get xs j)
                in set xs' j xi
 
-{-@ lma_swap :: xs:(Array a) -> { i:Int | 0 <= i && i < size xs } -> { j:Int | 0 <= j && j < size xs }
+{-@ lma_swap :: xs:(Array a) -> { i:Int | 0 <= i && i < size xs } 
+                             -> { j:Int | 0 <= j && j < size xs }
                              -> { pf:_  | get (swap xs i j) i == get xs j &&
                                           get (swap xs i j) j == get xs i } @-}
 lma_swap :: Array a -> Int -> Int -> Proof
@@ -224,7 +250,8 @@ lma_swap xs i j
     xi   = get xs  i
     xs'  = set xs  i (get xs j)
 
-{-@ lma_swap_eql :: xs:(Array a) -> { i:Int | 0 <= i && i < size xs } -> { j:Int | 0 <= j && j < size xs }
+{-@ lma_swap_eql :: xs:(Array a) -> { i:Int | 0 <= i && i < size xs } 
+                                 -> { j:Int | 0 <= j && j < size xs }
                                  -> { k:Int | 0 <= k && k < size xs && k /= i && k /= j }
                                  -> { pf:_  | get (swap xs i j) k == get xs k } @-}
 lma_swap_eql :: Array a -> Int -> Int -> Int -> Proof
@@ -233,5 +260,3 @@ lma_swap_eql xs i j k = () ? lma_gns xs' j k xi
   where
     xi   = get xs  i
     xs'  = set xs  i (get xs j)
-
--}
