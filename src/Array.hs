@@ -14,53 +14,65 @@ module Array where
 import           Prelude hiding (take, drop)
 import           GHC.Generics ( Generic )
 import           Control.DeepSeq ( NFData(..) )
+import           System.IO.Unsafe
+import           System.Random
+
 import           Language.Haskell.Liquid.ProofCombinators
 
 
 {-@ data Array a = Arr {  lst   :: [a]
-                       ,  left  :: { v: Nat | v >= 0 }
+                       ,  left  :: Nat
                        ,  right :: { v: Nat | v >= left && v - left == len lst }
+                       ,  tok   :: Int
                        }
   @-}
 
-data Array a = Arr {  lst   :: [a]
+data Array a = Arr {  lst   :: [a]  -- lst only contains from left ... right-1
                    ,  left  :: Int
-                   ,  right :: Int }
+                   ,  right :: Int 
+                   ,  tok   :: Int }
                deriving Show
 
-newtype Ur a = Ur a
+-- newtype Ur a = Ur a
 
 instance NFData a => NFData (Array a) where
-  rnf (Arr ls l r) = rnf ls `seq` rnf l `seq` rnf r
+  rnf (Arr ls l r t) = rnf ls `seq` rnf l `seq` rnf r `seq` rnf t
 
 -- The token measure is intended to track when two Arrays have the same 
 --   backing data structure. In the fake functional style, this is NOT
 --   preserved under `set` operations
-{-@ measure token :: Array a -> Nat @-}
+{-@ measure token :: xs:Array a -> { v:Nat | v == tok xs } @-}
 
 -- | basic API
 
   -- make and size
 
-{-@ reflect make @-}
+{- @ reflect make' @-}
+{-@ make' :: n:Nat -> x:_ -> xs:{(size xs) = n && left xs == 0 && right xs == n} @-}
+make' :: Int -> a -> Array a
+make' 0 x = Arr [] 0 0 0
+make' n x = let Arr lst l r _ = make' (n-1) x in Arr (x:lst) l (r+1) 0
+
 {-@ make :: n:Nat -> x:_ -> xs:{(size xs) = n && left xs == 0 && right xs == n} @-}
 make :: Int -> a -> Array a
-make 0 x = Arr [] 0 0
-make n x = let Arr lst l r = make (n-1) x in Arr (x:lst) l (r+1)
+make n x = Arr lst l r t
+  where
+    Arr lst l r _ = make' n x
+    t             = unsafePerformIO (randomIO :: IO Int)
 
 {-@ measure size @-}
 {-@ size :: xs:_ -> Nat @-}
 size :: Array a -> Int
-size (Arr _ l r) = r-l
+size (Arr _ l r _) = r-l
 
 {-@ reflect size2 @-}
-{-@ size2 :: xs:(Array a)
-               -> (Ur Int, Array a)<{
+{-@ size2 :: xs:(Array a) 
+               -> (Int, Array a)<{
                       \n zs -> n == size xs &&
                                left xs == left zs && right xs == right zs &&
                                size xs == size zs && token xs == token zs }> @-}
-size2 :: Array a -> (Ur Int, Array a)
-size2 xs = (Ur (size xs), xs)
+size2 :: Array a -> (Int, Array a)
+size2 xs = (size xs, xs)                           -- (Ur (size xs), xs)
 
 {-@ reflect listSize @-}
 {-@ listSize :: xs:_ -> Nat @-}
@@ -68,8 +80,8 @@ listSize :: [a] -> Int
 listSize []     = 0
 listSize (_:xs) = 1 + (listSize xs)
 
-fromList :: [a] -> Array a
-fromList ls = Arr ls 0 (length ls)
+--fromList :: [a] -> Array a
+--fromList ls = Arr ls 0 (length ls)
 
   -- get 
 
@@ -82,14 +94,14 @@ getList (_:xs) n = getList xs (n-1)
 {-@ reflect get @-}
 {-@ get :: xs:_ -> {n:Nat | n < size xs } -> x:_ @-}
 get :: Array a -> Int -> a
-get (Arr lst _ _) n = getList lst n
+get (Arr lst _ _ _) n = getList lst n
 
 {-@ get2 :: xs:Array a -> {n:Nat | n < size xs }
-              -> (Ur a, Array a)<{\ x zs -> size xs == size zs &&
-                                            left xs == left zs && right xs == right zs &&
-                                            token xs == token zs }> @-}
-get2 :: Array a -> Int -> (Ur a, Array a)
-get2 xs i = (Ur (get xs i), xs)
+              -> (a, Array a)<{\ x zs -> size xs == size zs &&
+                                         left xs == left zs && right xs == right zs &&
+                                         token xs == token zs }> @-}
+get2 :: Array a -> Int -> (a, Array a)
+get2 xs i = (get xs i, xs)                  -- (Ur (get xs i), xs)
 
   -- set
 
@@ -105,16 +117,7 @@ setList (x:xs) n y = x:(setList xs (n-1) y)
                 -> { nxs:(Array a) | left xs == left nxs && right xs == right nxs &&
                                      (size nxs) = (size xs) } @-}
 set :: Array a -> Int -> a -> Array a
-set (Arr arr l r) n y = Arr (setList arr n y) l r 
-
-{-@ assume axm_set_token :: xs:_ -> { n:Nat | n < size xs } -> x:_
-                                 -> { pf:_  | token xs == token (set xs n x) } @-}
-axm_set_token :: Array a -> Int -> a -> Proof
-axm_set_token xs n x = ()
-
-{-@ reflect withAxiom @-}
-withAxiom :: Array a -> Proof -> Array a
-withAxiom a _ = a
+set (Arr arr l r t) n y = Arr (setList arr n y) l r t 
 
   -- slices, splits, and appends
 
@@ -124,15 +127,9 @@ withAxiom a _ = a
                               left ys == left xs + l && right ys == left xs + r &&
                                                         right ys == right xs - size xs + r } @-}
 slice :: Array a -> Int -> Int -> Array a
-slice (Arr lst l r) l' r' = Arr lst' (l+l') (l+r')  
+slice (Arr lst l r t) l' r' = Arr lst' (l+l') (l+r') t
   where
     lst' = take (r' - l') (drop l' lst)
-
-{-@ assume axm_slice_token :: xs:_ -> { l:Nat | l <= size xs } 
-               -> { r:Nat | l <= r && r <= size xs }
-               -> { pf:_ | token xs == token (slice xs l r) } @-}
-axm_slice_token :: Array a -> Int -> Int -> Proof
-axm_slice_token xs l r = ()
 
 {-@ reflect conc @-}
 {-@ conc :: xs:_ -> ys:_ -> { zs:_ | len zs == len xs + len ys } @-}
@@ -159,13 +156,8 @@ drop n (x:xs) = drop (n-1) xs
         -> { zs:Array a | size zs == size xs + size ys &&
                           left xs == left zs && right ys == right zs } @-}
 append :: Array a -> Array a -> Array a
-append (Arr arr1 l1 _r1) (Arr arr2 _l2 r2) = Arr (conc arr1 arr2) l1 r2
+append (Arr arr1 l1 _r1 t) (Arr arr2 _l2 r2 _t) = Arr (conc arr1 arr2) l1 r2 t
 
-{-@ assume axm_append_token :: xs:Array a
-        -> { ys:Array a | token xs == token ys && right xs == left ys }
-        -> { pf:_ | token xs == token (append xs ys) } @-}
-axm_append_token :: Array a -> Array a -> Proof
-axm_append_token xs ys = ()
 
 --------------------------------------------------------------------------------
 -- | Proofs
@@ -191,7 +183,7 @@ lma_gs_list (x:xs) n x'
 {-@ lma_gs :: xs:_ -> n:{v:Nat | v < size xs } -> x:_
       -> {pf:_ | get (set xs n x) n = x} @-}
 lma_gs :: Array a -> Int -> a -> Proof
-lma_gs (Arr lst l r) n x = lma_gs_list lst n x
+lma_gs (Arr lst l r _) n x = lma_gs_list lst n x
 
 -- lemma showing that get n from set m xs x is
 {-@ lma_gns_list :: xs:_ -> n:{v:Nat | v < len xs } -> m:{v:Nat | v /= n && v < len xs} -> x:_
@@ -224,7 +216,7 @@ lma_gns_list (x:xs) n m x'
           -> m:{v:Nat | v /= n && v < size xs } -> x:_
           -> { pf:_ | get (set xs n x) m = get xs m} @-}
 lma_gns :: Array a -> Int -> Int -> a -> Proof
-lma_gns (Arr lst l r) n m x = lma_gns_list lst n m x
+lma_gns (Arr lst l r _) n m x = lma_gns_list lst n m x
 
 -- advanced operations
 
