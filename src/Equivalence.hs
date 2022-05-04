@@ -149,20 +149,20 @@ toSlice :: Eq a => Array a -> Int -> Int -> [a]
 toSlice xs i j | i == j     = []
                | otherwise  = (A.get xs i) : (toSlice xs (i+1) j)
 
-{-@ reflect append @-}
-append :: Eq a => [a] -> [a] -> [a]
-append []     ys = ys
-append (x:xs) ys = x : (append xs ys)
+{-@ reflect appendList @-}
+appendList :: Eq a => [a] -> [a] -> [a]
+appendList []     ys = ys
+appendList (x:xs) ys = x : (appendList xs ys)
 
-{-@ lem_append_injective :: xs:[a] -> y:a ->  xs':[a] 
-                         -> { y':a | append xs [y] == append xs' [y'] } 
+{-@ lem_appendList_injective :: xs:[a] -> y:a ->  xs':[a] 
+                         -> { y':a | appendList xs [y] == appendList xs' [y'] } 
                          -> { pf:_    | xs == xs' } @-}
-lem_append_injective :: Eq a => [a] -> a -> [a] -> a -> Proof
-lem_append_injective []     y []       y' = ()
-lem_append_injective (x:xs) y (x':xs') y' = () ? lem_append_injective xs y xs' y'
+lem_appendList_injective :: Eq a => [a] -> a -> [a] -> a -> Proof
+lem_appendList_injective []     y []       y' = ()
+lem_appendList_injective (x:xs) y (x':xs') y' = () ? lem_appendList_injective xs y xs' y'
 
 {-@ lem_toSlice_right :: xs:(Array a) -> { i:Int | 0 <= i } -> { j:Int | i < j && j <= A.size xs }
-                      -> { pf:_ | toSlice xs i j == append (toSlice xs i (j-1)) [A.get xs (j-1)] } / [j - i] @-}
+                      -> { pf:_ | toSlice xs i j == appendList (toSlice xs i (j-1)) [A.get xs (j-1)] } / [j - i] @-}
 lem_toSlice_right :: Ord a => Array a -> Int -> Int -> Proof
 lem_toSlice_right xs i j | i + 1 == j  = ()
                          | otherwise   = () ? lem_toSlice_right xs (i+1) j
@@ -177,7 +177,7 @@ lem_equal_slice_narrow xs ys i i' j' j
     | j' < j      = () ? lem_equal_slice_narrow xs ys i i' j' (j-1
                        ? lem_toSlice_right xs i j
                        ? lem_toSlice_right ys i j
-                       ? lem_append_injective (toSlice xs i (j-1)) (A.get xs (j-1)) 
+                       ? lem_appendList_injective (toSlice xs i (j-1)) (A.get xs (j-1)) 
                                               (toSlice ys i (j-1)) (A.get ys (j-1)))
     | otherwise   = ()
                             

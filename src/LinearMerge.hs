@@ -69,13 +69,13 @@ msort xs ys | (A.size xs) == 0 = xs
                                   (yls, yrs) = splitMid ys
                                 in yls' `par` yrs' `pseq` merge yls' yrs' xs (A.size yls') (A.size yrs')
 
-{-@ reflect topMSort @-}
-{-@ topMSort :: xs:_ -> ys:{(A.size ys == A.size xs)} @-}
+{- @ reflect topMSort @-}
+{-@ topMSort :: xs:_ -> ys:{(A.size ys == A.size xs) && isSorted ys} @-}
 topMSort :: Ord a => Array a -> Array a
-topMSort xs | (A.size xs == 0) = xs
-            | otherwise      = let 
-                                  tmp = make (A.size xs) (A.get xs 0)
-                               in msort xs tmp
+topMSort xs | (A.size xs == 0) = xs  -- ? isSortedFstN xs 0
+            | otherwise        = let 
+                                    tmp = make (A.size xs) (A.get xs 0)
+                                 in msort xs tmp ? lma_msort xs tmp
 
 {-@ reflect splitMid @-}
 {-@ splitMid :: xs:{A.size xs >= 2} -> {t:_ | ((A.size (fst t)) < (A.size xs) && (A.size (snd t)) < (A.size xs)) && (A.size xs = (A.size (fst t)) + (A.size (snd t))) && ((A.size (fst t)) = (mydiv (A.size xs)))} @-}
@@ -296,8 +296,9 @@ lma_msort xs ys
       === True
       *** QED
 
-{-@ lma_topMSort :: xs:_ 
+{- @ lma_topMSort :: xs:_ 
       -> { isSorted (topMSort xs) } / [A.size xs] @-}
+{-
 lma_topMSort ::  Ord a => Array a ->  Proof
 lma_topMSort xs
   | (A.size xs == 0) 
@@ -313,7 +314,7 @@ lma_topMSort xs
         ? (lma_msort xs tmp)
       === True
       *** QED
-
+-}
 
 --------------------------------------------------------------------------------
 -- | Proofs for Equivalence

@@ -17,16 +17,17 @@ library
       Array
       Order
       Equivalence
-      Merge
-      Insertion
+--      Merge
+--      Insertion
       LinearMerge
-      -- DpsMerge
+--      DpsMerge
       Properties
       QuickSort
   hs-source-dirs:
       src
   build-depends:
       deepseq,
+      random,
       -- Versions pinned in cabal.project.
       liquid-base,
       liquid-containers,
