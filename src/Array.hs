@@ -8,17 +8,30 @@
 {-# LANGUAGE GADTs         #-}
 {-# LANGUAGE DeriveGeneric #-}
 
---module Array (Array(..), make, get, set, size, lma_gs, lma_gns, swap, lma_swap, lma_swap_eql) where
-module Array where
+module Array
+  (
+    -- * Array type
+    Array
+
+    -- * Construction and querying
+  , make, get, set, slice, size, append, swap
+
+    -- * Linear versions
+  , size2, get2
+
+    -- * LiqidHaskell lemmas
+  , lma_gs, lma_gns, lma_swap, lma_swap_eql
+  ) where
+
 
 import           Prelude hiding (take, drop)
-import           GHC.Generics ( Generic )
 import           Control.DeepSeq ( NFData(..) )
 import           System.IO.Unsafe
 import           System.Random
 
 import           Language.Haskell.Liquid.ProofCombinators
 
+--------------------------------------------------------------------------------
 
 {-@ data Array a = Arr {  lst   :: [a]
                        ,  left  :: Nat
