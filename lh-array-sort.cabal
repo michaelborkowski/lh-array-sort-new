@@ -12,7 +12,15 @@ license:        MIT
 license-file:   LICENSE
 build-type:     Simple
 
+Flag mutable-arrays
+   Description: Use mutable arrays.
+   Default: False
+
 library
+
+  if flag(mutable-arrays)
+    cpp-options: -DMUTABLE_ARRAYS
+
   exposed-modules:
       Array
       Order
@@ -23,6 +31,9 @@ library
 --      DpsMerge
       Properties
       QuickSort
+  other-modules:
+      Array.List
+      Array.Mutable
   hs-source-dirs:
       src
   build-depends:
