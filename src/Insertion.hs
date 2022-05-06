@@ -33,21 +33,21 @@ insert xs x n                 -- sort the nth element into the first n+1 element
   | otherwise            = A.set xs n x
 
 {-@ reflect isort @-}
-{-@ isort :: xs:_ -> n:{v:Nat | v < A.size xs}
+{-@ isort :: xs:_ -> b:{A.size b == A.size xs} -> n:{v:Nat | v < A.size xs}
       -> ys:{A.size ys == A.size xs} / [n] @-}
-isort :: Ord a => A.Array a -> Int -> A.Array a
-isort xs n
+isort :: Ord a => A.Array a -> A.Array a -> Int -> A.Array a
+isort xs b n
   | (A.size xs == 0) = xs
   | (A.size xs == 1) = xs
   -- TODO(ckoparkar): move this allocation out of the recursion
-  | (n == 0)       = A.make (A.size xs) (A.get xs 0)
-  | otherwise      = insert (isort xs (n-1)) (A.get xs n) n
+  | (n == 0)       = b
+  | otherwise      = insert (isort xs b (n-1)) (A.get xs n) n
 
 isort1 :: Ord a => A.Array a -> A.Array a
 isort1 xs =
     if n <= 1
     then xs
-    else isort xs (n-1)
+    else isort xs (A.make (A.size xs) (A.get xs 0)) (n-1)
   where
     n = A.size xs
 
@@ -155,12 +155,12 @@ lma_insert_max xs x y n
 {-@ lma_insert :: xs:_ -> x:_ -> n:{v:Nat | v < A.size xs && (isSortedFstN xs (v))}
       -> ys:{isSortedFstN (insert xs x n) (n+1)} / [n] @-}
 lma_insert :: Ord a => A.Array a -> a -> Int -> Proof
-lma_insert xs x 0 = ()
+lma_insert _ _ 0 = ()
 lma_insert xs x n
   | x < (A.get xs (n-1)) && (n >= 2)
     = let
         xs' = (A.set xs (n) (A.get xs (n-1)))
-        ys  = (insert xs' x (n-1))
+        -- ys  = (insert xs' x (n-1))
       in isSortedFstN (insert xs x n) (n+1)
         -- === isSortedFstN ys (n+1)
         -- === (((A.get ys (n-1)) <= (A.get ys n)) && (isSortedFstN ys n))
@@ -176,7 +176,7 @@ lma_insert xs x n
   | x < (A.get xs (n-1)) && (n < 2)
     = let
         xs' = (A.set xs (n) (A.get xs (n-1)))
-        ys  = (insert xs' x (n-1))
+        -- ys  = (insert xs' x (n-1))
       in isSortedFstN (insert xs x n) (n+1)
         -- === isSortedFstN ys (n+1)
         -- === (((A.get ys (n-1)) <= (A.get ys n)) && (isSortedFstN ys n))
@@ -192,7 +192,7 @@ lma_insert xs x n
         *** QED
   | otherwise
     = let
-        xs' = (A.set xs n x)
+        -- xs' = (A.set xs n x)
         -- ys  = (insert xs' x (n-1))
       in isSortedFstN (insert xs x n) (n+1)
         -- === isSortedFstN xs' (n+1)
@@ -205,17 +205,17 @@ lma_insert xs x n
         === True
         *** QED
 
-{-@ lma_isort :: xs:_ -> n:{v:Nat | v < A.size xs }
-      -> ys:{isSortedFstN (isort xs n) (n+1)} / [n] @-}
-lma_isort :: Ord a => A.Array a -> Int -> Proof
-lma_isort xs n
+{-@ lma_isort :: xs:_ -> b:{A.size b == A.size xs} -> n:{v:Nat | v < A.size xs && isSortedFstN b (n+1)}
+      -> ys:{isSortedFstN (isort xs b n) (n+1)} / [n] @-}
+lma_isort :: Ord a => A.Array a -> A.Array a -> Int -> Proof
+lma_isort xs b n
   | (A.size xs == 0) = ()
   | (A.size xs == 1) = ()
   | (n == 0)       = ()
   | otherwise
-    = isSortedFstN (isort xs n) (n+1)
-    -- === isSortedFstN (insert (isort xs (n-1)) (A.get xs n) n) (n+1)
-      ? (lma_insert (isort xs (n-1)) (A.get xs n) (n ? (lma_isort xs (n-1))))
+    = isSortedFstN (isort xs b n) (n+1)
+    -- === isSortedFstN (insert (isort xs b (n-1)) (A.get xs n) n) (n+1)
+      ? (lma_insert (isort xs b (n-1)) (A.get xs n) (n ? (lma_isort xs b (n-1))))
     === True
     *** QED
 
@@ -260,37 +260,31 @@ lma_insert_eq xs x n
     === (B.put x (toBagLeft xs n))
     *** QED
 
-{-@ lma_isort_eq_r :: xs:_ -> n:{v:Nat | v < A.size xs}
-       -> ys:{toBagLeft (isort xs n) (n+1) == toBagLeft xs (n+1)} / [n] @-}
-lma_isort_eq_r :: Ord a => A.Array a -> Int -> Proof
-lma_isort_eq_r xs n
+{-@ lma_isort_eq_r :: xs:_ -> b:{A.size b == A.size xs && toBagLeft b 1 == toBagLeft xs 1} -> n:{v:Nat | v < A.size xs}
+       -> ys:{toBagLeft (isort xs b n) (n+1) == toBagLeft xs (n+1)} / [n] @-}
+lma_isort_eq_r :: Ord a => A.Array a -> A.Array a -> Int -> Proof
+lma_isort_eq_r xs b n
   | (A.size xs == 0) = ()
   | (A.size xs == 1) = ()
-  | (n == 0)
-    = toBagLeft (isort xs 0) 1
-    -- === B.put (A.get (isort xs 0) 0) (toBagLeft (isort xs 0) 0)
-    === B.put (A.get (A.make (A.size xs) (A.get xs 0)) 0) (toBagLeft (isort xs 0) 0) -- TODO: UNSAFE if this line gets commented
-    -- === B.put (A.get xs 0) (toBagLeft xs 0)
-    === toBagLeft xs 1
-    *** QED
+  | (n == 0) = ()
   | otherwise
-    = toBagLeft (isort xs n) (n+1)
+    = toBagLeft (isort xs b n) (n+1)
     -- === toBagLeft (insert (isort xs (n-1)) (A.get xs n) n) (n+1)
-      ? (lma_insert_eq (isort xs (n-1)) (A.get xs n) n)
+      ? (lma_insert_eq (isort xs b (n-1)) (A.get xs n) n)
     -- === B.union (S.singleton (A.get xs n)) (toBagLeft (isort xs (n-1)) n)
-      ? (lma_isort_eq_r xs (n-1))
+      ? (lma_isort_eq_r xs b (n-1))
     -- === B.union (S.singleton (A.get xs n)) (toBagLeft xs (n))
     === (toBagLeft xs (n+1))
     *** QED
 
-{-@ lma_isort_eq :: xs:_
-       -> { toBagEqual (isort xs ((A.size xs)-1)) xs } @-}
-lma_isort_eq :: Ord a => A.Array a -> Proof
-lma_isort_eq xs
+{-@ lma_isort_eq :: xs:_ -> b:{A.size b == A.size xs && toBagLeft b 1 == toBagLeft xs 1}
+       -> { toBagEqual (isort xs b ((A.size xs)-1)) xs } @-}
+lma_isort_eq :: Ord a => A.Array a -> A.Array a -> Proof
+lma_isort_eq xs b
   | (A.size xs == 0) = ()
   | otherwise
-    = toBagLeft (isort xs ((A.size xs)-1)) (A.size (isort xs ((A.size xs)-1)))
-    -- === toBagLeft (isort xs ((A.size xs)-1)) (A.size xs)
-      ? lma_isort_eq_r xs ((A.size xs)-1)
+    = toBagLeft (isort xs b ((A.size xs)-1)) (A.size (isort xs b ((A.size xs)-1)))
+    -- === toBagLeft (isort xs b ((A.size xs)-1)) (A.size xs)
+      ? lma_isort_eq_r xs b ((A.size xs)-1)
     === toBagLeft xs (A.size xs)
     *** QED
