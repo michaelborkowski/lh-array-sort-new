@@ -9,9 +9,9 @@ import           Data.List.Split    ( splitOn )
 import           System.Random      ( Random, newStdGen, randoms )
 import           System.Environment ( getArgs, withArgs )
 
-import qualified Insertion as I
+-- import qualified Insertion as I
 import qualified QuickSort as Q
-import qualified Merge as M
+-- import qualified Merge as M
 -- import qualified DpsMerge as DM
 import qualified Array as A
 
@@ -32,6 +32,14 @@ benchSorts _input_ty input_size fns = do
   where
     go input str (name,fn) = bench (name ++ "/" ++ str) (nf fn input)
 
+bench_fill_array :: Int -> IO Benchmark
+bench_fill_array input_size = do
+  let input :: (Int, Int)
+      !input = force (input_size, 1000)
+  pure $ bgroup "" [ bench "fill_array" (nf fill input) ]
+  where
+    fill (s,x) = A.make s x
+
 main :: IO ()
 main = do
   allargs <- getArgs
@@ -46,13 +54,15 @@ main = do
                             then error usage
                             else (read sz :: Int, rst')
           _ -> error usage
-  runbench <- benchSorts
+  runsortbench <- benchSorts
                 (Proxy :: Proxy Int64)
                 size
-                [ ("LH/insertion1", I.isort1)
+                [
+                --("LH/insertion1", I.isort1)
                 -- , ("LH/insertion2", I.isort2)
-                , ("LH/quick", Q.quickSort)
-                , ("LH/merge", M.msort)
+                ("LH/quick", Q.quickSort)
+                -- , ("LH/merge", M.msort)
                 -- , ("LH/dps_merge", DM.msort')
                 ]
-  withArgs rst $ defaultMain [ runbench ]
+  runfillbench <- bench_fill_array size
+  withArgs rst $ defaultMain [ runfillbench ]

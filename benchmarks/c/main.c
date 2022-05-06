@@ -51,7 +51,7 @@ int bench_insertion_glibc(int argc, char** argv)
     sort_fn_t sort_fn;
 
     if (strcmp(algo,"insertion") == 0) {
-        sort_fn = insertionsort;
+        sort_fn = insertionsort_glibc;
     }
 
     if (strcmp(elt_type,"int64") == 0) {
@@ -123,6 +123,74 @@ int bench_insertion_glibc(int argc, char** argv)
     return 0;
 }
 
+// cilksort.c contains a function called fill_sort...
+int __attribute__ ((noinline)) fill_array2(uint32_t N, int64_t x)
+{
+    void *array;
+    array = (int64_t*) malloc(N * sizeof(int64_t));
+    if (array == NULL) {
+        fprintf(stderr, "Couldn't allocate memory for input array.\n");
+    }
+    int64_t *elt = array;
+    for (uint32_t i = 0; i <= N-1; i++) {
+        elt = (int64_t*) array + i;
+        *elt = x;
+    }
+    free(array);
+}
+
+int bench_fill_array(int argc, char** argv)
+{
+    char *algo = argv[1];
+    char *elt_type = argv[2];
+    uint32_t N = atoi(argv[3]);
+
+    // Start protocol for criterion-interactive.
+    printf("READY\n");
+    fflush(stdout);
+
+    char *criterion_cmd = (char*) malloc(100);
+    ssize_t read;
+    size_t len;
+    uint32_t rounds;
+    uint32_t i;
+
+    // Wait for criterion-interactive to send a command.
+    read = getline(&criterion_cmd, &len, stdin);
+    while (strcmp(criterion_cmd,"EXIT") != 0) {
+        if (read == -1) {
+            printf("Couldn't read from stdin, error=%d\n", errno);
+            exit(1);
+        }
+
+        // One round of benchmarking.
+        if (strncmp(criterion_cmd,"START_BENCH", 11) == 0) {
+            rounds = atol(criterion_cmd+12);
+
+#ifdef CBENCH_DEBUG
+            puts(criterion_cmd);
+            printf("rounds=%" PRIu32 "\n", rounds);
+#endif
+
+            // The main event.
+            for (i = 0; i <= rounds; i++) {
+                fill_array2(N, 1000);
+            }
+
+            printf("END_BENCH\n");
+            fflush(stdout);
+        }
+
+        // Prepare for next round.
+        rounds=0;
+        read = getline(&criterion_cmd, &len, stdin);
+    }
+
+    free(criterion_cmd);
+
+    return 0;
+}
+
 double gib_difftimespecs(struct timespec* t0, struct timespec* t1)
 {
     return (double)(t1->tv_sec - t0->tv_sec)
@@ -140,8 +208,11 @@ int bench_gibbon_insertion2(int argc, char** argv);
 
 int main(int argc, char** argv)
 {
-    printf("glibc:\n");
-    bench_insertion_glibc(argc,argv);
+    printf("benchmarking fill array:\n");
+    bench_fill_array(argc,argv);
+
+    // printf("benchmarking glibc insertion sort:\n");
+    // bench_insertion_glibc(argc,argv);
 
     // printf("gibbon (1):\n");
     // bench_gibbon_insertion1(argc,argv);
