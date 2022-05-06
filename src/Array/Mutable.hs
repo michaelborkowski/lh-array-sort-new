@@ -24,6 +24,7 @@ module Array.Mutable
 
   ) where
 
+import           Control.DeepSeq ( NFData(..) )
 import qualified GHC.Exts as GHC
 
 --------------------------------------------------------------------------------
@@ -31,6 +32,9 @@ import qualified GHC.Exts as GHC
 --------------------------------------------------------------------------------
 
 data Array a = Array (Array# a)
+
+instance NFData a => NFData (Array a) where
+  rnf x = seq x ()
 
 {-# INLINE make #-}
 make :: Int -> a -> Array a

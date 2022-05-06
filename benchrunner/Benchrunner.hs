@@ -54,6 +54,7 @@ main = do
                             then error usage
                             else (read sz :: Int, rst')
           _ -> error usage
+{-
   runsortbench <- benchSorts
                 (Proxy :: Proxy Int64)
                 size
@@ -64,5 +65,6 @@ main = do
                 -- , ("LH/merge", M.msort)
                 -- , ("LH/dps_merge", DM.msort')
                 ]
+-}
   runfillbench <- bench_fill_array size
   withArgs rst $ defaultMain [ runfillbench ]
