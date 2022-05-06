@@ -1,3 +1,13 @@
+{-# LANGUAGE UnliftedNewtypes #-}
+{-# LANGUAGE UnboxedTuples    #-}
+{-# LANGUAGE MagicHash        #-}
+
+{-|
+
+Most of the source code here is taken from Data.Array.Mutable.Unlifted.Linear
+in [linear-base](https://github.com/tweag/linear-base).
+
+-}
 module Array.Mutable
   (
     -- * Array type
@@ -14,18 +24,25 @@ module Array.Mutable
 
   ) where
 
+import qualified GHC.Exts as GHC
+
+--------------------------------------------------------------------------------
+-- Mutable, lifted array API
 --------------------------------------------------------------------------------
 
-data Array a
+data Array a = Array (Array# a)
 
+{-# INLINE make #-}
 make :: Int -> a -> Array a
-make = _todo
+make s x = Array (make# s x)
 
+{-# INLINE get #-}
 get :: Array a -> Int -> a
-get = _todo
+get (Array arr) i = get# arr i
 
+{-# INLINE set #-}
 set :: Array a -> Int -> a -> Array a
-set = _todo
+set (Array arr) i a = Array (set# arr i a)
 
 slice :: Array a -> Int -> Int -> Array a
 slice = _todo
@@ -50,3 +67,32 @@ fromList = _todo
 
 toList :: Array a -> [a]
 toList = _todo
+
+
+--------------------------------------------------------------------------------
+-- Mutable, unlifted array API
+--------------------------------------------------------------------------------
+
+-- | A mutable array holding @a@s
+newtype Array# a = Array# (GHC.MutableArray# GHC.RealWorld a)
+
+{-# NOINLINE make# #-} -- prevents runRW# effect from being reordered
+make# :: Int -> a -> Array# a
+make# (GHC.I# s) a =
+  GHC.runRW# $ \st ->
+    case GHC.newArray# s a st of
+      (# _, arr #) -> Array# arr
+
+
+{-# NOINLINE get# #-} -- prevents the runRW# effect from being reordered
+get# :: Array# a -> Int -> a
+get# (Array# arr) (GHC.I# i) =
+  case GHC.runRW# (GHC.readArray# arr i) of
+    (# _, ret #) -> ret
+
+
+{-# NOINLINE set# #-} -- prevents the runRW# effect from being reordered
+set# :: Array# a -> Int -> a -> Array# a
+set# (Array# arr) (GHC.I# i) a =
+  case GHC.runRW# (GHC.writeArray# arr i a) of
+    _ -> Array# arr
