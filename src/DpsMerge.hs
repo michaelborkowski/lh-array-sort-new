@@ -12,6 +12,8 @@ import qualified Array as A
 
 -- Helper functions
                 -- ((A.size (fst t)) = (mydiv (A.size xs)))} @-}
+                -- A.size (fst t) < (A.size xs) && 
+                -- A.size (snd t) < (A.size xs) && 
 {- @ reflect splitMid @-}
 {-@ splitMid :: xs:{A.size xs >= 2} 
       -> {t:_ | token (fst t) == token xs && token (snd t) == token xs &&
@@ -19,14 +21,10 @@ import qualified Array as A
                 right (fst t) == left xs + div (size xs) 2 &&
                 left (fst t) == left xs && right (snd t) == right xs &&
                 A.size (fst t) == div (size xs) 2 &&
-                A.size (fst t) < (A.size xs) && 
                 A.size (snd t) == A.size xs - div (size xs) 2 &&
-                A.size (snd t) < (A.size xs) && 
                 A.size xs = (A.size (fst t)) + (A.size (snd t)) } @-}
 splitMid :: A.Array a -> (A.Array a, A.Array a)
 splitMid xs = (A.slice xs 0 m, A.slice xs m n)
-                ? {-`A.withAxiom`-} A.axm_slice_token xs 0 m
-                ? {-`A.withAxiom`-} A.axm_slice_token xs m n
   where
     n = A.size xs
     m = n `div` 2
@@ -37,15 +35,16 @@ splitMid xs = (A.slice xs 0 m, A.slice xs m n)
          -> { j:Nat | j >= 0 && j <= size dst && (size dst) - j == (size src) - i }
          -> { t:_ | token (fst t) == token src && token (snd t) == token dst && 
                     left (fst t) == left src && right (fst t) == right src &&
+                    left (snd t) == left dst && right (snd t) == right dst &&
                     A.size (fst t) == A.size src &&
                     A.size (snd t) == A.size dst } @-}
 copy :: A.Array a -> A.Array a -> Int -> Int -> (A.Array a, A.Array a)
 copy src dst i j =
-  let (A.Ur len, src') = A.size2 src in
+  let (len, src') = A.size2 src in
   if i < len
   then
-    let (A.Ur v, src'1) = A.get2 src' i in
-    copy src'1 (A.set dst j v ? A.axm_set_token dst j v) 
+    let (v, src'1) = A.get2 src' i in
+    copy src'1 (A.set dst j v) 
                (i + 1) (j + 1)
   else (src', dst)
 
@@ -55,29 +54,30 @@ copy src dst i j =
          -> {  zs:(Array a) | size xs1 + size xs2 == size zs }
          -> { i1:Nat | i1 <= size xs1 } -> { i2:Nat | i2 <= size xs2 }   
          -> { j:Nat  | i1 + i2 == j && j <= size zs }
-         -> { t:_           | token xs1 == token (fst t) && token xs2 == token (fst t) && 
+         -> { t:_           | left (fst t) == left xs1 && right (fst t) == right xs2 &&
+                              left (snd t) == left zs  && right (snd t) == right zs  &&
+                              size (fst t) == size xs1 + size xs2 && size (snd t) == size zs &&
+                              token xs1 == token (fst t) && token xs2 == token (fst t) && 
                               token zs  == token (snd t) } @-}
 merge' :: Ord a =>
   A.Array a -> A.Array a -> A.Array a ->
   Int -> Int -> Int ->
   (A.Array a, A.Array a)
 merge' src1 src2 dst i1 i2 j =
-  let (A.Ur len1, src1') = A.size2 src1
-      (A.Ur len2, src2') = A.size2 src2 in
+  let (len1, src1') = A.size2 src1
+      (len2, src2') = A.size2 src2 in
   if i1 >= len1
   then
-    let (src2'1, dst') = copy src2 dst i2 j in
-    (A.append src1' src2'1 ? A.axm_append_token src1' src2'1, dst')
+    let (src2'1, dst') = copy src2' dst i2 j in (A.append src1' src2'1, dst')
   else if i2 >= len2
   then
-    let (src1'1, dst') = copy src1 dst i1 j in
-    (A.append src1'1 src2' ? A.axm_append_token src1'1 src2', dst')
+    let (src1'1, dst') = copy src1' dst i1 j in (A.append src1'1 src2', dst')
   else
-    let (A.Ur v1, src1'1) = A.get2 src1' i1
-        (A.Ur v2, src2'1) = A.get2 src2' i2 in
+    let (v1, src1'1) = A.get2 src1' i1
+        (v2, src2'1) = A.get2 src2' i2 in
     if v1 < v2
-    then merge' src1'1 src2'1 (A.set dst j v1 ? A.axm_set_token dst j v1) (i1 + 1) i2 (j + 1)
-    else merge' src1'1 src2'1 (A.set dst j v2 ? A.axm_set_token dst j v2) i1 (i2 + 1) (j + 1)
+    then merge' src1'1 src2'1 (A.set dst j v1) (i1 + 1) i2 (j + 1)
+    else merge' src1'1 src2'1 (A.set dst j v2) i1 (i2 + 1) (j + 1)
 
 -- Possible: (right xs1 == left xs2) => (left xs1 == left (fst t) && right xs2 == right (fst t))
 {-@ merge :: xs1:(Array a)
@@ -85,6 +85,7 @@ merge' src1 src2 dst i1 i2 j =
         -> {  zs:(Array a) | size xs1 + size xs2 == size zs }
         -> { t:_           | left (fst t) == left xs1 && right (fst t) == right xs2 &&
                              left (snd t) == left zs  && right (snd t) == right zs  &&
+                             size (fst t) == size xs1 + size xs2 && size (snd t) == size zs &&
                              token xs1 == token (fst t) && token xs2 == token (fst t) &&
                              token zs  == token (snd t) } @-}
 merge :: Ord a => A.Array a -> A.Array a -> A.Array a -> (A.Array a, A.Array a)
@@ -102,7 +103,7 @@ merge src1 src2 dst = merge' src1 src2 dst 0 0 0
        / [A.size xs] @-}
 msortSwap :: (Show a, Ord a) => A.Array a -> A.Array a -> (A.Array a, A.Array a)
 msortSwap src tmp =
-  let (A.Ur len, src') = A.size2 src in
+  let (len, src') = A.size2 src in
   if len <= 1
   then (tmp, src')
   else
@@ -110,7 +111,7 @@ msortSwap src tmp =
         (tmp1, tmp2) = splitMid tmp
         (src1', tmp1') = msortInplace src1 tmp1
         (src2', tmp2') = msortInplace src2 tmp2
-        tmp3' = A.append tmp1' tmp2' ? A.axm_append_token tmp1' tmp2'
+        tmp3' = A.append tmp1' tmp2' 
         (src'', tmp4) = merge src1' src2' tmp3'
     in (tmp4, src'')
 
@@ -125,35 +126,35 @@ msortSwap src tmp =
        / [A.size xs] @-}
 msortInplace :: (Show a, Ord a) => A.Array a -> A.Array a -> (A.Array a, A.Array a)
 msortInplace src tmp =
-  let (A.Ur len, src') = A.size2 src in
+  let (len, src') = A.size2 src in
   if len <= 1
   then (src', tmp)
   else
     let (src1, src2) = splitMid src'
         (tmp1, tmp2) = splitMid tmp
-        (src1', tmp1') = msortSwap{-Inplace-} src1 tmp1
-        (src2', tmp2') = msortSwap{-Inplace-} src2 tmp2
-        src3'{-tmp3'-} = A.append src1' src2' {-tmp1' tmp2'-} ? A.axm_append_token src1' src2'
+        (tmp1', src1') = msortSwap{-Inplace-} src1 tmp1
+        (tmp2', src2') = msortSwap{-Inplace-} src2 tmp2
+        src3'{-tmp3'-} = A.append src1' src2' {-tmp1' tmp2'-} 
         (tmp''{-_src''-}, src4'{-tmp4-}) = merge tmp1' tmp2' src3' {-src1' src2' tmp3'-}
     in (src4'{-tmp4-}, tmp''{-_src''-})
 
-{-@ msort :: { xs:(Array a) | A.size xs > 0 && left xs == 0 && right xs == size xs }
-          -> { y:a | y == A.get xs 0 }
-          -> { zs:(Array a) | A.size xs == A.size zs && token xs == token zs } @-}
-msort :: (Show a, Ord a) => A.Array a -> a -> A.Array a
-msort src anyVal =
-  let (A.Ur len, src') = A.size2 src
+{-@ msort' :: { xs:(Array a) | A.size xs > 0 && left xs == 0 && right xs == size xs }
+           -> { y:a | y == A.get xs 0 }
+           -> { zs:(Array a) | A.size xs == A.size zs && token xs == token zs } @-}
+msort' :: (Show a, Ord a) => A.Array a -> a -> A.Array a
+msort' src anyVal =
+  let (len, src') = A.size2 src
       (src'', _tmp) = msortInplace src (A.make len anyVal) in
   _tmp `seq` src''
 
 -- finally, the top-level merge sort function -- TODO: use A.get2/A.size2 for linearity
-{-@ msort' :: { xs:(A.Array a) | left xs == 0 && right xs == size xs }
+{-@ msort :: { xs:(A.Array a) | left xs == 0 && right xs == size xs }
            -> { ys:(A.Array a) | A.size xs == A.size ys && token xs == token ys } @-}
-msort' :: (Show a, Ord a) => A.Array a -> A.Array a
-msort' src =
-  if A.size src == 0 then src
-  else msort src (A.get src 0)
-
+msort :: (Show a, Ord a) => A.Array a -> A.Array a
+msort src =
+  let (len, src') = A.size2 src in
+      if len == 0 then src'
+      else let (x0, src'') = A.get2 src' 0 in msort' src'' x0
 
 
 
