@@ -175,6 +175,8 @@ append :: Array a -> Array a -> Array a
 append (Arr arr1 l1 _r1 t) (Arr arr2 _l2 r2 _t) = Arr (conc arr1 arr2) l1 r2 t
 
 
+
+
 --------------------------------------------------------------------------------
 -- | Proofs
 --------------------------------------------------------------------------------
@@ -245,6 +247,14 @@ lma_gns (Arr lst l r _) n m x = lma_gns_list lst n m x
 lma_gns2 :: Array a -> Int -> Int -> a -> Proof
 --lma_gns2 (Arr lst _ _ _) n m x = lma_gns_list lst n m x
 lma_gns2 xs n m x = lma_gns xs n m x
+
+
+{-@ lem_get_slice :: xs:_ -> { l:Nat | l <= size xs } -> { r:Nat | l <= r && r <= size xs }
+                  -> { i:Nat | l <= i && i < r }
+                  -> { pf:_ | get (slice xs l r) (i - l) == get xs i } @-}
+lem_get_slice :: Array a -> Int -> Int -> Int -> Proof
+lem_get_slice xs l r i = ()
+
 
 -- advanced operations
 

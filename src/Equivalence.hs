@@ -83,6 +83,22 @@ lem_equal_toBagBtw_index :: Ord a => Array a -> Array a -> Int -> Int -> Int -> 
 lem_equal_toBagBtw_index xs ys i j k = lem_inBagBtw_index ys i j (A.get xs k
                                      ? lem_index_inBagBtw xs i j k)
 
+  -- | Lemmas connecting toBag/toBagBtw to slice/append
+
+{-@ lem_toBag_slice :: xs:_ -> { i:Nat | i <= A.size xs } 
+                            -> { j:Nat | i <= j && j <= A.size xs }
+                            -> { pf:_ | toBag (A.slice xs i j) == toBagBtw xs i j } @-}
+lem_toBag_slice :: Array a -> Int -> Int -> Proof
+lem_toBag_slice xs i j | i == j    = ()
+                       | otherwise = () ? lem_toBag_slice xs (i+1) j
+
+
+
+
+
+
+
+
   -- | Lemmas establishing that toBag/toBagBtw is preserved under swaps
 
 {-@ lem_toBagBtw_inside_swap :: xs:(Array a) -> { i:Int | 0 <= i } -> { i':Int | i < i' }
@@ -140,7 +156,7 @@ lem_bagBtw_swap xs il i j ir | i == j    = () ? lma_swap xs i i
                                               ? lem_toBagBtw_compose xs (swap xs i j) il i     (j+1)
                                               ? lem_toBagBtw_compose xs (swap xs i j) il (j+1) ir
 
-  -- | Equality of Slices
+  -- | Equality of Slices (specifically for the QuickSort algo)
 
 {-@ reflect toSlice @-}
 {-@ toSlice :: xs:(Array a) -> { i:Int | 0 <= i } -> { j:Int | i <= j && j <= A.size xs } 
