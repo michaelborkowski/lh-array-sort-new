@@ -8,7 +8,7 @@ Most of the source code here is taken from Data.Array.Mutable.Unlifted.Linear
 in [linear-base](https://github.com/tweag/linear-base).
 
 -}
-module Array.Mutable
+module Array.Mutable {-
   (
     -- * Array type
     Array
@@ -22,7 +22,7 @@ module Array.Mutable
     -- * Convert to/from lists
   , fromList, toList
 
-  ) where
+  ) -} where
 
 import           Control.DeepSeq ( NFData(..) )
 import qualified GHC.Exts as GHC

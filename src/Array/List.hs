@@ -8,7 +8,7 @@
 {-# LANGUAGE GADTs         #-}
 {-# LANGUAGE DeriveGeneric #-}
 
-module Array.List
+module Array.List {-
   (
     -- * Array type
     Array
@@ -24,7 +24,7 @@ module Array.List
 
     -- * LiqidHaskell lemmas
   , lma_gs_list, lma_gns_list
-  ) where
+  ) -} where
 
 
 import           Prelude hiding (take, drop)
@@ -101,6 +101,7 @@ fromList ls = Arr ls 0 (length ls) t
   where
     t = unsafePerformIO (randomIO :: IO Int)
 
+{-@ toList :: xs:_ -> { xls:[a] | xls == lst xs && len xls == size xs } @-}
 toList :: Array a -> [a]
 toList (Arr ls _ _ _) = ls
 

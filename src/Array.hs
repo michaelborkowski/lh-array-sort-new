@@ -6,7 +6,7 @@
 {-@ LIQUID "--short-names" @-}
 
 module Array
-  (
+{-  (
     -- * Array type
     Array
 
@@ -21,7 +21,7 @@ module Array
 
     -- * LiqidHaskell lemmas
   , lma_gs, lma_gns, lma_swap, lma_swap_eql
-  ) where
+  ) -} where
 
 import           Array.List (lma_gs_list, lma_gns_list)
 
