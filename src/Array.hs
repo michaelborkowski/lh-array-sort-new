@@ -245,17 +245,49 @@ lma_gns (Arr lst l r _) n m x = lma_gns_list lst n m x
           -> m:{v:Nat | v /= n && v < size xs } -> x:_
           -> { pf:_ | fst (get2 (set xs n x) m) == fst (get2 xs m) } @-}
 lma_gns2 :: Array a -> Int -> Int -> a -> Proof
---lma_gns2 (Arr lst _ _ _) n m x = lma_gns_list lst n m x
 lma_gns2 xs n m x = lma_gns xs n m x
 
+{-@ lem_getList_drop :: xs:_ -> { n:Nat | n < len xs } -> { i:Nat | n <= i && i < len xs }
+                             -> { pf:_ | getList (drop n xs) (i-n) == getList xs i } @-}
+lem_getList_drop :: [a] -> Int -> Int -> Proof
+lem_getList_drop (x:xs) n i | n == 0    = ()
+                            | otherwise = () ? lem_getList_drop xs (n-1) (i-1)
 
-{-@ lem_get_slice :: xs:_ -> { l:Nat | l <= size xs } -> { r:Nat | l <= r && r <= size xs }
+{-@ lem_getList_take :: xs:_ -> { n:Nat | 0 < n && n <= len xs } -> { i:Nat | i < n }
+                             -> { pf:_ | getList (take n xs) i == getList xs i } @-}
+lem_getList_take :: [a] -> Int -> Int -> Proof
+lem_getList_take (x:xs) n i | i == 0    = () 
+                            | otherwise = () ? lem_getList_take xs (n-1) (i-1)
+
+{-@ lem_get_slice :: xs:_ -> { l:Nat | l <= size xs } -> { r:Nat | l < r && r <= size xs }
                   -> { i:Nat | l <= i && i < r }
                   -> { pf:_ | get (slice xs l r) (i - l) == get xs i } @-}
 lem_get_slice :: Array a -> Int -> Int -> Int -> Proof
-lem_get_slice xs l r i = ()
+lem_get_slice (Arr lst _ _ _) l r i = () ? lem_getList_take (drop l lst) (r - l) (i - l)
+                                         ? lem_getList_drop lst          l       i
 
+{-@ lem_take_all :: xs:_ -> { pf:_ | take (len xs) xs == xs } @-}
+lem_take_all :: [a] -> Proof
+lem_take_all []     = ()
+lem_take_all (x:xs) = () ? lem_take_all xs
 
+{-@ lem_take_conc :: xs:_ -> ys:_ -> { pf:_ | take (len xs) (conc xs ys) == xs } @-}
+lem_take_conc :: [a] -> [a] -> Proof
+lem_take_conc []     ys = ()
+lem_take_conc (x:xs) ys = () ? lem_take_conc xs ys
+
+{-@ lem_drop_conc :: xs:_ -> ys:_ -> { pf:_ | drop (len xs) (conc xs ys) == ys } @-}
+lem_drop_conc :: [a] -> [a] -> Proof
+lem_drop_conc []     ys = ()
+lem_drop_conc (x:xs) ys = () ? lem_drop_conc xs ys 
+
+{-@ lem_slice_append :: xs:_ -> { ys:_ | token xs == token ys && right xs == left ys }
+                             -> { pf:_ | slice (append xs ys) 0 (size xs) == xs &&
+                                         slice (append xs ys) (size xs) (size xs + size ys) == ys } @-}
+lem_slice_append :: Array a -> Array a -> Proof
+lem_slice_append (Arr xs _ _ _) (Arr ys _ _ _) = () ? lem_take_conc xs ys 
+                                                    ? lem_drop_conc xs ys
+                                                    ? lem_take_all     ys
 -- advanced operations
 
 {-@ reflect swap @-}
