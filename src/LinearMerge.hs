@@ -77,13 +77,13 @@ topMSort xs | (A.size xs == 0) = xs  -- ? isSortedFstN xs 0
                                     tmp = make (A.size xs) (A.get xs 0)
                                  in msort xs tmp ? lma_msort xs tmp
 
-{-@ reflect splitMid @-}
-{-@ splitMid :: xs:{A.size xs >= 2} -> {t:_ | ((A.size (fst t)) < (A.size xs) && (A.size (snd t)) < (A.size xs)) && (A.size xs = (A.size (fst t)) + (A.size (snd t))) && ((A.size (fst t)) = (mydiv (A.size xs)))} @-}
-splitMid :: Array a -> (Array a, Array a)
-splitMid xs = ((A.slice xs 0 m), (A.slice xs m n)) 
-  where 
-    n = A.size xs 
-    m = mydiv n
+--{-@ reflect splitMid @-}
+--{-@ splitMid :: xs:{A.size xs >= 2} -> {t:_ | ((A.size (fst t)) < (A.size xs) && (A.size (snd t)) < (A.size xs)) && (A.size xs = (A.size (fst t)) + (A.size (snd t))) && ((A.size (fst t)) = (mydiv (A.size xs)))} @-}
+--splitMid :: Array a -> (Array a, Array a)
+--splitMid xs = ((A.slice xs 0 m), (A.slice xs m n)) 
+--  where 
+--    n = A.size xs 
+--    m = mydiv n
 
 -- mydiv n = div n 2
 {-@ reflect mydiv @-}

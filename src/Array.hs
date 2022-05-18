@@ -137,7 +137,7 @@ set (Arr arr l r t) n y = Arr (setList arr n y) l r t
 
   -- slices, splits, and appends
 
-{-@ reflect slice @-} -- need axiom for the token being the same 
+{-@ reflect slice @-} 
 {-@ slice :: xs:_ -> { l:Nat | l <= size xs } -> { r:Nat | l <= r && r <= size xs } 
                   -> { ys:_ | size ys == r-l         && token xs == token ys && 
                               left ys == left xs + l && right ys == left xs + r &&
@@ -146,6 +146,21 @@ slice :: Array a -> Int -> Int -> Array a
 slice (Arr lst l r t) l' r' = Arr lst' (l+l') (l+r') t
   where
     lst' = take (r' - l') (drop l' lst)
+
+{-@ reflect splitMid @-}
+{-@ splitMid :: xs:(Array a)
+      -> {t:_ | token (fst t) == token xs && token (snd t) == token xs &&
+                right (fst t) == left (snd t) &&
+                right (fst t) == left xs + div (size xs) 2 &&
+                left (fst t) == left xs && right (snd t) == right xs &&
+                size (fst t) == div (size xs) 2 &&
+                size (snd t) == size xs - div (size xs) 2 &&
+                size xs = (size (fst t)) + (size (snd t)) } @-}
+splitMid :: Ord a => Array a -> (Array a, Array a)
+splitMid xs = (slice xs 0 m, slice xs m n)   
+  where
+    n = size xs
+    m = n `div` 2
 
 {-@ reflect conc @-}
 {-@ conc :: xs:_ -> ys:_ -> { zs:_ | len zs == len xs + len ys } @-}

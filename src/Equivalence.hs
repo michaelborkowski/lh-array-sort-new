@@ -110,6 +110,16 @@ lem_toBagBtw_slice xs l r i j | i == j    = ()
 lem_toBag_slice :: Ord a => Array a -> Int -> Int -> Proof
 lem_toBag_slice xs i j = lem_toBagBtw_slice xs i j 0 (j-i)
 
+{-@ lem_toBag_splitMid :: xs:_ 
+      -> { pf:_ | toBag xs == B.union (toBag (fst (splitMid xs))) (toBag (snd (splitMid xs))) } @-}
+lem_toBag_splitMid :: Ord a => Array a -> Proof
+lem_toBag_splitMid xs = () ? lem_toBag_slice       xs 0 m
+                           ? lem_toBag_slice       xs m n
+                           ? lem_toBagBtw_compose' xs 0 m n
+  where
+    n = A.size xs
+    m = n `div` 2
+
 {-@ lem_toBag_append :: xs:_ -> { ys:_ | token xs == token ys && right xs == left ys }
                              -> { pf:_ | toBag (A.append xs ys) == B.union (toBag xs) (toBag ys) } @-}
 lem_toBag_append :: Ord a => Array a -> Array a -> Proof

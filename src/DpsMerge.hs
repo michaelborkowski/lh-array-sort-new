@@ -12,29 +12,6 @@ import           Equivalence
 import           Order
 --import Debug.Trace
 
-
--- Helper functions
-                -- ((A.size (fst t)) = (mydiv (A.size xs)))} @-}
-                -- A.size (fst t) < (A.size xs) && 
-                -- A.size (snd t) < (A.size xs) && 
-{- @ reflect splitMid @-}
-{-@ splitMid :: xs:{A.size xs >= 2} 
-      -> {t:_ | toBag xs == B.union (toBag (fst t)) (toBag (snd t)) &&
-                token (fst t) == token xs && token (snd t) == token xs &&
-                right (fst t) == left (snd t) &&
-                right (fst t) == left xs + div (size xs) 2 &&
-                left (fst t) == left xs && right (snd t) == right xs &&
-                A.size (fst t) == div (size xs) 2 &&
-                A.size (snd t) == A.size xs - div (size xs) 2 &&
-                A.size xs = (A.size (fst t)) + (A.size (snd t)) } @-}
-splitMid :: Ord a => A.Array a -> (A.Array a, A.Array a)
-splitMid xs = (A.slice xs 0 m, A.slice xs m n)   ? lem_toBag_slice       xs 0 m
-                                                 ? lem_toBag_slice       xs m n 
-                                                 ? lem_toBagBtw_compose' xs 0 m n
-  where
-    n = A.size xs
-    m = n `div` 2
-
 --                    token (fst t) == token src && token (snd t) == token dst && 
 --                    left (fst t) == left src && right (fst t) == right src &&
 --                    left (snd t) == left dst && right (snd t) == right dst &&
@@ -173,13 +150,14 @@ msortSwap src tmp =
   then let (src'', tmp'') = copy src' tmp 0 0 in
        (src'', tmp'')
   else
-    let (src1, src2) = splitMid src'
-        (tmp1, tmp2) = splitMid tmp
+    let (src1, src2) = A.splitMid src'
+        (tmp1, tmp2) = A.splitMid tmp
         (src1', tmp1') = msortInplace src1 tmp1
         (src2', tmp2') = msortInplace src2 tmp2
         tmp3' = A.append tmp1' tmp2' 
         (src'', tmp4) = merge src1' src2' tmp3'
-    in (src'', tmp4) -- tmp4 holds the sorted data
+    in (src'', tmp4)  ? lem_toBag_splitMid src -- tmp4 holds the sorted data
+                      ? lem_toBag_splitMid tmp
 
 --                      not (token xs == token ys) && right xs == right ys }
 {-@ msortInplace :: xs:Array a 
@@ -197,13 +175,14 @@ msortInplace src tmp =
   if len <= 1
   then (src', tmp)
   else
-    let (src1, src2) = splitMid src'
-        (tmp1, tmp2) = splitMid tmp
-        (src1', tmp1') {-(tmp1', src1')-} = msortSwap{-Inplace-} src1 tmp1
-        (src2', tmp2') {-(tmp2', src2')-} = msortSwap{-Inplace-} src2 tmp2
-        src3'{-tmp3'-} = A.append src1' src2' {-tmp1' tmp2'-} 
-        (tmp''{-_src''-}, src4'{-tmp4-}) = merge tmp1' tmp2' src3' {-src1' src2' tmp3'-}
-    in (src4'{-tmp4-}, tmp''{-_src''-})  -- src4' holds the sorted data
+    let (src1, src2) = A.splitMid src'
+        (tmp1, tmp2) = A.splitMid tmp
+        (src1', tmp1') = msortSwap src1 tmp1
+        (src2', tmp2') = msortSwap src2 tmp2
+        src3' = A.append src1' src2'  
+        (tmp'', src4') = merge tmp1' tmp2' src3' 
+    in (src4', tmp'')  ? lem_toBag_splitMid src -- src4' holds the sorted data
+                       ? lem_toBag_splitMid tmp
 
 {-@ msort' :: { xs:(Array a) | A.size xs > 0 && left xs == 0 && right xs == size xs }
            -> { y:a | y == A.get xs 0 }
