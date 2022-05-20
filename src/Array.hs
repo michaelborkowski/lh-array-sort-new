@@ -59,10 +59,10 @@ splitMid xs = (slice xs 0 m, slice xs m n)
 lma_gs :: Array a -> Int -> a -> Proof
 lma_gs arr n x = lma_gs_list (toList arr) n x
 
-{-@ lma_gs2 :: xs:_ -> n:{v:Nat | v < size xs } -> x:_
-      -> {pf:_ | fst (get2 (set xs n x) n) = x} @-}
-lma_gs2 :: Array a -> Int -> a -> Proof
-lma_gs2 xs n x = lma_gs xs n x
+--{-@ lma_gs2 :: xs:_ -> n:{v:Nat | v < size xs } -> x:_
+--      -> {pf:_ | fst (get2 (set xs n x) n) = x} @-}
+--lma_gs2 :: Array a -> Int -> a -> Proof
+--lma_gs2 xs n x = lma_gs xs n x
 
 {-@ lma_gns :: xs:_ -> n:{v:Nat | v < size xs }
           -> m:{v:Nat | v /= n && v < size xs } -> x:_
@@ -70,11 +70,11 @@ lma_gs2 xs n x = lma_gs xs n x
 lma_gns :: Array a -> Int -> Int -> a -> Proof
 lma_gns arr n m x = lma_gns_list (toList arr) n m x
 
-{-@ lma_gns2 :: xs:_ -> n:{v:Nat | v < size xs } 
-          -> m:{v:Nat | v /= n && v < size xs } -> x:_
-          -> { pf:_ | fst (get2 (set xs n x) m) == fst (get2 xs m) } @-}
-lma_gns2 :: Array a -> Int -> Int -> a -> Proof
-lma_gns2 xs n m x = lma_gns xs n m x
+--{-@ lma_gns2 :: xs:_ -> n:{v:Nat | v < size xs } 
+--          -> m:{v:Nat | v /= n && v < size xs } -> x:_
+--          -> { pf:_ | fst (get2 (set xs n x) m) == fst (get2 xs m) } @-}
+--lma_gns2 :: Array a -> Int -> Int -> a -> Proof
+--lma_gns2 xs n m x = lma_gns xs n m x
 
 {-@ lem_slice_append :: xs:_ -> { ys:_ | token xs == token ys && right xs == left ys }
                              -> { pf:_ | slice (append xs ys) 0 (size xs) == xs &&
