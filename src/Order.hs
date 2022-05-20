@@ -41,11 +41,12 @@ lem_isSortedBtw_right xs i j | i + 2 == j  = ()
                              | otherwise   = () ? lem_isSortedBtw_right xs (i+1) j
 
 {-@ lem_isSortedBtw_build_right :: xs:(Array a) -> {i:Int | 0 <= i } 
-                                -> { j:Int | i < j && j <= size xs && 
-                                             get xs (j-1) <= get xs j && isSortedBtw xs i j }
+                                -> { j:Int | i <= j && j <= size xs && isSortedBtw xs i j &&
+                                             ( i == j || get xs (j-1) <= get xs j ) }
                                 -> { pf:_ | isSortedBtw xs i (j+1) } / [j-i] @-}
 lem_isSortedBtw_build_right :: Ord a => Array a -> Int -> Int -> Proof
-lem_isSortedBtw_build_right xs i j | i + 1 == j  = ()
+lem_isSortedBtw_build_right xs i j | i     == j  = ()
+                                   | i + 1 == j  = ()
                                    | otherwise   = () ? lem_isSortedBtw_build_right xs (i+1) j
 
 {-@ lem_isSortedBtw_narrow :: xs:(Array a) -> { i:Int | 0 <= i }
