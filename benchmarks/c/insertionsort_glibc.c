@@ -21,7 +21,7 @@
 #include <string.h>
 #include <stdio.h>
 
-void *insertionsort (void *const pbase, size_t total_elems, size_t size,
+void *insertionsort_glibc (void *const pbase, size_t total_elems, size_t size,
                     __compar_fn_t cmp)
 {
     char *base_ptr = (char *) pbase;
