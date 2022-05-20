@@ -4,18 +4,25 @@
 {-@ LIQUID "--short-names" @-}
 -- {-@ LIQUID "--checks=lma_msort_eq" @-}
 
-
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE GADTs #-}
 
 module LinearMerge where
 
 import           Prelude 
 import           Language.Haskell.Liquid.ProofCombinators
-import           Array as A
+import           Array
 import           Order
 import           Equivalence
 import           Language.Haskell.Liquid.Bag as B
 --import           Control.Parallel (par, pseq)
+
+#ifdef MUTABLE_ARRAYS
+import           Array.Mutable as A
+#else
+import           Array.List as A
+#endif
+
 
 -- 11 min compilation
 

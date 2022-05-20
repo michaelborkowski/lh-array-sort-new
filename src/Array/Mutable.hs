@@ -51,9 +51,6 @@ set (Array arr) i a = Array (set# arr i a)
 slice :: Array a -> Int -> Int -> Array a
 slice = _todo
 
-splitMid :: Array a -> (Array a, Array a)
-splitMid = _todo
-
 size :: Array a -> Int
 size = _todo
 

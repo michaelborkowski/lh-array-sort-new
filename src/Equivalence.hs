@@ -2,6 +2,7 @@
 {-@ LIQUID "--ple"         @-}
 {-@ LIQUID "--short-names" @-}
 
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE GADTs #-}
 
 module Equivalence where
@@ -10,8 +11,14 @@ import           Prelude
 import           Language.Haskell.Liquid.ProofCombinators
 import qualified Data.Set as S
 import qualified Language.Haskell.Liquid.Bag as B
-import           Array as A
+import           Array 
 import           Order
+
+#ifdef MUTABLE_ARRAYS
+import           Array.Mutable as A
+#else
+import           Array.List as A
+#endif
 
   -- | Key Lemma about Bags in general
 
@@ -127,7 +134,7 @@ lem_toBag_append xs ys
     = () ? lem_toBagBtw_compose' (A.append xs ys) 0 (A.size xs) (A.size xs + A.size ys)
          ? lem_toBag_slice       (A.append xs ys) 0 (A.size xs)
          ? lem_toBag_slice       (A.append xs ys)   (A.size xs) (A.size xs + A.size ys)
-         ? A.lem_slice_append    xs ys 
+         ? lem_slice_append    xs ys 
                           
 
 
@@ -212,7 +219,7 @@ lem_get_toSlice xs ys l i r | l == i     = ()
 lem_toSlice_set_left :: Eq a => Array a -> Int -> a -> Int -> Int -> Proof
 lem_toSlice_set_left xs i v l r | l == r    = ()
                                 | otherwise = () ? lem_toSlice_set_left xs i v (l+1) r
-                                                 ? A.lma_gns            xs i l v
+                                                 ? lma_gns            xs i l v
 
 {-@ lem_toSlice_set_right :: xs:_ -> { i:Nat | i < A.size xs } -> v:a 
                                   -> { l:Nat | i < l } -> { r:Nat | l <= r && r <= A.size xs }
@@ -220,7 +227,7 @@ lem_toSlice_set_left xs i v l r | l == r    = ()
 lem_toSlice_set_right :: Eq a => Array a -> Int -> a -> Int -> Int -> Proof
 lem_toSlice_set_right xs i v l r | l == r    = ()
                                  | otherwise = () ? lem_toSlice_set_right xs i v (l+1) r
-                                                  ? A.lma_gns             xs i l v
+                                                  ? lma_gns             xs i l v
 
 {-@ lem_toSlice_set :: xs:_ -> { i:Nat | i < A.size xs } -> v:a 
                             -> { pf:_  | toSlice (A.set xs i v) 0 i == toSlice xs 0 i &&

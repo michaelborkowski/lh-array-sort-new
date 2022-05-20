@@ -154,21 +154,6 @@ slice (Arr lst l r t) l' r' = Arr lst' (l+l') (l+r') t
   where
     lst' = take (r' - l') (drop l' lst)
 
-{-@ reflect splitMid @-}
-{-@ splitMid :: xs:(Array a)
-      -> {t:_ | token (fst t) == token xs && token (snd t) == token xs &&
-                right (fst t) == left (snd t) &&
-                right (fst t) == left xs + div (size xs) 2 &&
-                left (fst t) == left xs && right (snd t) == right xs &&
-                size (fst t) == div (size xs) 2 &&
-                size (snd t) == size xs - div (size xs) 2 &&
-                size xs = (size (fst t)) + (size (snd t)) } @-}
-splitMid :: Array a -> (Array a, Array a)
-splitMid xs = (slice xs 0 m, slice xs m n)
-  where
-    n = size xs
-    m = n `div` 2
-
 {-@ reflect conc @-}
 {-@ conc :: xs:_ -> ys:_ -> { zs:_ | len zs == len xs + len ys } @-}
 conc :: [a] -> [a] -> [a]

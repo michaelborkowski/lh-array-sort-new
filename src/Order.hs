@@ -1,3 +1,5 @@
+{-# LANGUAGE CPP #-}
+
 {-@ LIQUID "--reflection"  @-}
 -- {-@ LIQUID "--diff"        @-}
 {-@ LIQUID "--ple"         @-}
@@ -11,6 +13,11 @@ import           Prelude hiding ((++))
 import           Language.Haskell.Liquid.ProofCombinators
 import           Array
 
+#ifdef MUTABLE_ARRAYS
+import           Array.Mutable
+#else
+import           Array.List
+#endif
 
 {-@ reflect isSorted @-}
 isSorted :: Ord a => Array a -> Bool

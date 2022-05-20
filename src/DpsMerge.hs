@@ -3,13 +3,22 @@
 {-@ LIQUID "--no-termination"  @-}
 {-@ LIQUID "--no-totality"  @-}
 
+{-# LANGUAGE CPP #-}
+
 module DpsMerge where
 
 import qualified Language.Haskell.Liquid.Bag as B
 import           Language.Haskell.Liquid.ProofCombinators
-import qualified Array as A
+import           Array 
 import           Equivalence
 import           Order
+
+#ifdef MUTABLE_ARRAYS
+import           Array.Mutable as A
+#else
+import           Array.List as A
+#endif
+
 
 --                    token (fst t) == token src && token (snd t) == token dst && 
 --                    left (fst t) == left src && right (fst t) == right src &&
@@ -35,13 +44,13 @@ copy src dst i j =
     let (v, src'1)     = A.get2 src' i 
         dst'1          = A.set  dst  j v 
         (src'2, dst'2) = copy src'1 dst'1 (i + 1) (j + 1
-             {- sortedness -} ? A.lma_gs               dst   j v
+             {- sortedness -} ? lma_gs               dst   j v
                               ? lem_isSortedBtw_narrow src 0 i len len 
                               ? lem_toSlice_set        dst         j v 
                               ? lem_equal_slice_sorted dst   dst'1 0 0 j j
 --                              ? if j > 0 then A.lma_gns       dst   j (j-1) v else ()
                               ? lem_isSortedBtw_build_right  dst'1 0 (j 
-                                   ? if j > 0 then A.lma_gns       dst   j (j-1) v else ())  
+                                   ? if j > 0 then lma_gns       dst   j (j-1) v else ())  
                            ) in
     (src'2, dst'2)     ? toProof ( toBagBtw src i len
             {- equivalence -}  === B.put v (toBagBtw src (i+1) len)
@@ -85,15 +94,15 @@ merge' src1 src2 dst i1 i2 j =
   if i1 >= len1                 
   then                              
     let (src2'1, dst') = copy src2' dst i2 j in (A.append src1' src2'1, dst')
-                       {- equivalence -}      ? lem_toBagBtw_compose' src1 0 i1 (A.size src1)
-                                              ? lem_toBagBtw_compose' src2 0 i2 (A.size src2)
+                       {- equivalence -}      ? lem_toBagBtw_compose' src1 0 i1 len1
+                                              ? lem_toBagBtw_compose' src2 0 i2 len2
                                               ? lem_toBagBtw_compose' dst' 0 j  (A.size dst')
                                               ? lem_equal_slice_bag   dst dst' 0 j   
   else if i2 >= len2
   then
     let (src1'1, dst') = copy src1' dst i1 j in (A.append src1'1 src2', dst')
-                       {- equivalence -}      ? lem_toBagBtw_compose' src1 0 i1 (A.size src1)
-                                              ? lem_toBagBtw_compose' src2 0 i2 (A.size src2)
+                       {- equivalence -}      ? lem_toBagBtw_compose' src1 0 i1 len1
+                                              ? lem_toBagBtw_compose' src2 0 i2 len2
                                               ? lem_toBagBtw_compose' dst' 0 j  (A.size dst')
                                               ? lem_equal_slice_bag   dst dst' 0 j   
   else
@@ -106,13 +115,13 @@ merge' src1 src2 dst i1 i2 j =
                                       ? lem_bag_union v1 (toBagBtw src1 0 i1) (toBagBtw src2 0 i2)
                                       ? lem_equal_slice_bag    dst dst'   0 (j   
                                           ? lem_toSlice_set    dst     j v1)
-                                      ? A.lma_gs dst j v1
+                                      ? lma_gs dst j v1
                                       ? lem_toBagBtw_right dst' 0 (j+1)   
                     {- sor -}         ? lem_isSortedBtw_narrow src1 0 i1 len1 len1
                                       -- ? lem_toSlice_set        dst         j v1
                                       ? lem_equal_slice_sorted dst   dst'  0 0 j j
                                       ? lem_isSortedBtw_build_right  dst'  0 (j
-                                            ? if j > 0 then A.lma_gns dst   j (j-1) v1 else ())
+                                            ? if j > 0 then lma_gns dst   j (j-1) v1 else ())
                                  ) in
          (src'', dst'') -- ? lem_toSlice_set        dst        j v1
                         ? lem_equal_slice_narrow dst' dst'' 0 0 j (j+1)
@@ -122,13 +131,13 @@ merge' src1 src2 dst i1 i2 j =
                                       ? lem_bag_union v2 (toBagBtw src1 0 i1) (toBagBtw src2 0 i2)
                                       ? lem_equal_slice_bag    dst dst'   0 (j   
                                           ? lem_toSlice_set    dst     j v2)
-                                      ? A.lma_gs dst j v2
+                                      ? lma_gs dst j v2
                                       ? lem_toBagBtw_right dst' 0 (j+1)   
                     {- sor -}         ? lem_isSortedBtw_narrow src2 0 i2 len2 len2
                                       -- ? lem_toSlice_set        dst         j v2
                                       ? lem_equal_slice_sorted dst   dst'  0 0 j j
                                       ? lem_isSortedBtw_build_right  dst'  0 (j
-                                            ? if j > 0 then A.lma_gns dst   j (j-1) v2 else ())
+                                            ? if j > 0 then lma_gns dst   j (j-1) v2 else ())
                                  ) in
          (src'', dst'') -- ? lem_toSlice_set        dst        j v2
                         ? lem_equal_slice_narrow dst' dst'' 0 0 j (j+1)
@@ -166,8 +175,8 @@ msortSwap src tmp =
   then let (src'', tmp'') = copy src' tmp 0 0 in
        (src'', tmp'')
   else
-    let (src1, src2) = A.splitMid src'
-        (tmp1, tmp2) = A.splitMid tmp
+    let (src1, src2) = splitMid src'
+        (tmp1, tmp2) = splitMid tmp
         (src1', tmp1') = msortInplace src1 tmp1
         (src2', tmp2') = msortInplace src2 tmp2
         tmp3' = A.append tmp1' tmp2' 
@@ -191,8 +200,8 @@ msortInplace src tmp =
   if len <= 1
   then (src', tmp)
   else
-    let (src1, src2) = A.splitMid src'
-        (tmp1, tmp2) = A.splitMid tmp
+    let (src1, src2) = splitMid src'
+        (tmp1, tmp2) = splitMid tmp
         (src1', tmp1') = msortSwap src1 tmp1
         (src2', tmp2') = msortSwap src2 tmp2
         src3' = A.append src1' src2'  
