@@ -76,14 +76,6 @@ lma_gns arr n m x = lma_gns_list (toList arr) n m x
 --lma_gns2 :: Array a -> Int -> Int -> a -> Proof
 --lma_gns2 xs n m x = lma_gns xs n m x
 
-{-@ lem_slice_append :: xs:_ -> { ys:_ | token xs == token ys && right xs == left ys }
-                             -> { pf:_ | slice (append xs ys) 0 (size xs) == xs &&
-                                         slice (append xs ys) (size xs) (size xs + size ys) == ys } @-}
-lem_slice_append :: Array a -> Array a -> Proof
-lem_slice_append arr1 arr2 = () ? lem_take_conc (toList arr1) (toList arr2)  
-                                ? lem_drop_conc (toList arr1) (toList arr2)
-                                ? lem_take_all                (toList arr2)
-
 -- advanced operations
 
 {-@ reflect swap @-}

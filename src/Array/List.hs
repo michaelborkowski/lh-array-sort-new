@@ -3,6 +3,9 @@
 {-@ LIQUID "--ple"         @-}
 {-@ LIQUID "--short-names" @-}
 
+{- @ LIQUID "--no-environment-reduction"      @-}
+{-@ LIQUID "--prune-unsorted" @-}
+
 {-@ infixr ++  @-}  -- TODO: Silly to have to rewrite this annotation!
 
 {-# LANGUAGE GADTs         #-}
@@ -266,3 +269,10 @@ lem_drop_conc :: [a] -> [a] -> Proof
 lem_drop_conc []     ys = ()
 lem_drop_conc (x:xs) ys = () ? lem_drop_conc xs ys
 
+{-@ lem_slice_append :: xs:_ -> { ys:_ | token xs == token ys && right xs == left ys }
+                             -> { pf:_ | slice (append xs ys) 0 (size xs) == xs &&
+                                         slice (append xs ys) (size xs) (size xs + size ys) == ys } @-}
+lem_slice_append :: Array a -> Array a -> Proof
+lem_slice_append (Arr xls _ _ _) (Arr yls _ _ _)  = () ? lem_take_conc xls yls 
+                                                       ? lem_drop_conc xls yls
+                                                       ? lem_take_all      yls
