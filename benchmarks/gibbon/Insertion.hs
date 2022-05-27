@@ -39,20 +39,23 @@ insert cmp xs x n =
                in insert cmp xs' x (n-1)
           else inplaceUpdate n x xs
 
-isort :: (a -> a -> Int) -> Vector a -> Int -> Vector a
-isort cmp xs n =
+isort :: (a -> a -> Int) -> Vector a -> Vector a -> Int -> Vector a
+isort cmp xs b n =
   let len = length xs
   in if len <= 1
   then xs
   else if n == 0
-       then let ls :: Vector a
-                ls = (alloc len)
-            in ls
-       else let xs' = isort cmp xs (n-1)
+       then b
+       else let xs' = isort cmp xs b (n-1)
             in insert cmp xs' (nth xs n) n
 
 isort1 :: (a -> a -> Int) -> Vector a -> Vector a
-isort1 cmp xs = isort cmp xs ((length xs) - 1)
+isort1 cmp xs =
+  let n = length xs
+      hd = nth xs 0
+      b :: Vector a
+      b = generate n (\i -> hd)
+  in isort cmp xs b ((length xs) - 1)
 
 --------------------------------------------------------------------------------
 
