@@ -3,15 +3,23 @@
 {- @ LIQUID "--ple-local"         @-}
 {-@ LIQUID "--short-names" @-}
 
+{-# LANGUAGE CPP #-}
+
 module QuickSort where
 
 import qualified Language.Haskell.Liquid.Bag as B
 import           Language.Haskell.Liquid.ProofCombinators
 
-import Array as A
+import Array 
 import Equivalence
 import Order
 import Properties
+
+#ifdef MUTABLE_ARRAYS
+import           Array.Mutable as A
+#else
+import           Array.List as A
+#endif
 
 {-@ quickSort :: xs:(Array a) -> { ys:(Array a) | isSorted' ys && A.size xs == A.size ys &&
                                                                   toBag  xs == toBag  ys } @-}

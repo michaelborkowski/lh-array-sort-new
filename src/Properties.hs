@@ -2,12 +2,20 @@
 {-@ LIQUID "--ple"          @-}
 {-@ LIQUID "--short-names"  @-}
 
+{-# LANGUAGE CPP #-}
+
 module Properties where
 
 import qualified Language.Haskell.Liquid.Bag as B
 import           Language.Haskell.Liquid.ProofCombinators
 import           Array
 import           Equivalence
+
+#ifdef MUTABLE_ARRAYS
+import           Array.Mutable
+#else
+import           Array.List
+#endif
 
   -- | This module abstracts reasoning about properties of individual array elements.
 

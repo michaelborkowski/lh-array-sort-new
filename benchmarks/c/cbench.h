@@ -13,7 +13,7 @@ typedef void (*sort_fn_t) (void *const pbase, size_t total_elems, size_t size,
 void quicksort_glibc (void *const pbase, size_t total_elems, size_t size,
                       __compar_fn_t cmp);
 
-void *insertionsort (void *const pbase, size_t total_elems, size_t size,
+void *insertionsort_glibc (void *const pbase, size_t total_elems, size_t size,
                      __compar_fn_t cmp);
 
 #endif
