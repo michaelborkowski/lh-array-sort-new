@@ -230,15 +230,3 @@ lma_gns_list (x:xs) n m x'
   -- === getList xs (m-1)
   === getList (x:xs) m
   *** QED
-
-
--- advanced operations
-
-{-@ reflect swap @-}
-{-@ swap :: xs:(Array a) -> { i:Int | 0 <= i && i < size xs }
-                         -> { j:Int | 0 <= j && j < size xs }
-                         -> { ys:(Array a) | size xs == size ys } @-}
-swap :: Array a -> Int -> Int -> Array a
-swap xs i j = let xi  = get xs i
-                  xs' = set xs i (get xs j)
-               in set xs' j xi

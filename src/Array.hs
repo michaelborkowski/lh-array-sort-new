@@ -6,12 +6,12 @@
 {-@ LIQUID "--short-names" @-}
 
 module Array
-{-  (
+  (
     -- * Array type
     Array
 
     -- * Construction and querying
-  , make, get, set, slice, size, append, swap
+  , make, size, get, set, slice, append, swap
 
     -- * Linear versions
   , size2, get2
@@ -21,7 +21,7 @@ module Array
 
     -- * LiqidHaskell lemmas
   , lma_gs, lma_gns, lma_swap, lma_swap_eql
-  ) -} where
+  ) where
 
 import           Array.List (lma_gs_list, lma_gns_list)
 
@@ -34,6 +34,16 @@ import           Array.List
 import           Language.Haskell.Liquid.ProofCombinators
 
 --------------------------------------------------------------------------------
+
+{-@ reflect swap @-}
+{-@ swap :: xs:(Array a) -> { i:Int | 0 <= i && i < size xs }
+                         -> { j:Int | 0 <= j && j < size xs }
+                         -> { ys:(Array a) | size xs == size ys } @-}
+swap :: Array a -> Int -> Int -> Array a
+swap xs i j = let xi  = get xs i
+                  xs' = set xs i (get xs j)
+               in set xs' j xi
+
 
 {-@ lma_gs :: xs:_ -> n:{v:Nat | v < size xs } -> x:_
       -> {pf:_ | get (set xs n x) n = x} @-}
