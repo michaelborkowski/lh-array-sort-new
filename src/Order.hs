@@ -1,3 +1,5 @@
+{-# LANGUAGE CPP #-}
+
 {-@ LIQUID "--reflection"  @-}
 -- {-@ LIQUID "--diff"        @-}
 {-@ LIQUID "--ple"         @-}
@@ -11,6 +13,11 @@ import           Prelude hiding ((++))
 import           Language.Haskell.Liquid.ProofCombinators
 import           Array
 
+#ifdef MUTABLE_ARRAYS
+import           Array.Mutable
+#else
+import           Array.List
+#endif
 
 {-@ reflect isSorted @-}
 isSorted :: Ord a => Array a -> Bool
@@ -41,14 +48,24 @@ lem_isSortedBtw_right xs i j | i + 2 == j  = ()
                              | otherwise   = () ? lem_isSortedBtw_right xs (i+1) j
 
 {-@ lem_isSortedBtw_build_right :: xs:(Array a) -> {i:Int | 0 <= i } 
-                                -> { j:Int | i < j && j <= size xs && 
-                                             get xs (j-1) <= get xs j && isSortedBtw xs i j }
+                                -> { j:Int | i <= j && j <= size xs && isSortedBtw xs i j &&
+                                             ( i == j || get xs (j-1) <= get xs j ) }
                                 -> { pf:_ | isSortedBtw xs i (j+1) } / [j-i] @-}
 lem_isSortedBtw_build_right :: Ord a => Array a -> Int -> Int -> Proof
-lem_isSortedBtw_build_right xs i j | i + 1 == j  = ()
-                             | otherwise   = () ? lem_isSortedBtw_build_right xs (i+1) j
+lem_isSortedBtw_build_right xs i j | i     == j  = ()
+                                   | i + 1 == j  = ()
+                                   | otherwise   = () ? lem_isSortedBtw_build_right xs (i+1) j
 
-
+{-@ lem_isSortedBtw_narrow :: xs:(Array a) -> { i:Int | 0 <= i }
+                                           -> { i':Int | i <= i' } -> { j':Int | i' <= j' }
+                                           -> { j:Int | j' <= j && j <= size xs && isSortedBtw xs i j }
+                                           -> { pf:_  | isSortedBtw xs i' j' } / [ i' - i + j - j'] @-}
+lem_isSortedBtw_narrow :: Ord a => Array a -> Int -> Int -> Int -> Int -> Proof
+lem_isSortedBtw_narrow xs i i' j' j
+    | i+1 < j && i < i'      = () ? lem_isSortedBtw_narrow xs (i+1) i' j' j
+    | i+1 < j && j' < j      = () ? lem_isSortedBtw_narrow xs i i' j' (j-1
+                                  ? lem_isSortedBtw_right  xs i j )
+    | otherwise              = ()
 
 {-@ lem_isSortedBtw_compose :: xs:(Array a) -> { i:Int | 0 <= i } -> { j:Int | i <= j }
                                             -> { k:Int | j < k && k <= size xs &&

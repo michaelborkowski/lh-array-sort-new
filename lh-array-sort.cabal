@@ -28,7 +28,7 @@ library
 --      Merge
       Insertion
       LinearMerge
---      DpsMerge
+      DpsMerge
       Properties
       QuickSort
   other-modules:
@@ -48,4 +48,4 @@ library
   default-language: Haskell2010
   ghc-options: -Wall -Wcompat
                -fdefer-typed-holes
-               -- -fplugin=LiquidHaskell
+               -fplugin=LiquidHaskell

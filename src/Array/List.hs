@@ -3,6 +3,9 @@
 {-@ LIQUID "--ple"         @-}
 {-@ LIQUID "--short-names" @-}
 
+{- @ LIQUID "--no-environment-reduction"      @-}
+{-@ LIQUID "--prune-unsorted" @-}
+
 {-@ infixr ++  @-}  -- TODO: Silly to have to rewrite this annotation!
 
 {-# LANGUAGE GADTs         #-}
@@ -57,7 +60,12 @@ instance NFData a => NFData (Array a) where
 -- The token measure is intended to track when two Arrays have the same
 --   backing data structure. In the fake functional style, this is NOT
 --   preserved under `set` operations
-{-@ measure token :: xs:Array a -> { v:Nat | v == tok xs } @-}
+{-     @ measure token :: xs:Array a -> { v:Nat | v == tok xs } @-}
+
+{-@ reflect token @-}
+{-@ token :: xs:Array a -> { v:Int | v == tok xs } @-}
+token :: Array a -> Int
+token xs = tok xs
 
 -- | basic API
 
@@ -84,9 +92,7 @@ size (Arr _ l r _) = r-l
 {-@ reflect size2 @-}
 {-@ size2 :: xs:(Array a)
                -> (Int, Array a)<{
-                      \n zs -> n == size xs &&
-                               left xs == left zs && right xs == right zs &&
-                               size xs == size zs && token xs == token zs }> @-}
+                      \n zs -> n == size xs && xs == zs }> @-}
 size2 :: Array a -> (Int, Array a)
 size2 xs = (size xs, xs)                           -- (Ur (size xs), xs)
 
@@ -119,9 +125,7 @@ get :: Array a -> Int -> a
 get (Arr lst _ _ _) n = getList lst n
 
 {-@ get2 :: xs:Array a -> {n:Nat | n < size xs }
-              -> (a, Array a)<{\ x zs -> size xs == size zs &&
-                                         left xs == left zs && right xs == right zs &&
-                                         token xs == token zs }> @-}
+              -> (a, Array a)<{\ x zs -> x == get xs n && xs == zs }> @-}
 get2 :: Array a -> Int -> (a, Array a)
 get2 xs i = (get xs i, xs)                  -- (Ur (get xs i), xs)
 
@@ -137,7 +141,7 @@ setList (x:xs) n y = x:(setList xs (n-1) y)
 {-@ reflect set @-}
 {-@ set :: xs:_ -> { n:Nat | n < size xs } -> x:_
                 -> { nxs:(Array a) | left xs == left nxs && right xs == right nxs &&
-                                     (size nxs) = (size xs) } @-}
+                                     token xs == token nxs && size xs == size nxs } @-}
 set :: Array a -> Int -> a -> Array a
 set (Arr arr l r t) n y = Arr (setList arr n y) l r t
 
@@ -145,7 +149,7 @@ set (Arr arr l r t) n y = Arr (setList arr n y) l r t
 
 {-@ reflect slice @-} -- need axiom for the token being the same
 {-@ slice :: xs:_ -> { l:Nat | l <= size xs } -> { r:Nat | l <= r && r <= size xs }
-                  -> { ys:_ | size ys == r-l &&
+                  -> { ys:_ | size ys == r-l         && token xs == token ys &&
                               left ys == left xs + l && right ys == left xs + r &&
                                                         right ys == right xs - size xs + r } @-}
 slice :: Array a -> Int -> Int -> Array a
@@ -175,7 +179,7 @@ drop n (x:xs) = drop (n-1) xs
 {-@ reflect append @-}
 {-@ append :: xs:Array a
         -> { ys:Array a | token xs == token ys && right xs == left ys }
-        -> { zs:Array a | size zs == size xs + size ys &&
+        -> { zs:Array a | token xs == token zs && size zs == size xs + size ys &&
                           left xs == left zs && right ys == right zs } @-}
 append :: Array a -> Array a -> Array a
 append (Arr arr1 l1 _r1 t) (Arr arr2 _l2 r2 _t) = Arr (conc arr1 arr2) l1 r2 t
@@ -230,3 +234,46 @@ lma_gns_list (x:xs) n m x'
   -- === getList xs (m-1)
   === getList (x:xs) m
   *** QED
+
+
+{-@ lem_getList_drop :: xs:_ -> { n:Nat | n < len xs } -> { i:Nat | n <= i && i < len xs }
+                             -> { pf:_ | getList (drop n xs) (i-n) == getList xs i } @-}
+lem_getList_drop :: [a] -> Int -> Int -> Proof
+lem_getList_drop (x:xs) n i | n == 0    = ()
+                            | otherwise = () ? lem_getList_drop xs (n-1) (i-1)
+
+{-@ lem_getList_take :: xs:_ -> { n:Nat | 0 < n && n <= len xs } -> { i:Nat | i < n }
+                             -> { pf:_ | getList (take n xs) i == getList xs i } @-}
+lem_getList_take :: [a] -> Int -> Int -> Proof
+lem_getList_take (x:xs) n i | i == 0    = ()
+                            | otherwise = () ? lem_getList_take xs (n-1) (i-1)
+
+{-@ lem_get_slice :: xs:_ -> { l:Nat | l <= size xs } -> { r:Nat | l < r && r <= size xs }
+                  -> { i:Nat | l <= i && i < r }
+                  -> { pf:_ | get (slice xs l r) (i - l) == get xs i } @-}
+lem_get_slice :: Array a -> Int -> Int -> Int -> Proof
+lem_get_slice (Arr lst _ _ _) l r i = () ? lem_getList_take (drop l lst) (r - l) (i - l)
+                                         ? lem_getList_drop lst          l       i
+
+{-@ lem_take_all :: xs:_ -> { pf:_ | take (len xs) xs == xs } @-}
+lem_take_all :: [a] -> Proof
+lem_take_all []     = ()
+lem_take_all (x:xs) = () ? lem_take_all xs
+
+{-@ lem_take_conc :: xs:_ -> ys:_ -> { pf:_ | take (len xs) (conc xs ys) == xs } @-}
+lem_take_conc :: [a] -> [a] -> Proof
+lem_take_conc []     ys = ()
+lem_take_conc (x:xs) ys = () ? lem_take_conc xs ys
+
+{-@ lem_drop_conc :: xs:_ -> ys:_ -> { pf:_ | drop (len xs) (conc xs ys) == ys } @-}
+lem_drop_conc :: [a] -> [a] -> Proof
+lem_drop_conc []     ys = ()
+lem_drop_conc (x:xs) ys = () ? lem_drop_conc xs ys
+
+{-@ lem_slice_append :: xs:_ -> { ys:_ | token xs == token ys && right xs == left ys }
+                             -> { pf:_ | slice (append xs ys) 0 (size xs) == xs &&
+                                         slice (append xs ys) (size xs) (size xs + size ys) == ys } @-}
+lem_slice_append :: Array a -> Array a -> Proof
+lem_slice_append (Arr xls _ _ _) (Arr yls _ _ _)  = () ? lem_take_conc xls yls 
+                                                       ? lem_drop_conc xls yls
+                                                       ? lem_take_all      yls

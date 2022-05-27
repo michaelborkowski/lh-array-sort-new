@@ -30,7 +30,7 @@ cabal.project.local~
 # Liquid Haskell
 # ~~~~~~~~~~~~~~~~~~~~
 src/.liquid/
-
+src/Array/.liquid
 
 # C
 # ~~~~~~~~~~~~~~~~~~~~
