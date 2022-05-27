@@ -19,11 +19,19 @@ module Array
     -- * Convert to/from lists
   , fromList, toList
 
+    -- * Advanced operations
+  , splitMid, swap
+
     -- * LiqidHaskell lemmas
-  , lma_gs, lma_gns, lma_swap, lma_swap_eql
+  , lma_gs, lma_gns, lma_swap, lma_swap_eql, lem_slice_append, lem_get_slice
   ) where
 
-import           Array.List (lma_gs_list, lma_gns_list)
+import           Prelude hiding (take, drop)
+import           Array.List ( lma_gs_list, lma_gns_list
+                            , lem_take_conc, lem_drop_conc, lem_take_all
+                            , lem_getList_take, lem_getList_drop
+                            , take, drop
+                            )
 
 #ifdef MUTABLE_ARRAYS
 import           Array.Mutable
@@ -35,14 +43,18 @@ import           Language.Haskell.Liquid.ProofCombinators
 
 --------------------------------------------------------------------------------
 
+-- advanced operations
+
 {-@ reflect swap @-}
-{-@ swap :: xs:(Array a) -> { i:Int | 0 <= i && i < size xs }
+{-@ swap :: xs:(Array a) -> { i:Int | 0 <= i && i < size xs } 
                          -> { j:Int | 0 <= j && j < size xs }
-                         -> { ys:(Array a) | size xs == size ys } @-}
+                         -> { ys:(Array a) | size xs == size ys && token xs == token ys &&
+                                             left xs == left ys && right xs == right ys } @-}
 swap :: Array a -> Int -> Int -> Array a
 swap xs i j = let xi  = get xs i
                   xs' = set xs i (get xs j)
                in set xs' j xi
+
 
 {-@ reflect splitMid @-}
 {-@ splitMid :: xs:(Array a)
@@ -85,17 +97,6 @@ lma_gns arr n m x = lma_gns_list (toList arr) n m x
 --lma_gns2 :: Array a -> Int -> Int -> a -> Proof
 --lma_gns2 xs n m x = lma_gns xs n m x
 
--- advanced operations
-
-{-@ reflect swap @-}
-{-@ swap :: xs:(Array a) -> { i:Int | 0 <= i && i < size xs } 
-                         -> { j:Int | 0 <= j && j < size xs }
-                         -> { ys:(Array a) | size xs == size ys && token xs == token ys &&
-                                             left xs == left ys && right xs == right ys } @-}
-swap :: Array a -> Int -> Int -> Array a
-swap xs i j = let xi  = get xs i
-                  xs' = set xs i (get xs j)
-               in set xs' j xi
 
 {-@ lma_swap :: xs:(Array a) -> { i:Int | 0 <= i && i < size xs }
                              -> { j:Int | 0 <= j && j < size xs }
@@ -121,3 +122,25 @@ lma_swap_eql xs i j k = () ? lma_gns xs' j k xi
   where
     xi   = get xs  i
     xs'  = set xs  i (get xs j)
+
+
+{-@ lem_slice_append :: xs:_ -> { ys:_ | token xs == token ys && right xs == left ys }
+                             -> { pf:_ | slice (append xs ys) 0 (size xs) == xs &&
+                                         slice (append xs ys) (size xs) (size xs + size ys) == ys } @-}
+lem_slice_append :: Array a -> Array a -> Proof
+lem_slice_append xs ys  = () ? lem_take_conc xls yls 
+                            ? lem_drop_conc xls yls
+                            ? lem_take_all      yls
+  where
+    xls = toList xs
+    yls = toList ys
+
+
+{-@ lem_get_slice :: xs:_ -> { l:Nat | l <= size xs } -> { r:Nat | l < r && r <= size xs }
+                  -> { i:Nat | l <= i && i < r }
+                  -> { pf:_ | get (slice xs l r) (i - l) == get xs i } @-}
+lem_get_slice :: Array a -> Int -> Int -> Int -> Proof
+lem_get_slice arr l r i = () ? lem_getList_take (drop l lst) (r - l) (i - l)
+                          ? lem_getList_drop lst          l       i
+  where
+    lst = toList arr
