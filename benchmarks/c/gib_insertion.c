@@ -52,12 +52,12 @@ typedef struct gib_vector {
 
 } GibVector;
 
-GibInt gib_vector_length(GibVector *vec)
+static inline GibInt gib_vector_length(GibVector *vec)
 {
     return (vec->upper - vec->lower);
 }
 
-GibVector *gib_vector_alloc(GibInt num, size_t elt_size)
+static inline GibVector *gib_vector_alloc(GibInt num, size_t elt_size)
 {
     GibVector *vec = (GibVector *) malloc(sizeof(GibVector));
     if (vec == NULL) {
@@ -76,7 +76,7 @@ GibVector *gib_vector_alloc(GibInt num, size_t elt_size)
     return vec;
 }
 
-void *gib_vector_nth(GibVector *vec, GibInt i)
+static inline void *gib_vector_nth(GibVector *vec, GibInt i)
 {
 #ifdef _GIBBON_BOUNDSCHECK
     if (i < vec->lower || i > vec->upper) {
@@ -88,14 +88,14 @@ void *gib_vector_nth(GibVector *vec, GibInt i)
     return ((char*)vec->data + (vec->elt_size * (vec->lower + i)));
 }
 
-GibVector *gib_vector_inplace_update(GibVector *vec, GibInt i, void* elt)
+static inline GibVector *gib_vector_inplace_update(GibVector *vec, GibInt i, void* elt)
 {
     void* dst = gib_vector_nth(vec, i);
     memcpy(dst, elt, vec->elt_size);
     return vec;
 }
 
-void gib_vector_free(GibVector *vec)
+static inline void gib_vector_free(GibVector *vec)
 {
     free(vec->data);
     free(vec);
@@ -533,6 +533,105 @@ int bench_gibbon_insertion1(int argc, char** argv)
 
     free(criterion_cmd);
     gib_vector_free(vec);
+
+    return 0;
+}
+
+
+
+/* -------------------------------------------------------------------------- */
+
+
+/*
+GibVector *generate_loop_389_515(GibVector *vec_161_546_568,
+                                GibInt idx_162_547_569, GibInt end_163_548_570)
+{
+    GibBool fltIf_556_571 = idx_162_547_569 == end_163_548_570;
+
+    if (fltIf_556_571) {
+        return vec_161_546_568;
+    } else {
+        GibInt tmp_0 = 1000;
+        GibVector *vec1_166_549_574 = gib_vector_inplace_update(vec_161_546_568,
+                                                           idx_162_547_569,
+                                                           &tmp_0);
+        GibInt fltAppE_558_575 = idx_162_547_569 + 1;
+
+        return generate_loop_389_515(vec1_166_549_574, fltAppE_558_575,
+                                     end_163_548_570);
+    }
+}
+*/
+GibVector *generate_loop_389_515(GibVector *vec_161_546_568,
+                                GibInt idx_162_547_569, GibInt end_163_548_570)
+{
+    GibInt tmp_0 = 1000;
+    GibInt *dst;
+    for (int i = 0; i < end_163_548_570; i++) {
+        gib_vector_inplace_update(vec_161_546_568,
+                                  idx_162_547_569,
+                                  &tmp_0);
+
+    }
+    return vec_161_546_568;
+}
+
+int bench_gibbon_fillarray(int argc, char** argv)
+{
+    uint32_t N = atoi(argv[3]);
+    // int rounds = atol(argv[4]);
+
+
+    GibVector *vec_10_544_552_562 = NULL;
+    GibVector *vec1_11_545_553_563 = NULL;
+
+    // Start protocol for criterion-interactive.
+    printf("READY\n");
+    fflush(stdout);
+
+    char *criterion_cmd = (char*) malloc(100);
+    ssize_t read;
+    size_t len;
+    uint32_t rounds;
+    uint32_t i;
+
+    // Wait for criterion-interactive to send a command.
+    read = getline(&criterion_cmd, &len, stdin);
+    while (strcmp(criterion_cmd,"EXIT") != 0) {
+        if (read == -1) {
+            printf("Couldn't read from stdin, error=%d\n", errno);
+            exit(1);
+        }
+
+        // One round of benchmarking.
+        if (strncmp(criterion_cmd,"START_BENCH", 11) == 0) {
+            rounds = atol(criterion_cmd+12);
+
+#ifdef CBENCH_DEBUG
+            puts(criterion_cmd);
+            printf("rounds=%" PRIu32 "\n", rounds);
+#endif
+
+            // The main event.
+            for (i = 0; i <= rounds; i++) {
+                vec_10_544_552_562 = gib_vector_alloc(N, sizeof(GibInt));
+                vec1_11_545_553_563 =
+                        generate_loop_389_515(vec_10_544_552_562, 0, N);
+
+            }
+
+            printf("END_BENCH\n");
+            fflush(stdout);
+        }
+
+        // Prepare for next round.
+        rounds=0;
+        read = getline(&criterion_cmd, &len, stdin);
+    }
+
+    free(criterion_cmd);
+    gib_vector_free(vec1_11_545_553_563);
+    gib_vector_free(vec_10_544_552_562);
 
     return 0;
 }
