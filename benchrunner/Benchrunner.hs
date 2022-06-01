@@ -9,10 +9,10 @@ import           Data.List.Split    ( splitOn )
 import           System.Random      ( Random, newStdGen, randoms )
 import           System.Environment ( getArgs, withArgs )
 
--- import qualified Insertion as I
+import qualified Insertion as I
 import qualified QuickSort as Q
 -- import qualified Merge as M
--- import qualified DpsMerge as DM
+import qualified DpsMerge as DM
 import qualified Array as A
 
 --------------------------------------------------------------------------------
@@ -40,31 +40,35 @@ bench_fill_array input_size = do
   where
     fill (s,x) = A.make s x
 
+data Benchmarks = FillArray | Sorting
+  deriving (Eq, Show, Read)
+
 main :: IO ()
 main = do
   allargs <- getArgs
   let usage = "USAGE: benchrunner -- BENCH_ARGS -- CRITERION_ARGS"
-      (size,rst) =
+      (benchmark,size,rst) =
         case splitOn ["--"] allargs of
-          [] -> (10,[])
-          [(sz:_)] -> if sz == "--help"
+          [] -> (Sorting,10,[])
+          [(bnch:sz:_)] -> if sz == "--help"
                       then error usage
-                      else (read sz :: Int, [])
-          [(sz:_), rst'] -> if sz == "--help"
+                      else (read bnch :: Benchmarks, read sz :: Int, [])
+          [(bnch:sz:_), rst'] -> if sz == "--help"
                             then error usage
-                            else (read sz :: Int, rst')
+                            else (read bnch :: Benchmarks, read sz :: Int, rst')
           _ -> error usage
-{-
-  runsortbench <- benchSorts
+
+  runbench <-
+    if benchmark == FillArray
+    then bench_fill_array size
+    else benchSorts
                 (Proxy :: Proxy Int64)
                 size
                 [
-                --("LH/insertion1", I.isort1)
-                -- , ("LH/insertion2", I.isort2)
-                ("LH/quick", Q.quickSort)
+                  ("LH/insertion1", I.isort1)
+                , ("LH/insertion2", I.isort2)
+                -- ("LH/quick", Q.quickSort)
                 -- , ("LH/merge", M.msort)
-                -- , ("LH/dps_merge", DM.msort')
+                , ("LH/dps_merge", DM.msort)
                 ]
--}
-  runfillbench <- bench_fill_array size
-  withArgs rst $ defaultMain [ runfillbench ]
+  withArgs rst $ defaultMain [ runbench ]
