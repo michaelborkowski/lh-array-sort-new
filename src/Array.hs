@@ -122,25 +122,3 @@ lma_swap_eql xs i j k = () ? lma_gns xs' j k xi
   where
     xi   = get xs  i
     xs'  = set xs  i (get xs j)
-
-
-{-@ lem_slice_append :: xs:_ -> { ys:_ | token xs == token ys && right xs == left ys }
-                             -> { pf:_ | slice (append xs ys) 0 (size xs) == xs &&
-                                         slice (append xs ys) (size xs) (size xs + size ys) == ys } @-}
-lem_slice_append :: Array a -> Array a -> Proof
-lem_slice_append xs ys  = () ? lem_take_conc xls yls 
-                            ? lem_drop_conc xls yls
-                            ? lem_take_all      yls
-  where
-    xls = toList xs
-    yls = toList ys
-
-
-{-@ lem_get_slice :: xs:_ -> { l:Nat | l <= size xs } -> { r:Nat | l < r && r <= size xs }
-                  -> { i:Nat | l <= i && i < r }
-                  -> { pf:_ | get (slice xs l r) (i - l) == get xs i } @-}
-lem_get_slice :: Array a -> Int -> Int -> Int -> Proof
-lem_get_slice arr l r i = () ? lem_getList_take (drop l lst) (r - l) (i - l)
-                          ? lem_getList_drop lst          l       i
-  where
-    lst = toList arr
