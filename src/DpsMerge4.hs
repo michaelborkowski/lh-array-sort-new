@@ -1,9 +1,11 @@
 {-@ LIQUID "--ple" @-}
 {-@ LIQUID "--reflection"  @-}
+{-@ LIQUID "--no-termination"  @-}
+{-@ LIQUID "--no-totality"  @-}
 
 {-# LANGUAGE CPP #-}
 
-module DpsMerge where
+module DpsMerge4 where
 
 import qualified Language.Haskell.Liquid.Bag as B
 import           Language.Haskell.Liquid.ProofCombinators
@@ -28,7 +30,7 @@ import           Array.List as A
                     isSorted' (snd t) &&
                     fst t == src             && token (snd t) == token dst && 
                     left (snd t) == left dst && right (snd t) == right dst &&
-                    A.size (snd t) == A.size dst } / [size src - i] @-}
+                    A.size (snd t) == A.size dst } @-}
 copy :: Ord a => A.Array a -> A.Array a -> Int -> Int -> (A.Array a, A.Array a)
 copy src dst i j =
   let (len, src') = A.size2 src in
@@ -56,6 +58,10 @@ copy src dst i j =
   else (src', dst)
 
 -- DPS merge
+                              -- left (fst t) == left xs1 && right (fst t) == right xs2 &&
+                              -- left (snd t) == left zs  && right (snd t) == right zs  &&
+                              -- size (fst t) == size xs1 + size xs2 && size (snd t) == size zs &&
+                              -- token xs1 == token (fst t) && token xs2 == token (fst t) && 
 {-@ merge' :: { xs1:(Array a) | isSorted' xs1 }
            -> { xs2:(Array a) | isSorted' xs2 && token xs1 == token xs2 && right xs1 == left xs2 }
            -> {  zs:(Array a) | size xs1 + size xs2 == size zs }
@@ -72,7 +78,7 @@ copy src dst i j =
                          token xs1 == token (fst t) &&
                          token (snd t) == token zs &&
                          left (snd t) == left zs  && right (snd t) == right zs  &&
-                         size (snd t) == size zs } / [size zs - j] @-}
+                         size (snd t) == size zs } @-}
 merge' :: Ord a =>
   A.Array a -> A.Array a -> A.Array a ->
   Int -> Int -> Int ->
@@ -146,7 +152,8 @@ merge :: Ord a => A.Array a -> A.Array a -> A.Array a -> (A.Array a, A.Array a)
 merge src1 src2 dst = merge' src1 src2 dst 0 0 0   -- the 0's are relative to the current
                                                    --   slices, not absolute indices
 
--- DPS mergesort
+-- DPS mergesort 
+{-
 --                      not (token xs == token ys) && right xs == right ys }
 {-@ msortSwap :: xs:Array a 
       -> { ys:(Array a ) | A.size ys  == A.size xs   && left xs == left ys && 
@@ -171,7 +178,7 @@ msortSwap src tmp =
         tmp3' = A.append tmp1' tmp2' 
         (src'', tmp4) = merge src1' src2' tmp3'
     in (src'', tmp4)  ? lem_toBag_splitMid src -- tmp4 holds the sorted data
-                      ? lem_toBag_splitMid tmp
+                      ? lem_toBag_splitMid tmp   -}
 
 --                      not (token xs == token ys) && right xs == right ys }
 {-@ msortInplace :: xs:Array a 
@@ -185,6 +192,29 @@ msortSwap src tmp =
        / [A.size xs] @-}
 msortInplace :: (Show a, Ord a) => A.Array a -> A.Array a -> (A.Array a, A.Array a)
 msortInplace src tmp =
+  let (srcA, srcB)   = splitMid src
+      (tmpA, tmpB)   = splitMid tmp
+      (src1, src2)   = splitMid srcA
+      (src3, src4)   = splitMid srcB
+      (tmp1, tmp2)   = splitMid tmpA
+      (tmp3, tmp4)   = splitMid tmpB
+      (src1', tmp1') = msortInplace src1 tmp1
+      (src2', tmp2') = msortInplace src2 tmp2
+      (src3', tmp3') = msortInplace src3 tmp3
+      (src4', tmp4') = msortInplace src4 tmp4
+      tmpA'          = A.append tmp1' tmp2'
+      tmpB'          = A.append tmp3' tmp4'
+      (srcA'', tmpA'') = merge src1' src2' tmpA'
+      (srcB'', tmpB'') = merge src3' src4' tmpB'
+      src'           = A.append srcA'' srcB''
+      (tmp'', src'') = merge tmpA'' tmpB'' src'
+  in (src'', tmp'') ? lem_toBag_splitMid src 
+                    ? lem_toBag_splitMid tmp
+                       ? lem_toBag_splitMid srcA
+                       ? lem_toBag_splitMid srcB
+                       ? lem_toBag_splitMid tmpA
+                       ? lem_toBag_splitMid tmpB
+{-
   let (len, src') = A.size2 src in
   if len <= 1
   then (src', tmp)
@@ -196,7 +226,7 @@ msortInplace src tmp =
         src3' = A.append src1' src2'  
         (tmp'', src4') = merge tmp1' tmp2' src3' 
     in (src4', tmp'')  ? lem_toBag_splitMid src -- src4' holds the sorted data
-                       ? lem_toBag_splitMid tmp
+                       ? lem_toBag_splitMid tmp   -}
 
 {-@ msort' :: { xs:(Array a) | A.size xs > 0 && left xs == 0 && right xs == size xs }
            -> { y:a | y == A.get xs 0 }

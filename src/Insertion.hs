@@ -4,6 +4,7 @@
 {-@ LIQUID "--short-names" @-}
 -- {-@ LIQUID "--checks=lma_insert_eq" @-}
 
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE BangPatterns #-}
 
@@ -12,10 +13,15 @@ module Insertion where
 import           Prelude
 import           Language.Haskell.Liquid.ProofCombinators
 import qualified Language.Haskell.Liquid.Bag as B
-import qualified Array as A
+import           Array     
 import           Order
 import           Equivalence
 
+#ifdef MUTABLE_ARRAYS
+import           Array.Mutable as A
+#else
+import           Array.List as A
+#endif
 
 --------------------------------------------------------------------------------
 -- | Implementations
@@ -109,7 +115,7 @@ lma_insert_fix :: Ord a => A.Array a -> a -> Int -> Int -> Proof
 lma_insert_fix xs x 0 m
   = A.get (insert xs x 0) m
   -- === A.get (A.set xs 0 x) m
-    ? (A.lma_gns xs 0 m x)
+    ? (lma_gns xs 0 m x)
   === A.get xs m
   *** QED
 
@@ -119,13 +125,13 @@ lma_insert_fix xs x n m
     -- === A.get (insert (A.set xs (n) (A.get xs (n-1))) x (n - 1)) m
       ? (lma_insert_fix (A.set xs (n) (A.get xs (n-1))) x (n-1) m)
     -- === A.get (A.set xs (n) (A.get xs (n-1))) m
-      ? (A.lma_gns xs n m (A.get xs (n-1)))
+      ? (lma_gns xs n m (A.get xs (n-1)))
     === A.get xs m
     *** QED
   | otherwise
     = A.get (insert xs x n) m
     -- === A.get (A.set xs n x) m
-      ? (A.lma_gns xs n m x)
+      ? (lma_gns xs n m x)
     === A.get xs m
     *** QED
 
@@ -138,7 +144,7 @@ lma_insert_max xs x y n
   | x < (A.get xs (n-1))
     = y
     =>= A.get xs (n-1)
-      ? (A.lma_gs xs n (A.get xs (n-1)))
+      ? (lma_gs xs n (A.get xs (n-1)))
     -- === A.get (A.set xs (n) (A.get xs (n-1))) n
       ? (lma_insert_fix (A.set xs (n) (A.get xs (n-1))) x (n-1) n)
     -- === A.get (insert (A.set xs (n) (A.get xs (n-1))) x (n-1)) n
@@ -147,7 +153,7 @@ lma_insert_max xs x y n
   | otherwise
     = y
     =>= x
-      ? (A.lma_gs xs n x)
+      ? (lma_gs xs n x)
     -- === A.get (A.set xs n x) n
     === A.get (insert xs x n) n
     *** QED
@@ -168,9 +174,9 @@ lma_insert xs x n
         -- === (A.get ys (n-1)) <= (A.get ys (n))
           ? (lma_insert_fix xs' x (n-1) n)
         -- === (A.get ys (n-1)) <= (A.get xs' (n))
-          ? (A.lma_gs xs n (A.get xs (n-1)))
+          ? (lma_gs xs n (A.get xs (n-1)))
         -- === (A.get ys (n-1)) <= (A.get xs (n-1))
-          ? (lma_insert_max xs' x (A.get xs (n-1)) (n-1 ? (A.lma_gns xs n (n-2) (A.get xs (n-1)))))
+          ? (lma_insert_max xs' x (A.get xs (n-1)) (n-1 ? (lma_gns xs n (n-2) (A.get xs (n-1)))))
         === True
         *** QED
   | x < (A.get xs (n-1)) && (n < 2)
@@ -184,9 +190,9 @@ lma_insert xs x n
         -- === (A.get ys (n-1)) <= (A.get ys (n))
           ? (lma_insert_fix xs' x (n-1) n)
         -- === (A.get ys (n-1)) <= (A.get xs' (n))
-          ? (A.lma_gs xs n (A.get xs (n-1)))
+          ? (lma_gs xs n (A.get xs (n-1)))
         -- === (A.get ys (n-1)) <= (A.get xs (n-1))
-          ? (A.lma_gs xs' 0 x)-- A.get ys (n-1) === get (insert xs' x (n-1)) (n-1) ===
+          ? (lma_gs xs' 0 x)-- A.get ys (n-1) === get (insert xs' x (n-1)) (n-1) ===
         -- === x <= (A.get xs (n-1))
         === True
         *** QED
@@ -200,7 +206,7 @@ lma_insert xs x n
           ? (lma_isfn_set xs x n n)
         -- === (((A.get xs' (n-1)) <= (A.get xs' n)) && (isSortedFstN xs n))
         -- === ((A.get xs' (n-1)) <= (A.get xs' n))
-          ? (A.lma_gns xs n (n-1) x) &&& (A.lma_gs xs n x)
+          ? (lma_gns xs n (n-1) x) &&& (lma_gs xs n x)
         -- === ((A.get xs (n-1)) <= x)
         === True
         *** QED
@@ -230,7 +236,7 @@ lma_insert_eq xs x 0
   = toBagLeft (insert xs x 0) 1
   -- === toBagLeft (A.set xs 0 x) 1
   -- === B.put (A.get (A.set xs 0 x) 0) (toBagLeft xs 0)
-    ? (A.lma_gs xs 0 x)
+    ? (lma_gs xs 0 x)
   === B.put x (toBagLeft xs 0)
   *** QED
 lma_insert_eq xs x n
@@ -248,7 +254,7 @@ lma_insert_eq xs x n
       -- === B.put x (B.put (A.get ys n) (toBagLeft xs (n-1)))
         ? (lma_insert_fix xs' x (n-1) n)
       -- === B.put x (B.put (A.get xs' n) (toBagLeft xs (n-1)))
-        ? (A.lma_gs xs n (A.get xs (n-1)))
+        ? (lma_gs xs n (A.get xs (n-1)))
       -- === B.put x (B.put (A.get xs (n-1)) (toBagLeft xs (n-1)))
       === B.put x (toBagLeft xs n)
       *** QED
@@ -256,7 +262,7 @@ lma_insert_eq xs x n
     = toBagLeft (insert xs x n) (n+1)
     -- === toBagLeft (A.set xs n x) (n+1)
     -- === B.put (A.get (A.set xs n x) n) (toBagLeft (A.set xs n x) n)
-      ? (A.lma_gs xs n x) &&& (lma_set_equal xs x n n)
+      ? (lma_gs xs n x) &&& (lma_set_equal xs x n n)
     === (B.put x (toBagLeft xs n))
     *** QED
 

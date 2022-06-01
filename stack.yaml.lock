@@ -5,64 +5,29 @@
 
 packages:
 - completed:
-    hackage: text-format-0.3.2@sha256:2a3fc17cf87120fcfdbca62a0da59759755549285841cdc1483081c35fb3d115,1814
-    pantry-tree:
-      size: 1029
-      sha256: 2db26ddb77184186e0d5b2b020bdfbeb044c168024767b1fa3691682ca618896
-  original:
-    hackage: text-format-0.3.2
-- completed:
-    hackage: optics-0.2@sha256:813ef6cc4d2e2b5ee00435831031f38917ba01d1e56dcb62dc18cd0315a9ccb7,6296
-    pantry-tree:
-      size: 1003
-      sha256: 8a74dbcd983fcc96b7b6c5c9fc6da7240dd2e5bdab7caa4927b8287a4cbe5c0f
-  original:
-    hackage: optics-0.2
-- completed:
-    hackage: Diff-0.3.4@sha256:5ab20a407f9e65d13b642c3cd414906a40280343a31b388f6ed69b9228fe42c1,1127
-    pantry-tree:
-      size: 416
-      sha256: 48d1b942ff99293d69a8ca4ea60f372093e5aeea73f63d11829ceca01d63c7fd
-  original:
-    hackage: Diff-0.3.4
-- completed:
-    hackage: aeson-1.4.7.1@sha256:6199a98b072e5a7748e81ab72476a0992cf23d925ebe4fefd5b917cbda9c2af8,7098
-    pantry-tree:
-      size: 40133
-      sha256: 03fc9207bffa6928efbe42a1f603aa482b3dc821bde1db753faae000d0e2ee00
-  original:
-    hackage: aeson-1.4.7.1
-- completed:
-    hackage: th-compat-0.1.2@sha256:3d55de1adc542c1a870c9ada90da2fbbe5f4e8bcd3eed545a55c3df9311b32a8,2854
-    pantry-tree:
-      size: 530
-      sha256: 4629996e2e8b5bfd5fbd231fb72e2bf68fbeca2c36071f44a90c4310ea73ad01
-  original:
-    hackage: th-compat-0.1.2@sha256:3d55de1adc542c1a870c9ada90da2fbbe5f4e8bcd3eed545a55c3df9311b32a8,2854
-- completed:
     name: liquidhaskell
-    version: 0.8.10.2.1
+    version: 0.8.10.7.1
     git: https://github.com/ucsd-progsys/liquidhaskell
     pantry-tree:
-      size: 294654
-      sha256: 46225865a5f0707005036e8691025c5811659653245b58b1417783b4a283c816
-    commit: 2c10e1e47ac90e828cca2c35bdddb0316f51ff2b
+      size: 319294
+      sha256: d9de08ac652081a8ef4b1a1ab9c3e0b798901cad970e2c25319305001cf06887
+    commit: 8b5e3640fe06964b27af9f6e44f563d8e6abbfe0
   original:
     git: https://github.com/ucsd-progsys/liquidhaskell
-    commit: 2c10e1e47ac90e828cca2c35bdddb0316f51ff2b
+    commit: 8b5e3640fe06964b27af9f6e44f563d8e6abbfe0
 - completed:
     subdir: liquid-base
     name: liquid-base
-    version: 4.14.1.0
+    version: 4.14.3.0
     git: https://github.com/ucsd-progsys/liquidhaskell
     pantry-tree:
       size: 15057
-      sha256: 49214f6bd48452f1e93e33539a4877bc91815454ebab25954073b15a26397a28
-    commit: 2c10e1e47ac90e828cca2c35bdddb0316f51ff2b
+      sha256: ec6292884597585ab0a007b242bf5c711466a9b91fd5f3b2fbcac3602594f140
+    commit: 8b5e3640fe06964b27af9f6e44f563d8e6abbfe0
   original:
     subdir: liquid-base
     git: https://github.com/ucsd-progsys/liquidhaskell
-    commit: 2c10e1e47ac90e828cca2c35bdddb0316f51ff2b
+    commit: 8b5e3640fe06964b27af9f6e44f563d8e6abbfe0
 - completed:
     subdir: liquid-ghc-prim
     name: liquid-ghc-prim
@@ -70,12 +35,12 @@ packages:
     git: https://github.com/ucsd-progsys/liquidhaskell
     pantry-tree:
       size: 912
-      sha256: f4a142e73996a292cf2eae8c364f71fe9a1195937801cad720ac1394db1bd3ae
-    commit: 2c10e1e47ac90e828cca2c35bdddb0316f51ff2b
+      sha256: a1b1fbc8fda0d355f390bfe8ec3036e935b9d4c244217cce6e24363472cd66bd
+    commit: 8b5e3640fe06964b27af9f6e44f563d8e6abbfe0
   original:
     subdir: liquid-ghc-prim
     git: https://github.com/ucsd-progsys/liquidhaskell
-    commit: 2c10e1e47ac90e828cca2c35bdddb0316f51ff2b
+    commit: 8b5e3640fe06964b27af9f6e44f563d8e6abbfe0
 - completed:
     subdir: liquid-containers
     name: liquid-containers
@@ -83,12 +48,12 @@ packages:
     git: https://github.com/ucsd-progsys/liquidhaskell
     pantry-tree:
       size: 2143
-      sha256: e0813348d68667e035d96bcd225b9d545693bf7827f40d41d86c4535cf120cb8
-    commit: 2c10e1e47ac90e828cca2c35bdddb0316f51ff2b
+      sha256: 64ab781aea3b709196876c58ec418a1e8ef93418c71ba7f373658641beabdc7b
+    commit: 8b5e3640fe06964b27af9f6e44f563d8e6abbfe0
   original:
     subdir: liquid-containers
     git: https://github.com/ucsd-progsys/liquidhaskell
-    commit: 2c10e1e47ac90e828cca2c35bdddb0316f51ff2b
+    commit: 8b5e3640fe06964b27af9f6e44f563d8e6abbfe0
 - completed:
     subdir: liquid-prelude
     name: liquid-prelude
@@ -96,52 +61,37 @@ packages:
     git: https://github.com/ucsd-progsys/liquidhaskell
     pantry-tree:
       size: 1029
-      sha256: 17fffd9d59ef7d3e7fa04b89174250bab84af77822d3f5de0124d608aa6827c6
-    commit: 2c10e1e47ac90e828cca2c35bdddb0316f51ff2b
+      sha256: c7f41d6fe87cb7d02944834ff59c5d3c7f29b1bd0c83dec5095fed21362c2546
+    commit: 8b5e3640fe06964b27af9f6e44f563d8e6abbfe0
   original:
     subdir: liquid-prelude
     git: https://github.com/ucsd-progsys/liquidhaskell
-    commit: 2c10e1e47ac90e828cca2c35bdddb0316f51ff2b
+    commit: 8b5e3640fe06964b27af9f6e44f563d8e6abbfe0
 - completed:
     name: liquid-fixpoint
-    version: 0.8.10.2.1
+    version: 0.8.10.7.1
     git: https://github.com/ucsd-progsys/liquid-fixpoint
     pantry-tree:
-      size: 20726
-      sha256: 9c3dabef69d61a85a28ba7f7111c09a44d55307d69e1b8f66bced6ae8460cbc2
-    commit: a1b049592a57dffec2ba32e836d23d77e9e8c8f3
+      size: 22311
+      sha256: 08c682e475986bae0560d92c115eff6561aea261be0a358a1aab72aa221aa4f4
+    commit: 08fa6b6e0001c2da6b96a135523ca56107a3c0d6
   original:
     git: https://github.com/ucsd-progsys/liquid-fixpoint
-    commit: a1b049592a57dffec2ba32e836d23d77e9e8c8f3
+    commit: 08fa6b6e0001c2da6b96a135523ca56107a3c0d6
 - completed:
-    subdir: optics-core
-    name: optics-core
-    version: '0.2'
-    git: https://github.com/well-typed/optics.git
+    name: rest-rewrite
+    version: 0.2.0
+    git: https://github.com/facundominguez/rest
     pantry-tree:
-      size: 5115
-      sha256: f201dc2f8e36774d93805afc13218bc470b5c2f46859d58213709ab54b779897
-    commit: 0a4940cc927df3f50151692282f8b148bf326886
+      size: 4013
+      sha256: 2a91674ccab6b0bd43dcc41fa5e2cb60cbfd35ad585df8293c2884466091d0c0
+    commit: 31e974979c90e910efe5199ee0d3721b791667f6
   original:
-    subdir: optics-core
-    git: https://github.com/well-typed/optics.git
-    commit: 0a4940cc927df3f50151692282f8b148bf326886
-- completed:
-    subdir: optics-th
-    name: optics-th
-    version: '0.2'
-    git: https://github.com/well-typed/optics.git
-    pantry-tree:
-      size: 653
-      sha256: 0507fcb38b53196e5d5399b294cf88b22a1d43acc2a6c064e22f6d180fe6b406
-    commit: 0a4940cc927df3f50151692282f8b148bf326886
-  original:
-    subdir: optics-th
-    git: https://github.com/well-typed/optics.git
-    commit: 0a4940cc927df3f50151692282f8b148bf326886
+    git: https://github.com/facundominguez/rest
+    commit: 31e974979c90e910efe5199ee0d3721b791667f6
 snapshots:
 - completed:
-    size: 532379
-    url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/lts/16/8.yaml
-    sha256: 2ad3210d2ad35f3176005d68369a18e4d984517bfaa2caade76f28ed0b2e0521
-  original: lts-16.8
+    size: 590102
+    url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/lts/18/27.yaml
+    sha256: 79a786674930a89301b0e908fad2822a48882f3d01486117693c377b8edffdbe
+  original: lts-18.27
