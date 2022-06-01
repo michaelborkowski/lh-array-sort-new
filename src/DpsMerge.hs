@@ -1,7 +1,5 @@
 {-@ LIQUID "--ple" @-}
 {-@ LIQUID "--reflection"  @-}
-{-@ LIQUID "--no-termination"  @-}
-{-@ LIQUID "--no-totality"  @-}
 
 {-# LANGUAGE CPP #-}
 
@@ -19,11 +17,6 @@ import           Array.Mutable as A
 import           Array.List as A
 #endif
 
-
---                    token (fst t) == token src && token (snd t) == token dst && 
---                    left (fst t) == left src && right (fst t) == right src &&
---                    left (snd t) == left dst && right (snd t) == right dst &&
---                    A.size (fst t) == A.size src &&
 -- copy sets dst[j..] <- src[i..]
 {-@ copy :: src:(Array a) -> { dst:(Array a) | size dst >= size src }
          -> { i:Nat | i >= 0 && i <= size src && isSorted' src }
@@ -35,7 +28,7 @@ import           Array.List as A
                     isSorted' (snd t) &&
                     fst t == src             && token (snd t) == token dst && 
                     left (snd t) == left dst && right (snd t) == right dst &&
-                    A.size (snd t) == A.size dst } @-}
+                    A.size (snd t) == A.size dst } / [size src - i] @-}
 copy :: Ord a => A.Array a -> A.Array a -> Int -> Int -> (A.Array a, A.Array a)
 copy src dst i j =
   let (len, src') = A.size2 src in
@@ -63,10 +56,6 @@ copy src dst i j =
   else (src', dst)
 
 -- DPS merge
-                              -- left (fst t) == left xs1 && right (fst t) == right xs2 &&
-                              -- left (snd t) == left zs  && right (snd t) == right zs  &&
-                              -- size (fst t) == size xs1 + size xs2 && size (snd t) == size zs &&
-                              -- token xs1 == token (fst t) && token xs2 == token (fst t) && 
 {-@ merge' :: { xs1:(Array a) | isSorted' xs1 }
            -> { xs2:(Array a) | isSorted' xs2 && token xs1 == token xs2 && right xs1 == left xs2 }
            -> {  zs:(Array a) | size xs1 + size xs2 == size zs }
@@ -83,7 +72,7 @@ copy src dst i j =
                          token xs1 == token (fst t) &&
                          token (snd t) == token zs &&
                          left (snd t) == left zs  && right (snd t) == right zs  &&
-                         size (snd t) == size zs } @-}
+                         size (snd t) == size zs } / [size zs - j] @-}
 merge' :: Ord a =>
   A.Array a -> A.Array a -> A.Array a ->
   Int -> Int -> Int ->
