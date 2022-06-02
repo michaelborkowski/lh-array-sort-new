@@ -39,7 +39,8 @@ import           Array.Mutable
 import           Array.List
 #endif
 
-import           Language.Haskell.Liquid.ProofCombinators
+import           Language.Haskell.Liquid.ProofCombinators hiding ((?))
+import           ProofCombinators
 
 --------------------------------------------------------------------------------
 

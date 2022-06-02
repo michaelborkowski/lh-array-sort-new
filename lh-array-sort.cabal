@@ -34,6 +34,7 @@ library
   other-modules:
       Array.List
       Array.Mutable
+      ProofCombinators
   hs-source-dirs:
       src
   build-depends:

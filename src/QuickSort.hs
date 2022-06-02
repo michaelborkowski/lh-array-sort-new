@@ -8,8 +8,9 @@
 module QuickSort where
 
 import qualified Language.Haskell.Liquid.Bag as B
-import           Language.Haskell.Liquid.ProofCombinators
+import           Language.Haskell.Liquid.ProofCombinators hiding ((?))
 
+import ProofCombinators
 import Array 
 import Equivalence
 import Order

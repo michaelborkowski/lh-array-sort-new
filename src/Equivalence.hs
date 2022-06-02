@@ -8,7 +8,8 @@
 module Equivalence where
 
 import           Prelude
-import           Language.Haskell.Liquid.ProofCombinators
+import           Language.Haskell.Liquid.ProofCombinators hiding ((?))
+import           ProofCombinators
 import qualified Data.Set as S
 import qualified Language.Haskell.Liquid.Bag as B
 import           Array 
