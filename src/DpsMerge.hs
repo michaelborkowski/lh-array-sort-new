@@ -6,7 +6,8 @@
 module DpsMerge where
 
 import qualified Language.Haskell.Liquid.Bag as B
-import           Language.Haskell.Liquid.ProofCombinators
+import           Language.Haskell.Liquid.ProofCombinators hiding ((?))
+import           ProofCombinators
 import           Array 
 import           Equivalence
 import           Order
@@ -41,7 +42,6 @@ copy src dst i j =
                               ? lem_isSortedBtw_narrow src 0 i len len 
                               ? lem_toSlice_set        dst         j v 
                               ? lem_equal_slice_sorted dst   dst'1 0 0 j j
---                              ? if j > 0 then A.lma_gns       dst   j (j-1) v else ()
                               ? lem_isSortedBtw_build_right  dst'1 0 (j 
                                    ? if j > 0 then lma_gns       dst   j (j-1) v else ())  
                            ) in
@@ -130,6 +130,7 @@ merge' src1 src2 dst i1 i2 j =
                                  ) in
          (src'', dst'') -- ? lem_toSlice_set        dst        j v2
                         ? lem_equal_slice_narrow dst' dst'' 0 0 j (j+1)
+
 
     -- Possible: (right xs1 == left xs2) => (left xs1 == left (fst t) && right xs2 == right (fst t))
 {-@ merge :: { xs1:(Array a) | isSorted' xs1 }

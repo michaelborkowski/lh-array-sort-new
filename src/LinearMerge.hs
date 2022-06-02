@@ -10,7 +10,8 @@
 module LinearMerge where
 
 import           Prelude 
-import           Language.Haskell.Liquid.ProofCombinators
+import           Language.Haskell.Liquid.ProofCombinators hiding ((?))
+import           ProofCombinators
 import           Array
 import           Order
 import           Equivalence
@@ -219,7 +220,7 @@ lma_merge xs ys zs n 0
   = isSortedFstN mer1 n
   -- === (((A.get mer1 (n-2)) <= (A.get mer1 (n-1))) && (isSortedFstN mer1 (n-1)))
   -- === (((A.get mer2 (n-2)) <= (A.get mer2 (n-1))) && (isSortedFstN mer2 (n-1)))
-    ? (lma_merge_fix xs ys zs' (n-1) 0 (n-1)) &&& (lma_gs zs (n-1) xs_n)
+    ? ((lma_merge_fix xs ys zs' (n-1) 0 (n-1)) &&& (lma_gs zs (n-1) xs_n))
   -- === (((A.get mer2 (n-2)) <= xs_n) && (isSortedFstN mer2 (n-1)))
     ? (lma_merge_max xs ys zs' (n-1) 0 (xs_n ? lma_is_isfn xs n)) -- Does not work with lma_is_isfn xs n
   -- === (isSortedFstN mer2 (n-1))
@@ -235,7 +236,7 @@ lma_merge xs ys zs 0 m
   = isSortedFstN mer1 m
   -- === (((A.get mer1 (m-2)) <= (A.get mer1 (m-1))) && (isSortedFstN mer1 (m-1)))
   -- === (((A.get mer2 (m-2)) <= (A.get mer2 (m-1))) && (isSortedFstN mer2 (m-1)))
-    ? (lma_merge_fix xs ys zs' 0 (m-1) (m-1)) &&& (lma_gs zs (m-1) ys_m)
+    ? ((lma_merge_fix xs ys zs' 0 (m-1) (m-1)) &&& (lma_gs zs (m-1) ys_m))
   -- === (((A.get mer2 (m-2)) <= ys_m) && (isSortedFstN mer2 (m-1)))
     ? (lma_merge_max xs ys zs' 0 (m-1) (ys_m ? lma_is_isfn ys m)) -- lma_is_isfn ys m
   -- === (isSortedFstN mer2 (m-1))
@@ -255,7 +256,7 @@ lma_merge xs ys zs n m
       in isSortedFstN mer1 (n+m)
       -- === (((A.get mer1 (n+m-2)) <= (A.get mer1 (n+m-1))) && (isSortedFstN mer1 (n+m-1)))
       -- === (((A.get mer2 (n+m-2)) <= (A.get mer2 (n+m-1))) && (isSortedFstN mer2 (n+m-1)))
-        ? (lma_merge_fix xs ys zs' n (m-1) (n+m-1)) &&& (lma_gs zs (n+m-1) ys_m)
+        ? ((lma_merge_fix xs ys zs' n (m-1) (n+m-1)) &&& (lma_gs zs (n+m-1) ys_m))
       -- === (((A.get mer2 (n+m-2)) <= ys_m) && (isSortedFstN mer2 (n+m-1)))
         ? (lma_merge_max xs ys zs' n (m-1) (ys_m ? lma_is_isfn ys m))
       -- === (isSortedFstN mer2 (n+m-1))
@@ -269,7 +270,7 @@ lma_merge xs ys zs n m
       in isSortedFstN mer1 (n+m)
       -- === (((A.get mer1 (n+m-2)) <= (A.get mer1 (n+m-1))) && (isSortedFstN mer1 (n+m-1)))
       -- === (((A.get mer2 (n+m-2)) <= (A.get mer2 (n+m-1))) && (isSortedFstN mer2 (n+m-1)))
-        ? (lma_merge_fix xs ys zs' (n-1) m (n+m-1)) &&& (lma_gs zs (n+m-1) xs_n)
+        ? ((lma_merge_fix xs ys zs' (n-1) m (n+m-1)) &&& (lma_gs zs (n+m-1) xs_n))
       -- === (((A.get mer2 (n+m-2)) <= xs_n) && (isSortedFstN mer2 (n+m-1)))
         ? (lma_merge_max xs ys zs' (n-1) m (xs_n ? lma_is_isfn xs n))
       -- === (isSortedFstN mer2 (n+m-1))
@@ -339,7 +340,7 @@ lma_merge_eq xs ys zs n 0
     ? (lma_merge_eq xs ys zs' (n-1) 0)
   -- === B.union (S.singleton (get mer2 (n-1))) (B.union (toBagLeft xs (n-1)) (toBagLeft ys 0))
   -- === B.union (toBagLeft ys 0) (B.union (S.singleton (get mer2 (n-1))) (toBagLeft xs (n-1)))
-    ? (lma_merge_fix xs ys zs' (n-1) 0 (n-1)) &&& (lma_gs zs (n-1) xs_n)
+    ? ((lma_merge_fix xs ys zs' (n-1) 0 (n-1)) &&& (lma_gs zs (n-1) xs_n))
   -- === B.union (toBagLeft ys 0) (B.union (S.singleton xs_n) (toBagLeft xs (n-1)))
   === B.union (toBagLeft ys 0) (toBagLeft xs n)
   *** QED
@@ -354,7 +355,7 @@ lma_merge_eq xs ys zs 0 m
     ? (lma_merge_eq xs ys zs' 0 (m-1))
   -- === B.union (S.singleton (get mer2 (m-1))) (B.union (toBagLeft ys (m-1)) (toBagLeft xs 0))
   -- === B.union (toBagLeft xs 0) (B.union (S.singleton (get mer2 (m-1))) (toBagLeft ys (m-1)))
-    ? (lma_merge_fix xs ys zs' 0 (m-1) (m-1)) &&& (lma_gs zs (m-1) ys_m)
+    ? ((lma_merge_fix xs ys zs' 0 (m-1) (m-1)) &&& (lma_gs zs (m-1) ys_m))
   -- === B.union (toBagLeft xs 0) (B.union (S.singleton ys_m) (toBagLeft ys (m-1)))
   === B.union (toBagLeft xs 0) (toBagLeft ys m)
   *** QED
@@ -373,7 +374,7 @@ lma_merge_eq xs ys zs n m
         ? (lma_merge_eq xs ys zs' n (m-1))
       -- === B.union (S.singleton (get mer2 (n+m-1))) (B.union (toBagLeft xs n) (toBagLeft ys (m-1)))
       -- === B.union (toBagLeft xs n) (B.union (S.singleton (get mer2 (n+m-1))) (toBagLeft ys (m-1)))
-        ? (lma_merge_fix xs ys zs' n (m-1) (n+m-1)) &&& (lma_gs zs (n+m-1) ys_m)
+        ? ((lma_merge_fix xs ys zs' n (m-1) (n+m-1)) &&& (lma_gs zs (n+m-1) ys_m))
       -- === B.union (toBagLeft xs n) (B.union (S.singleton ys_m) (toBagLeft ys (m-1)))
       === B.union (toBagLeft xs n) (toBagLeft ys m)
       *** QED
@@ -387,7 +388,7 @@ lma_merge_eq xs ys zs n m
         ? (lma_merge_eq xs ys zs' (n-1) m)
       -- === B.union (S.singleton (get mer2 (n+m-1))) (B.union (toBagLeft xs (n-1)) (toBagLeft ys m))
       -- === B.union (toBagLeft ys m) (B.union (S.singleton (get mer2 (n+m-1))) (toBagLeft xs (n-1)))
-        ? (lma_merge_fix xs ys zs' (n-1) m (n+m-1)) &&& (lma_gs zs (n+m-1) xs_n)
+        ? ((lma_merge_fix xs ys zs' (n-1) m (n+m-1)) &&& (lma_gs zs (n+m-1) xs_n))
       -- === B.union (toBagLeft ys m) (B.union (S.singleton xs_n) (toBagLeft xs (n-1)))
       === B.union (toBagLeft ys m) (toBagLeft xs n)
       *** QED
@@ -414,7 +415,7 @@ lma_msort_eq xs ys
       -- === toBagLeft (merge yls' yrs' xs (A.size yls') (A.size yrs')) (A.size xs)
         ? (lma_merge_eq yls' yrs' xs (A.size yls') (A.size yrs'))
       -- === B.union (toBagLeft yls' (A.size yls')) (toBagLeft yrs' (A.size yrs'))
-        ? ((lma_msort_eq xls yls) &&& (tri yls' xls)) &&& ((lma_msort_eq xrs yrs) &&& (tri yrs' xrs))
+        ? (((lma_msort_eq xls yls) &&& (tri yls' xls)) &&& ((lma_msort_eq xrs yrs) &&& (tri yrs' xrs)))
       -- === B.union (toBagLeft xls (A.size xls)) (toBagLeft xrs (A.size xrs))
         ? (lma_splitMid_eq xs)
       === toBagLeft xs (A.size xs) ? (tri (msort xs ys) xs) -- speed up

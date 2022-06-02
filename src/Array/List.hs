@@ -35,7 +35,8 @@ import           Control.DeepSeq ( NFData(..) )
 import           System.IO.Unsafe
 import           System.Random
 
-import           Language.Haskell.Liquid.ProofCombinators
+import           Language.Haskell.Liquid.ProofCombinators hiding ((?))
+import           ProofCombinators
 
 --------------------------------------------------------------------------------
 

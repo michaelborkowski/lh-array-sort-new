@@ -10,7 +10,8 @@
 module Order where
 
 import           Prelude hiding ((++)) 
-import           Language.Haskell.Liquid.ProofCombinators
+import           Language.Haskell.Liquid.ProofCombinators hiding ((?))
+import           ProofCombinators
 import           Array
 
 #ifdef MUTABLE_ARRAYS
@@ -86,7 +87,7 @@ lma_set_ps :: Ord a => Array a -> Int -> a -> Proof
 lma_set_ps xs 1 x 
   = isSortedFstN (set xs 1 x) 2
   -- === (((get (set xs 1 x) 0) <= (get (set xs 1 x) 1)) && (isSortedFstN (set xs 1 x) 1))
-    ? (lma_gns xs 1 0 x) &&& (lma_gs xs 1 x)
+    ? ((lma_gns xs 1 0 x) &&& (lma_gs xs 1 x))
   -- === (((get xs 0) <= x) && (isSortedFstN (set xs 1 x) 1))
   -- === isSortedFstN (set xs 1 x) 1
   === True
@@ -94,11 +95,11 @@ lma_set_ps xs 1 x
 lma_set_ps xs n x 
   = isSortedFstN (set xs n x) (n+1)
   -- === (((get (set xs n x) (n-1)) <= (get (set xs n x) (n))) && (isSortedFstN (set xs n x) (n)))
-    ? (lma_gns xs n (n-1) x) &&& (lma_gs xs n x)
+    ? ((lma_gns xs n (n-1) x) &&& (lma_gs xs n x))
   -- === (((get xs (n-1)) <= x) && (isSortedFstN (set xs n x) (n)))
   -- === (isSortedFstN (set xs n x) (n)) 
   -- === (((get (set xs n x) (n-2)) <= (get (set xs n x) (n-1))) && (isSortedFstN (set xs n x) (n-1)))
-    ? (lma_gns xs n (n-2) x) &&& (lma_gns xs n (n-1) x)
+    ? ((lma_gns xs n (n-2) x) &&& (lma_gns xs n (n-1) x))
   -- === (((get xs (n-2)) <= (get xs (n-1))) && (isSortedFstN (set xs n x) (n-1)))
   -- === isSortedFstN (set xs n x) (n-1)
     ? lma_isfn_set xs x n (n-1)
@@ -137,7 +138,7 @@ lma_isfn_set xs x n 1 = ()
 lma_isfn_set xs x n m 
   = isSortedFstN (set xs n x) m
   -- === (((get (set xs n x) (m-2)) <= (get (set xs n x) (m-1))) && (isSortedFstN (set xs n x) (m-1)))
-    ? (lma_gns xs n (m-2) x) &&& (lma_gns xs n (m-1) x)
+    ? ((lma_gns xs n (m-2) x) &&& (lma_gns xs n (m-1) x))
   -- === (((get xs (m-2)) <= (get xs (m-1))) && (isSortedFstN (set xs n x) (m-1)))
     ? lma_isfn_set xs x n (m-1)
   -- === (((get xs (m-2)) <= (get xs (m-1))) && (isSortedFstN xs (m-1)))
