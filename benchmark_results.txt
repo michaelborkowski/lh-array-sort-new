@@ -1,0 +1,410 @@
+[2022.05.27]:
+========================================
+
+(1 )Fill an array
+----------------------------------------
+
+Haskell list
+~~~~~~~~~~~~~~~~~~~~
+
+[nix-shell:~/chai/lh-array-sort]$ cabal v2-exec benchrunner -fmutable-arrays -- 1000000
+Warning: The package list for 'hackage.haskell.org' is 125 days old.
+Run 'cabal update' to get the latest list of available packages.
+Resolving dependencies...
+benchmarking fill_array
+time                 495.6 μs   (494.8 μs .. 496.4 μs)
+                     1.000 R²   (1.000 R² .. 1.000 R²)
+mean                 496.1 μs   (495.8 μs .. 496.8 μs)
+std dev              1.320 μs   (685.0 ns .. 2.417 μs)
+
+
+Haskell mutable arrays
+~~~~~~~~~~~~~~~~~~~~
+
+[nix-shell:~/chai/lh-array-sort]$ cabal v2-exec benchrunner -fno-mutable-arrays -- 1000000
+benchmarking fill_array
+time                 495.9 μs   (494.7 μs .. 497.4 μs)
+                     1.000 R²   (1.000 R² .. 1.000 R²)
+mean                 496.5 μs   (495.4 μs .. 498.5 μs)
+std dev              4.437 μs   (2.178 μs .. 7.219 μs)
+
+
+
+Handwritten C
+~~~~~~~~~~~~~~~~~~~~
+
+[nix-shell:~/chai/lh-array-sort/benchmarks]$ ./criterion-interactive ./c/cbench.exe fillarray int64 1000000
+criterion-interactive: created subprocess (./c/cbench.exe fillarray int64 1000000), now waiting for READY signal.
+> benchmarking fill array.
+benchmarking ./c/cbench.exe
+time                 280.3 μs   (279.3 μs .. 281.6 μs)
+                     1.000 R²   (1.000 R² .. 1.000 R²)
+mean                 282.9 μs   (282.0 μs .. 284.2 μs)
+std dev              3.554 μs   (2.694 μs .. 4.715 μs)
+
+
+Gibbon
+~~~~~~~~~~~~~~~~~~~~
+
+[nix-shell:~/chai/lh-array-sort/benchmarks]$ ./criterion-interactive ./c/cbench.exe gib_fillarray int64 1000000
+criterion-interactive: created subprocess (./c/cbench.exe gib_fillarray int64 1000000), now waiting for READY signal.
+> benchmarking gibbon fill array.
+benchmarking ./c/cbench.exe
+time                 2.660 ms   (2.658 ms .. 2.662 ms)
+                     1.000 R²   (1.000 R² .. 1.000 R²)
+mean                 2.757 ms   (2.741 ms .. 2.778 ms)
+std dev              61.55 μs   (49.97 μs .. 78.27 μs)
+
+
+Gibbon (edited by hand)
+~~~~~~~~~~~~~~~~~~~~
+
+-- after turning recursive loop function into a for loop
+
+[nix-shell:~/chai/lh-array-sort/benchmarks]$ ./criterion-interactive ./c/cbench.exe gib_fillarray int64 1000000
+criterion-interactive: created subprocess (./c/cbench.exe gib_fillarray int64 1000000), now waiting for READY signal.
+> benchmarking gibbon fill array.
+benchmarking ./c/cbench.exe
+time                 456.2 μs   (455.6 μs .. 456.6 μs)
+                     1.000 R²   (1.000 R² .. 1.000 R²)
+mean                 460.0 μs   (459.4 μs .. 460.7 μs)
+std dev              2.175 μs   (1.819 μs .. 2.589 μs)
+
+
+
+
+
+(2) Insertion sort
+----------------------------------------
+
+
+Haskell list
+~~~~~~~~~~~~~~~~~~~~
+
+[nix-shell:~/chai/lh-array-sort]$ cabal v2-exec benchrunner -fno-mutable-arrays -- Sorting 10
+benchmarking LH/insertion1/10
+time                 2.913 μs   (2.872 μs .. 2.950 μs)
+                     0.999 R²   (0.998 R² .. 0.999 R²)
+mean                 2.920 μs   (2.889 μs .. 2.948 μs)
+std dev              98.17 ns   (79.72 ns .. 117.9 ns)
+variance introduced by outliers: 44% (moderately inflated)
+
+benchmarking LH/insertion2/10
+time                 2.774 μs   (2.772 μs .. 2.775 μs)
+                     1.000 R²   (1.000 R² .. 1.000 R²)
+mean                 2.771 μs   (2.769 μs .. 2.773 μs)
+std dev              5.932 ns   (5.127 ns .. 6.798 ns)
+
+[nix-shell:~/chai/lh-array-sort]$ cabal v2-exec benchrunner -fno-mutable-arrays -- Sorting 100
+benchmarking LH/insertion1/100
+time                 2.199 ms   (2.189 ms .. 2.208 ms)
+                     1.000 R²   (1.000 R² .. 1.000 R²)
+mean                 2.184 ms   (2.181 ms .. 2.188 ms)
+std dev              14.05 μs   (11.50 μs .. 18.55 μs)
+
+benchmarking LH/insertion2/100
+time                 2.192 ms   (2.190 ms .. 2.195 ms)
+                     1.000 R²   (1.000 R² .. 1.000 R²)
+mean                 2.195 ms   (2.192 ms .. 2.200 ms)
+std dev              11.04 μs   (4.557 μs .. 18.83 μs)
+
+
+[nix-shell:~/chai/lh-array-sort]$ cabal v2-exec benchrunner -fno-mutable-arrays -- Sorting 1000
+benchmarking LH/insertion1/1000
+time                 6.235 s    (6.215 s .. 6.257 s)
+                     1.000 R²   (1.000 R² .. 1.000 R²)
+mean                 6.233 s    (6.229 s .. 6.236 s)
+std dev              3.461 ms   (1.600 ms .. 4.074 ms)
+variance introduced by outliers: 19% (moderately inflated)
+
+benchmarking LH/insertion2/1000
+time                 2.386 s    (2.361 s .. 2.443 s)
+                     1.000 R²   (1.000 R² .. 1.000 R²)
+mean                 2.367 s    (2.362 s .. 2.377 s)
+std dev              10.08 ms   (132.2 μs .. 11.78 ms)
+variance introduced by outliers: 19% (moderately inflated)
+
+
+Haskell mutable arrays
+~~~~~~~~~~~~~~~~~~~~
+
+[nix-shell:~/chai/lh-array-sort]$ cabal v2-exec benchrunner -fmutable-arrays -- Sorting 10
+benchmarking LH/insertion1/10
+time                 969.7 ns   (966.9 ns .. 974.0 ns)
+                     1.000 R²   (1.000 R² .. 1.000 R²)
+mean                 967.6 ns   (966.7 ns .. 969.5 ns)
+std dev              4.221 ns   (2.198 ns .. 7.846 ns)
+
+benchmarking LH/insertion2/10
+time                 195.7 ns   (195.5 ns .. 196.0 ns)
+                     1.000 R²   (1.000 R² .. 1.000 R²)
+mean                 196.0 ns   (195.7 ns .. 197.2 ns)
+std dev              1.805 ns   (284.7 ps .. 3.665 ns)
+
+
+[nix-shell:~/chai/lh-array-sort]$ cabal v2-exec benchrunner -fmutable-arrays -- Sorting 100
+benchmarking LH/insertion1/100
+time                 12.15 μs   (12.14 μs .. 12.16 μs)
+                     1.000 R²   (1.000 R² .. 1.000 R²)
+mean                 12.15 μs   (12.15 μs .. 12.16 μs)
+std dev              22.14 ns   (17.57 ns .. 28.94 ns)
+
+benchmarking LH/insertion2/100
+time                 1.961 μs   (1.956 μs .. 1.968 μs)
+                     1.000 R²   (1.000 R² .. 1.000 R²)
+mean                 1.964 μs   (1.959 μs .. 1.970 μs)
+std dev              20.28 ns   (15.78 ns .. 27.18 ns)
+
+
+
+Handwritten C
+~~~~~~~~~~~~~~~~~~~~
+
+[nix-shell:~/chai/lh-array-sort/benchmarks]$ ./criterion-interactive ./c/cbench.exe insertion int64 10
+criterion-interactive: created subprocess (./c/cbench.exe insertion int64 10), now waiting for READY signal.
+> benchmarking canonical sorting algorithms.
+> benchmarking glibc insertion sort:
+benchmarking ./c/cbench.exe
+time                 205.6 ns   (205.5 ns .. 205.7 ns)
+                     1.000 R²   (1.000 R² .. 1.000 R²)
+mean                 205.9 ns   (205.8 ns .. 206.0 ns)
+std dev              344.6 ps   (263.3 ps .. 445.5 ps)
+
+[nix-shell:~/chai/lh-array-sort/benchmarks]$ ./criterion-interactive ./c/cbench.exe insertion int64 100
+criterion-interactive: created subprocess (./c/cbench.exe insertion int64 100), now waiting for READY signal.
+> benchmarking canonical sorting algorithms.
+> benchmarking glibc insertion sort:
+benchmarking ./c/cbench.exe
+time                 12.83 μs   (12.82 μs .. 12.84 μs)
+                     1.000 R²   (1.000 R² .. 1.000 R²)
+mean                 12.86 μs   (12.85 μs .. 12.87 μs)
+std dev              35.06 ns   (18.92 ns .. 57.12 ns)
+
+
+[nix-shell:~/chai/lh-array-sort/benchmarks]$ ./criterion-interactive ./c/cbench.exe insertion int64 1000
+criterion-interactive: created subprocess (./c/cbench.exe insertion int64 1000), now waiting for READY signal.
+> benchmarking canonical sorting algorithms.
+> benchmarking glibc insertion sort:
+benchmarking ./c/cbench.exe
+time                 819.0 μs   (818.0 μs .. 819.7 μs)
+                     1.000 R²   (1.000 R² .. 1.000 R²)
+mean                 830.2 μs   (828.5 μs .. 832.4 μs)
+std dev              6.495 μs   (5.525 μs .. 7.719 μs)
+
+Gibbon
+~~~~~~~~~~~~~~~~~~~~
+
+Version (2)
+
+[nix-shell:~/chai/lh-array-sort/benchmarks]$ ./criterion-interactive ./c/cbench.exe gib_insertion2 int64 10
+criterion-interactive: created subprocess (./c/cbench.exe gib_insertion2 int64 10), now waiting for READY signal.
+> benchmarking gibbon insertionsort2.
+benchmarking ./c/cbench.exe
+time                 302.8 ns   (302.6 ns .. 303.0 ns)
+                     1.000 R²   (1.000 R² .. 1.000 R²)
+mean                 303.2 ns   (303.0 ns .. 303.6 ns)
+std dev              747.2 ps   (551.0 ps .. 1.176 ns)
+
+[nix-shell:~/chai/lh-array-sort/benchmarks]$ ./criterion-interactive ./c/cbench.exe gib_insertion2 int64 100
+criterion-interactive: created subprocess (./c/cbench.exe gib_insertion2 int64 100), now waiting for READY signal.
+> benchmarking gibbon insertionsort2.
+benchmarking ./c/cbench.exe
+time                 14.93 μs   (14.92 μs .. 14.93 μs)
+                     1.000 R²   (1.000 R² .. 1.000 R²)
+mean                 14.95 μs   (14.94 μs .. 14.96 μs)
+std dev              22.12 ns   (16.12 ns .. 34.88 ns)
+
+[nix-shell:~/chai/lh-array-sort/benchmarks]$ ./criterion-interactive ./c/cbench.exe gib_insertion2 int64 1000
+criterion-interactive: created subprocess (./c/cbench.exe gib_insertion2 int64 1000), now waiting for READY signal.
+> benchmarking gibbon insertionsort2.
+benchmarking ./c/cbench.exe
+time                 1.437 ms   (1.433 ms .. 1.442 ms)
+                     1.000 R²   (1.000 R² .. 1.000 R²)
+mean                 1.469 ms   (1.464 ms .. 1.476 ms)
+std dev              19.27 μs   (16.06 μs .. 22.69 μs)
+
+
+Version (1)
+
+[nix-shell:~/chai/lh-array-sort/benchmarks]$ ./criterion-interactive ./c/cbench.exe gib_insertion1 int64 10
+criterion-interactive: created subprocess (./c/cbench.exe gib_insertion1 int64 10), now waiting for READY signal.
+> benchmarking gibbon insertionsort1.
+benchmarking ./c/cbench.exe
+time                 302.8 ns   (302.7 ns .. 302.9 ns)
+                     1.000 R²   (1.000 R² .. 1.000 R²)
+mean                 303.2 ns   (303.1 ns .. 303.6 ns)
+std dev              662.1 ps   (375.0 ps .. 1.190 ns)
+
+[nix-shell:~/chai/lh-array-sort/benchmarks]$ ./criterion-interactive ./c/cbench.exe gib_insertion1 int64 100
+criterion-interactive: created subprocess (./c/cbench.exe gib_insertion1 int64 100), now waiting for READY signal.
+> benchmarking gibbon insertionsort1.
+benchmarking ./c/cbench.exe
+time                 14.93 μs   (14.91 μs .. 14.95 μs)
+                     1.000 R²   (1.000 R² .. 1.000 R²)
+mean                 14.95 μs   (14.94 μs .. 14.96 μs)
+std dev              29.35 ns   (22.54 ns .. 42.00 ns)
+
+[nix-shell:~/chai/lh-array-sort/benchmarks]$ ./criterion-interactive ./c/cbench.exe gib_insertion1 int64 1000
+criterion-interactive: created subprocess (./c/cbench.exe gib_insertion1 int64 1000), now waiting for READY signal.
+> benchmarking gibbon insertionsort1.
+benchmarking ./c/cbench.exe
+time                 1.437 ms   (1.436 ms .. 1.437 ms)
+                     1.000 R²   (1.000 R² .. 1.000 R²)
+mean                 1.468 ms   (1.463 ms .. 1.475 ms)
+std dev              19.46 μs   (16.26 μs .. 23.28 μs)
+
+
+Gibbon (OLD AND WRONG)
+~~~~~~~~~~~~~~~~~~~~
+
+[nix-shell:~/chai/lh-array-sort/benchmarks]$ ./criterion-interactive ./c/cbench.exe gib_insertion1 int64 10
+criterion-interactive: created subprocess (./c/cbench.exe gib_insertion1 int64 10), now waiting for READY signal.
+> benchmarking gibbon insertionsort1.
+benchmarking ./c/cbench.exe
+time                 206.9 ns   (206.8 ns .. 207.1 ns)
+                     1.000 R²   (1.000 R² .. 1.000 R²)
+mean                 207.2 ns   (207.0 ns .. 207.5 ns)
+std dev              636.7 ps   (283.3 ps .. 1.257 ns)
+
+
+after changing isort1
+
+[nix-shell:~/chai/lh-array-sort/benchmarks]$ ./criterion-interactive ./c/cbench.exe gib_insertion1 int64 10
+criterion-interactive: created subprocess (./c/cbench.exe gib_insertion1 int64 10), now waiting for READY signal.
+> benchmarking gibbon insertionsort1.
+benchmarking ./c/cbench.exe
+time                 261.6 ns   (261.3 ns .. 262.1 ns)
+                     1.000 R²   (1.000 R² .. 1.000 R²)
+mean                 261.8 ns   (261.6 ns .. 262.1 ns)
+std dev              719.1 ps   (445.5 ps .. 1.116 ns)
+
+
+[nix-shell:~/chai/lh-array-sort/benchmarks]$ ./criterion-interactive ./c/cbench.exe gib_insertion2 int64 10
+criterion-interactive: created subprocess (./c/cbench.exe gib_insertion2 int64 10), now waiting for READY signal.
+> benchmarking gibbon insertionsort2.
+benchmarking ./c/cbench.exe
+time                 211.5 ns   (211.4 ns .. 211.7 ns)
+                     1.000 R²   (1.000 R² .. 1.000 R²)
+mean                 212.0 ns   (211.8 ns .. 212.9 ns)
+std dev              1.442 ns   (341.0 ps .. 3.009 ns)
+
+
+[nix-shell:~/chai/lh-array-sort/benchmarks]$ ./criterion-interactive ./c/cbench.exe gib_insertion1 int64 100
+criterion-interactive: created subprocess (./c/cbench.exe gib_insertion1 int64 100), now waiting for READY signal.
+> benchmarking gibbon insertionsort1.
+benchmarking ./c/cbench.exe
+time                 10.87 μs   (10.86 μs .. 10.88 μs)
+                     1.000 R²   (1.000 R² .. 1.000 R²)
+mean                 10.90 μs   (10.89 μs .. 10.93 μs)
+std dev              74.21 ns   (42.79 ns .. 138.7 ns)
+
+after changing isort1
+
+[nix-shell:~/chai/lh-array-sort/benchmarks]$ ./criterion-interactive ./c/cbench.exe gib_insertion1 int64 100
+criterion-interactive: created subprocess (./c/cbench.exe gib_insertion1 int64 100), now waiting for READY signal.
+> benchmarking gibbon insertionsort1.
+benchmarking ./c/cbench.exe
+time                 11.63 μs   (11.62 μs .. 11.65 μs)
+                     1.000 R²   (1.000 R² .. 1.000 R²)
+mean                 11.69 μs   (11.66 μs .. 11.80 μs)
+std dev              146.5 ns   (48.43 ns .. 319.1 ns)
+
+
+[nix-shell:~/chai/lh-array-sort/benchmarks]$ ./criterion-interactive ./c/cbench.exe gib_insertion2 int64 100
+criterion-interactive: created subprocess (./c/cbench.exe gib_insertion2 int64 100), now waiting for READY signal.
+> benchmarking gibbon insertionsort2.
+benchmarking ./c/cbench.exe
+time                 10.64 μs   (10.64 μs .. 10.65 μs)
+                     1.000 R²   (1.000 R² .. 1.000 R²)
+mean                 10.66 μs   (10.66 μs .. 10.67 μs)
+std dev              21.18 ns   (15.30 ns .. 31.34 ns)
+
+
+[nix-shell:~/chai/lh-array-sort/benchmarks]$ ./criterion-interactive ./c/cbench.exe gib_insertion1 int64 1000
+criterion-interactive: created subprocess (./c/cbench.exe gib_insertion1 int64 1000), now waiting for READY signal.
+> benchmarking gibbon insertionsort1.
+benchmarking ./c/cbench.exe
+time                 1.087 ms   (1.079 ms .. 1.095 ms)
+                     1.000 R²   (1.000 R² .. 1.000 R²)
+mean                 1.099 ms   (1.096 ms .. 1.103 ms)
+std dev              12.02 μs   (10.30 μs .. 14.33 μs)
+
+after changing isort1
+
+[nix-shell:~/chai/lh-array-sort/benchmarks]$ ./criterion-interactive ./c/cbench.exe gib_insertion1 int64 1000
+criterion-interactive: created subprocess (./c/cbench.exe gib_insertion1 int64 1000), now waiting for READY signal.
+> benchmarking gibbon insertionsort1.
+benchmarking ./c/cbench.exe
+time                 1.084 ms   (1.082 ms .. 1.087 ms)
+                     1.000 R²   (1.000 R² .. 1.000 R²)
+mean                 1.110 ms   (1.105 ms .. 1.117 ms)
+std dev              20.54 μs   (14.06 μs .. 30.09 μs)
+
+
+[nix-shell:~/chai/lh-array-sort/benchmarks]$ ./criterion-interactive ./c/cbench.exe gib_insertion2 int64 1000
+criterion-interactive: created subprocess (./c/cbench.exe gib_insertion2 int64 1000), now waiting for READY signal.
+> benchmarking gibbon insertionsort2.
+benchmarking ./c/cbench.exe
+time                 1.076 ms   (1.074 ms .. 1.077 ms)
+                     1.000 R²   (1.000 R² .. 1.000 R²)
+mean                 1.096 ms   (1.093 ms .. 1.099 ms)
+std dev              11.87 μs   (9.926 μs .. 14.66 μs)
+
+
+
+
+(3) Merge sort
+----------------------------------------
+
+
+Haskell list
+~~~~~~~~~~~~~~~~~~~~
+
+[nix-shell:~/chai/lh-array-sort]$ cabal v2-exec benchrunner -fno-mutable-arrays -- Mergesort 10000
+benchmarking LH/dps_merge/10000
+time                 4.366 s    (4.337 s .. 4.382 s)
+                     1.000 R²   (1.000 R² .. 1.000 R²)
+mean                 4.357 s    (4.348 s .. 4.361 s)
+std dev              6.467 ms   (1.986 ms .. 8.675 ms)
+variance introduced by outliers: 19% (moderately inflated)
+
+
+
+Haskell mutable arrays
+~~~~~~~~~~~~~~~~~~~~
+
+
+Handwritten C
+~~~~~~~~~~~~~~~~~~~~
+
+
+Gibbon
+~~~~~~~~~~~~~~~~~~~~
+
+[nix-shell:~/chai/lh-array-sort/benchmarks]$ ./criterion-interactive ./c/cbench.exe gib_mergesort float32 10000
+criterion-interactive: created subprocess (./c/cbench.exe gib_mergesort float32 10000), now waiting for READY signal.
+> benchmarking gibbon mergesort.
+benchmarking ./c/cbench.exe
+time                 908.1 μs   (906.0 μs .. 909.6 μs)
+                     1.000 R²   (1.000 R² .. 1.000 R²)
+mean                 922.4 μs   (919.4 μs .. 930.3 μs)
+std dev              15.01 μs   (8.417 μs .. 28.72 μs)
+
+[nix-shell:~/chai/lh-array-sort/benchmarks]$ ./criterion-interactive ./c/cbench.exe gib_mergesort float32 100000
+criterion-interactive: created subprocess (./c/cbench.exe gib_mergesort float32 100000), now waiting for READY signal.
+> benchmarking gibbon mergesort.
+benchmarking ./c/cbench.exe
+time                 11.65 ms   (11.64 ms .. 11.65 ms)
+                     1.000 R²   (1.000 R² .. 1.000 R²)
+mean                 12.95 ms   (12.57 ms .. 13.59 ms)
+std dev              1.257 ms   (733.6 μs .. 2.083 ms)
+variance introduced by outliers: 50% (severely inflated)
+
+[nix-shell:~/chai/lh-array-sort/benchmarks]$ ./criterion-interactive ./c/cbench.exe gib_mergesort float32 1000000criterion-interactive: created subprocess (./c/cbench.exe gib_mergesort float32 1000000), now waiting for READY signal.
+> benchmarking gibbon mergesort.
+benchmarking ./c/cbench.exe
+time                 149.2 ms   (148.4 ms .. 150.3 ms)
+                     1.000 R²   (1.000 R² .. 1.000 R²)
+mean                 210.3 ms   (186.2 ms .. 265.5 ms)
+std dev              46.81 ms   (11.61 ms .. 67.43 ms)
+variance introduced by outliers: 64% (severely inflated)

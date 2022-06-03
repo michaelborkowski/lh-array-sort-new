@@ -1,5 +1,7 @@
 /* Gibbon program. */
 
+#include "gibbon_rts.h"
+
 #include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -31,76 +33,6 @@
 #include <cilk/cilk.h>
 #include <cilk/cilk_api.h>
 #endif
-
-typedef int64_t GibInt;
-typedef bool GibBool;
-
-/* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
- * Vectors
- * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
- */
-
-typedef struct gib_vector {
-    // Bounds on the vector.
-    int64_t lower, upper;
-
-    // Size of each element.
-    size_t elt_size;
-
-    // Elements of the vector.
-    void *data;
-
-} GibVector;
-
-static inline GibInt gib_vector_length(GibVector *vec)
-{
-    return (vec->upper - vec->lower);
-}
-
-static inline GibVector *gib_vector_alloc(GibInt num, size_t elt_size)
-{
-    GibVector *vec = (GibVector *) malloc(sizeof(GibVector));
-    if (vec == NULL) {
-        fprintf(stderr, "alloc_vector: malloc failed: %ld", sizeof(GibVector));
-        exit(1);
-    }
-    void *data = (void *) malloc(num * elt_size);
-    if (data == NULL) {
-        fprintf(stderr, "alloc_vector: malloc failed: %ld", sizeof(num * elt_size));
-        exit(1);
-    }
-    vec->lower = 0;
-    vec->upper = num;
-    vec->elt_size = elt_size;
-    vec->data = data;
-    return vec;
-}
-
-static inline void *gib_vector_nth(GibVector *vec, GibInt i)
-{
-#ifdef _GIBBON_BOUNDSCHECK
-    if (i < vec->lower || i > vec->upper) {
-        fprintf(stdderr, "gib_vector_nth index out of bounds: %lld (%lld,%lld)\n",
-                i, vec->lower, vec->upper);
-        exit(1);
-    }
-#endif
-    return ((char*)vec->data + (vec->elt_size * (vec->lower + i)));
-}
-
-static inline GibVector *gib_vector_inplace_update(GibVector *vec, GibInt i, void* elt)
-{
-    void* dst = gib_vector_nth(vec, i);
-    memcpy(dst, elt, vec->elt_size);
-    return vec;
-}
-
-static inline void gib_vector_free(GibVector *vec)
-{
-    free(vec->data);
-    free(vec);
-    return;
-}
 
 /* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
  * Program starts here
@@ -298,9 +230,9 @@ GibVector *isort2_445_629(GibVector *xs_22_710_806)
     GibInt n__56_697_783_846 =  maxInt(fltAppE_760_810, 0);
     GibInt tmp_1 = sizeof(GibInt);
     GibVector *vec_57_698_784_847 = gib_vector_alloc(n__56_697_783_846, tmp_1);
-    // GibVector *vec1_58_699_785_848 =
-    //            generate_loop_452_633(vec_57_698_784_847, 0, n__56_697_783_846, xs_22_710_806);
-    GibVector *vec1_58_699_785_848 = xs_22_710_806;
+    GibVector *vec1_58_699_785_848 =
+               generate_loop_452_633(vec_57_698_784_847, 0, n__56_697_783_846, xs_22_710_806);
+    // GibVector *vec1_58_699_785_848 = xs_22_710_806;
     GibVector *tailapp_851 =  go_448_634(1, n_24_711_808, vec1_58_699_785_848);
 
     return tailapp_851;

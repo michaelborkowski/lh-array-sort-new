@@ -14,5 +14,5 @@ in
   stdenv.mkDerivation {
     name = "lh-array-sort";
     buildInputs = [ ghc ghc901 cabal-install stack ghcid z3
-                    stdenv gcc gdb ];
+                    stdenv gcc gdb uthash ];
   }

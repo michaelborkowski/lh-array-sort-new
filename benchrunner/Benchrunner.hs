@@ -40,7 +40,7 @@ bench_fill_array input_size = do
   where
     fill (s,x) = A.make s x
 
-data Benchmarks = FillArray | Sorting
+data Benchmarks = FillArray | Insertionsort | Mergesort
   deriving (Eq, Show, Read)
 
 main :: IO ()
@@ -49,7 +49,7 @@ main = do
   let usage = "USAGE: benchrunner -- BENCH_ARGS -- CRITERION_ARGS"
       (benchmark,size,rst) =
         case splitOn ["--"] allargs of
-          [] -> (Sorting,10,[])
+          [] -> (Insertionsort,10,[])
           [(bnch:sz:_)] -> if sz == "--help"
                       then error usage
                       else (read bnch :: Benchmarks, read sz :: Int, [])
@@ -59,9 +59,10 @@ main = do
           _ -> error usage
 
   runbench <-
-    if benchmark == FillArray
-    then bench_fill_array size
-    else benchSorts
+    case benchmark of
+      FillArray -> bench_fill_array size
+      Insertionsort ->
+              benchSorts
                 (Proxy :: Proxy Int64)
                 size
                 [
@@ -69,6 +70,10 @@ main = do
                 , ("LH/insertion2", I.isort2)
                 -- ("LH/quick", Q.quickSort)
                 -- , ("LH/merge", M.msort)
-                , ("LH/dps_merge", DM.msort)
                 ]
+      Mergesort ->
+        benchSorts
+                (Proxy :: Proxy Float)
+                size
+                [ ("LH/dps_merge", DM.msort) ]
   withArgs rst $ defaultMain [ runbench ]

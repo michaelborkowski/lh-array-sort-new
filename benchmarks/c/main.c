@@ -30,7 +30,11 @@ int main(int argc, char** argv)
     } else if (strcmp(argv[1], "gib_insertion2") == 0) {
         printf("benchmarking gibbon insertionsort2.\n");
         bench_gibbon_insertion1(argc,argv);
-    } else if (strcmp(argv[1], "fillarray") == 0) {
+    } else if (strcmp(argv[1], "gib_mergesort") == 0) {
+        printf("benchmarking gibbon mergesort.\n");
+        bench_gibbon_mergesort(argc,argv);
+    }
+    else if (strcmp(argv[1], "fillarray") == 0) {
         printf("benchmarking canonical fill array.\n");
         bench_canonical_fillarray(argc,argv);
     } else {
