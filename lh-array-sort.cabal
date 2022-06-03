@@ -29,6 +29,8 @@ library
      Insertion
       LinearMerge
       DpsMerge
+      DpsMergeSort
+      DpsMergeSort4
       Properties
       QuickSort
   other-modules:

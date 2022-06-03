@@ -1,6 +1,5 @@
 {-@ LIQUID "--reflection"  @-}
 {-@ LIQUID "--ple"         @-}
-{- @ LIQUID "--ple-local"         @-}
 {-@ LIQUID "--short-names" @-}
 
 {-# LANGUAGE CPP #-}
@@ -33,25 +32,25 @@ quickSort xs = quickSortBtw xs 0 (size xs)
                                     toSlice xs j (A.size xs) == toSlice ys j (A.size xs) &&
                                     toBagBtw xs i j == toBagBtw ys i j } / [j - i] @-}
 quickSortBtw :: Ord a => Array a -> Int -> Int -> Array a
-quickSortBtw xs i j 
-    | j - i < 2  = xs 
-    | otherwise  = let (xs', i_piv) = shuffleBtw xs i j   -- isPartitionedBtw xs' i i_piv j
-                       xs''         = quickSortBtw xs'  i           i_piv
-                       xs'''        = quickSortBtw xs'' (i_piv + 1) j
-                                    ? lem_qs_pres_partition_left  xs'  xs''  i i_piv j
-                    in xs'''        ? lem_sorted_partitions xs''' i i_piv (j
-                                          ? lem_equal_slice_sorted xs'' xs''' 0 i i_piv (i_piv+1)
-                                          ? lem_qs_pres_partition_right xs'' xs''' i i_piv j )
-                                    ? lem_equal_slice_narrow         xs'  xs'' i_piv j (A.size xs) (A.size xs)
-                                    ? lem_equal_slice_narrow         xs'  xs'' i_piv i_piv j (A.size xs)
-                                    ? lem_equal_slice_bag            xs'  xs''       i_piv j
-                                    ? lem_equal_slice_narrow         xs'' xs''' 0 0 i (i_piv+1)
-                                    ? lem_equal_slice_narrow         xs'' xs''' 0 i (i_piv+1) (i_piv+1)
-                                    ? lem_equal_slice_bag            xs'' xs'''   i (i_piv+1)
-                                    ? lem_toBagBtw_compose           xs'  xs''    i i_piv     j
-                                    ? lem_toBagBtw_compose           xs'' xs'''   i (i_piv+1) j
+quickSortBtw xs i j  =
+  if j - i < 2
+  then xs
+  else let (xs', i_piv) = shuffleBtw xs i j   -- isPartitionedBtw xs' i i_piv j
+           xs''         = quickSortBtw xs'  i           i_piv
+           xs'''        = quickSortBtw xs'' (i_piv + 1) j
+                        ? lem_qs_pres_partition_left  xs'  xs''  i i_piv j
+        in xs'''        ? lem_sorted_partitions xs''' i i_piv (j
+                              ? lem_equal_slice_sorted xs'' xs''' 0 i i_piv (i_piv+1)
+                              ? lem_qs_pres_partition_right xs'' xs''' i i_piv j )
+                        ? lem_equal_slice_narrow         xs'  xs'' i_piv j (A.size xs) (A.size xs)
+                        ? lem_equal_slice_narrow         xs'  xs'' i_piv i_piv j (A.size xs)
+                        ? lem_equal_slice_bag            xs'  xs''       i_piv j
+                        ? lem_equal_slice_narrow         xs'' xs''' 0 0 i (i_piv+1)
+                        ? lem_equal_slice_narrow         xs'' xs''' 0 i (i_piv+1) (i_piv+1)
+                        ? lem_equal_slice_bag            xs'' xs'''   i (i_piv+1)
+                        ? lem_toBagBtw_compose           xs'  xs''    i i_piv     j
+                        ? lem_toBagBtw_compose           xs'' xs'''   i (i_piv+1) j
 
-{-@ ple shuffleBtw @-}
 {-@ shuffleBtw :: xs:(Array a) -> { i:Int | 0 <= i } -> { j:Int | i + 1 < j && j <= A.size xs }
                   -> (Array a, Int)<{\ys ip -> isPartitionedBtw ys i ip j && 
                                                toSlice xs 0 i == toSlice ys 0 i && 
@@ -59,54 +58,59 @@ quickSortBtw xs i j
                                                toBagBtw xs i j == toBagBtw ys i j &&
                                                i <= ip && ip < j && A.size ys == A.size xs }> @-}
 shuffleBtw :: Ord a => Array a -> Int -> Int -> (Array a, Int)
-shuffleBtw xs i j = let (xs', ip) = goShuffle xs 
-                                              i (j-2)  -- BOTH bounds inclusive      
-                        {-@ xs'' :: { vs:(Array a) | isPartitionedBtw vs i ip j &&
-                                                     toSlice xs' 0 i == toSlice vs 0 i && 
-                                                     toSlice xs' j (A.size xs') == toSlice vs j (A.size xs') &&
-                                                     A.size xs' == A.size vs &&
-                                                     toBagBtw xs i j == toBagBtw vs i j } @-}
-                        xs''      = if ip < j-1 
-                                      then swap xs' ip (j-1) 
-                                         ? lma_swap xs' ip (j-1)
-                                         ? lem_bagBtw_swap xs' i ip (j-1) j
-                                         ? lem_range_inside_swap xs' ip (j-1)
-                                         ? lem_range_outside_swap xs' i ip (j-1) j (get xs' (j-1))
-                                         ? lem_toSlice_swap xs' i ip (j-1) j
-                                      else xs' 
-                     in (xs'', ip)
-  where
-    piv = get xs (j-1) -- fix xs[j-1] as the pivot                 
-                                                        
-    {-@ goShuffle :: { zs:(Array a) | get zs (j-1) == piv && A.size zs == A.size xs &&
-                                                             toBagBtw zs i j == toBagBtw xs i j && 
-                                                             toSlice xs 0 i == toSlice zs 0 i && 
-                                                             toSlice xs j (A.size zs) == toSlice zs j (A.size zs)}
-                  -> { jl:Int | i <= jl    &&             rangeUpperBound zs i      jl    piv } 
-                  -> { jr:Int | jl <= jr+1 && jr < j-1 && rangeLowerBound zs (jr+1) (j-1) piv }
-                  -> (Array a, Int)<{\ws ip -> rangeUpperBound ws i      ip    piv && 
-                                               rangeLowerBound ws ip     (j-1) piv &&
-                                               A.size ws == A.size zs && 
-                                               get ws (j-1) == get zs (j-1) &&
-                                               toBagBtw zs i j == toBagBtw ws i j &&
-                                               toBagBtw xs i j == toBagBtw ws i j &&
-                                               toSlice zs 0 i == toSlice ws 0 i && 
-                                               toSlice zs j (A.size zs) == toSlice ws j (A.size zs) &&
-                                               i <= ip && ip < j }> / [jr - jl + 1] @-}
-    -- at return, all of ws[i:ip] <= ws[j-1] and all of ws[ip:j-1] > ws[j-1].
-    goShuffle zs jl jr    -- BOTH bounds inclusive here
-      | jl > jr           = (zs, jl) 
-      | get zs jl <= piv  = goShuffle zs (jl+1 ? lem_rangeProperty_build_right zs (belowPivot (get zs (j-1))) i (jl
-                                               ? toProof (belowPivot (get zs (j-1)) (get zs jl))
-                                         )) jr
-      | get zs jr >  piv  = goShuffle zs jl     (jr-1)
-      | otherwise         = let zs' = swap zs jl jr 
-                                    ? lem_range_outside_swap zs i jl jr (j-1) piv
-                                    ? lma_swap        zs   jl jr
-                                    ? lma_swap_eql zs jl jr (j-1)
-                                    ? lem_bagBtw_swap zs i jl jr j   
-                                    ? lem_toSlice_swap  zs i jl jr j 
-                             in goShuffle zs' jl (jr-1)
+shuffleBtw xs i j = 
+  let 
+      (piv, xs1) = A.get2 xs (j-1)        -- fix xs[j-1] as the pivot
+      {-@ goShuffle :: { zs:(Array a) | get zs (j-1) == piv && A.size zs == A.size xs &&
+                                        toBagBtw zs i j == toBagBtw xs i j && 
+                                        toSlice xs 0 i == toSlice zs 0 i && 
+                                        toSlice xs j (A.size zs) == toSlice zs j (A.size zs)}
+                    -> { jl:Int | i <= jl    &&             rangeUpperBound zs i      jl    piv } 
+                    -> { jr:Int | jl <= jr+1 && jr < j-1 && rangeLowerBound zs (jr+1) (j-1) piv }
+                    -> (Array a, Int)<{\ws ip -> rangeUpperBound ws i      ip    piv && 
+                                                 rangeLowerBound ws ip     (j-1) piv &&
+                                                 A.size ws == A.size zs && 
+                                                 get ws (j-1) == get zs (j-1) &&
+                                                 toBagBtw zs i j == toBagBtw ws i j &&
+                                                 toBagBtw xs i j == toBagBtw ws i j &&
+                                                 toSlice zs 0 i == toSlice ws 0 i && 
+                                                 toSlice zs j (A.size zs) == toSlice ws j (A.size zs) &&
+                                                 i <= ip && ip < j }> / [jr - jl + 1] @-}
+      -- at return, all of ws[i:ip] <= ws[j-1] and all of ws[ip:j-1] > ws[j-1].
+      goShuffle zs jl jr    =   -- BOTH bounds inclusive here
+        if jl > jr
+        then (zs, jl) 
+        else let (vl, zs') = A.get2 zs jl in
+          if vl <= piv 
+          then goShuffle zs' (jl+1 ? lem_rangeProperty_build_right zs (belowPivot (get zs (j-1))) 
+                                       i (jl ? toProof (belowPivot (get zs (j-1)) (get zs jl)))) 
+                             jr
+          else let (vr, zs'') = A.get2 zs jr in
+            if vr >  piv  
+            then goShuffle zs'' jl     (jr-1)
+            else let zs''' = swap zs'' jl jr 
+                           ? lem_range_outside_swap zs i jl jr (j-1) piv
+                           ? lma_swap        zs   jl jr
+                           ? lma_swap_eql zs jl jr (j-1)
+                           ? lem_bagBtw_swap zs i jl jr j   
+                           ? lem_toSlice_swap  zs i jl jr j 
+                  in goShuffle zs''' jl (jr-1)
+
+      (xs', ip)  = goShuffle xs1 i (j-2)  -- BOTH bounds inclusive      
+      {-@ xs'' :: { vs:(Array a) | isPartitionedBtw vs i ip j &&
+                                   toSlice xs' 0 i == toSlice vs 0 i && 
+                                   toSlice xs' j (A.size xs') == toSlice vs j (A.size xs') &&
+                                   A.size xs' == A.size vs &&
+                                   toBagBtw xs i j == toBagBtw vs i j } @-}
+      xs''       = if ip < j-1 
+                   then swap xs' ip (j-1) ? lma_swap xs' ip (j-1)
+                                          ? lem_bagBtw_swap xs' i ip (j-1) j
+                                          ? lem_range_inside_swap xs' ip (j-1)
+                                          ? lem_range_outside_swap xs' i ip (j-1) j (get xs' (j-1))
+                                          ? lem_toSlice_swap xs' i ip (j-1) j
+                   else xs' 
+   in (xs'', ip)
+--  where
 
  -- | The remaining definitions and lemmas pertain to the partition property w/r/t the pivot element
 
