@@ -31,6 +31,8 @@ library
       DpsMerge
       DpsMergeSort
       DpsMergeSort4
+      DpsMergeSortPar
+      DpsMergeSort4Par
       Properties
       QuickSort
   other-modules:
