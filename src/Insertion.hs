@@ -92,12 +92,15 @@ int main(void){
 }
 -}
 
-{-@ isort_top :: xs:_ -> ys:{isSorted ys && toBagEqual ys xs} @-}
+{-@ isort_top :: xs:_ -> ys:{isSorted ys && (toBag xs == toBag ys)} @-}
 isort_top :: Ord a => A.Array a -> A.Array a
 isort_top xs' =
     if s <= 1
     then xs
-    else isort xs s ? ((lma_isort xs s) &&& (lma_isort_eq xs s))
+    else 
+      let ys = isort xs s in ys 
+        ? ((lma_isort xs s) &&& (lma_isort_eq xs s) 
+        &&& (lma_toBag_toBagLeft xs (size xs)) &&& (lma_toBag_toBagLeft ys (size ys)))
   where
     (s, xs) = A.size2 xs'
 
