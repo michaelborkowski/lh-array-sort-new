@@ -125,6 +125,7 @@ getList (_:xs) n = getList xs (n-1)
 get :: Array a -> Int -> a
 get (Arr lst _ _ _) n = getList lst n
 
+{-@ reflect get2 @-}
 {-@ get2 :: xs:Array a -> {n:Nat | n < size xs }
               -> (a, Array a)<{\ x zs -> x == get xs n && xs == zs }> @-}
 get2 :: Array a -> Int -> (a, Array a)
@@ -157,6 +158,12 @@ slice :: Array a -> Int -> Int -> Array a
 slice (Arr lst l r t) l' r' = Arr lst' (l+l') (l+r') t
   where
     lst' = take (r' - l') (drop l' lst)
+
+{-@ reflect slice2 @-}
+{-@ slice2 :: xs:_ -> { l:Nat | l <= size xs } -> { r:Nat | l <= r && r <= size xs } 
+                  -> (Array a, Array a)<{\ ys zs -> xs == zs && ys = slice xs l r }> @-}
+slice2 :: Array a -> Int -> Int -> (Array a, Array a)
+slice2 xs l r = (slice xs l r, xs)
 
 {-@ reflect conc @-}
 {-@ conc :: xs:_ -> ys:_ -> { zs:_ | len zs == len xs + len ys } @-}
