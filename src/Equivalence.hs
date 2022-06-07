@@ -361,3 +361,27 @@ lma_set_equal xs x n m
   -- === S.union (S.singleton (get xs (m-1))) (toSet xs (m-1))
   === toBagLeft xs m
   *** QED-- {-@ reflect tri @-}
+
+
+{-@ lma_toBag_toBagLeft :: xs:_ -> n:{ Nat | n <= A.size xs}
+      -> { toBagLeft xs n == toBagBtw xs 0 n } / [n] @-}
+lma_toBag_toBagLeft :: Ord a => Array a -> Int -> Proof
+lma_toBag_toBagLeft xs 0 = ()
+lma_toBag_toBagLeft xs n
+  = toBagBtw xs 0 n
+    ? (lem_toBagBtw_right xs 0 n)
+  === B.put (A.get xs (n-1)) (toBagBtw xs 0 (n-1))
+    ? (lma_toBag_toBagLeft xs (n-1))
+  === B.put (A.get xs (n-1)) (toBagLeft xs (n-1))
+  === toBagLeft xs n
+  *** QED
+
+
+-- {-@ lma_toBag_toBagEqual :: xs:_ -> ys:{ A.size xs == A.size ys } 
+--       -> { toBagEqual xs ys <=> (toBag xs == toBag ys)} @-}
+-- lma_toBag_toBagEqual :: Ord a => Array a -> Array a -> Proof
+-- lma_toBag_toBagEqual xs ys 
+--   = toBagEqual xs ys
+--   === (toBagLeft xs (size xs)) == (toBagLeft ys (size ys))
+--   === 
+--   === (toBagBtw xs 0 (size xs)) == (toBagBtw ys 0 (size ys))

@@ -13,18 +13,24 @@ package prof
 source-repository-package
     type: git
     location: https://github.com/ucsd-progsys/liquidhaskell
-    tag: 2c10e1e47ac90e828cca2c35bdddb0316f51ff2b
+    tag: 8b5e3640fe06964b27af9f6e44f563d8e6abbfe0
 
 source-repository-package
     type: git
     location: https://github.com/ucsd-progsys/liquidhaskell
-    tag: 2c10e1e47ac90e828cca2c35bdddb0316f51ff2b
+    tag: 8b5e3640fe06964b27af9f6e44f563d8e6abbfe0
     subdir: liquid-base liquid-ghc-prim liquid-containers liquid-prelude
 
 source-repository-package
     type: git
     location: https://github.com/ucsd-progsys/liquid-fixpoint
-    tag: a1b049592a57dffec2ba32e836d23d77e9e8c8f3
+    tag: 08fa6b6e0001c2da6b96a135523ca56107a3c0d6
+
+source-repository-package
+    type:git 
+    location: https://github.com/facundominguez/rest
+    tag: 31e974979c90e910efe5199ee0d3721b791667f6
+
 
 source-repository-package
     type: git

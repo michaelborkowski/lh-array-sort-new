@@ -26,7 +26,7 @@ library
       Order
       Equivalence
 --      Merge
---      Insertion
+      Insertion
       LinearMerge
       DpsMerge
       DpsMergeSort
