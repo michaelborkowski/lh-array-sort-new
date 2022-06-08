@@ -1,6 +1,6 @@
 cabal-version:      >=1.10
 
-name:               bench
+name:               benchrunner
 version:            0.1
 build-type:         Simple
 synopsis:           Benchmark harness.

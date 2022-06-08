@@ -12,7 +12,7 @@ import           System.Environment ( getArgs, withArgs )
 import qualified Insertion as I
 import qualified QuickSort as Q
 -- import qualified Merge as M
-import qualified DpsMerge as DM
+import qualified DpsMergeSort as DM
 import qualified Array as A
 
 --------------------------------------------------------------------------------
@@ -65,12 +65,7 @@ main = do
               benchSorts
                 (Proxy :: Proxy Int64)
                 size
-                [
-                  ("LH/insertion1", I.isort1)
-                , ("LH/insertion2", I.isort2)
-                -- ("LH/quick", Q.quickSort)
-                -- , ("LH/merge", M.msort)
-                ]
+                [ ("LH/insertion", I.isort_top) ]
       Mergesort ->
         benchSorts
                 (Proxy :: Proxy Float)
