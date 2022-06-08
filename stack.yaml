@@ -2,7 +2,10 @@ resolver: lts-18.27
 compiler: ghc-8.10.7
 
 packages:
-- . 
+- .
+- ./benchrunner
+- ./benchmarks/haskell
+- ./prof
 
 extra-deps:
 # Required for the 8.10.1 build
