@@ -47,7 +47,8 @@ build: build_haskell build_c
 build_haskell:
 ifeq ($(STACK),1)
 # CSK: verify that this does indeed build everything, including criterion-external.
-	$(STK) build all $(F_MUTABLE_ARRAYS)
+	$(STK) build $(F_MUTABLE_ARRAYS)
+	$(STK) build criterion-external
 else
 	$(CABAL) v2-build all $(F_MUTABLE_ARRAYS)
 	$(CABAL) v2-build criterion-external
