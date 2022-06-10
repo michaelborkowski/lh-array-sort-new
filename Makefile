@@ -6,18 +6,20 @@ ifeq ($(STACK),1)
 	STK = stack
 	HCTOOL = stack
 	HCTOOLEXEC = exec
+ifeq ($(MUTABLE_ARRAYS),1)
+		F_MUTABLE_ARRAYS = --flag lh-array-sort:mutable-arrays
+else
+		F_MUTABLE_ARRAYS = --flag lh-array-sort:-mutable-arrays
+endif
 else
 	CABAL = cabal
 	HCTOOL = cabal
 	HCTOOLEXEC = v2-exec
-endif
-
-
-# Flag to decide whether we're using mutable arrays.
 ifeq ($(MUTABLE_ARRAYS),1)
-	F_MUTABLE_ARRAYS = -fmutable-arrays
+		F_MUTABLE_ARRAYS = -fmutable-arrays
 else
-	F_MUTABLE_ARRAYS = -fno-mutable-arrays
+		F_MUTABLE_ARRAYS = -fno-mutable-arrays
+endif
 endif
 
 all: checkdeps build bench
@@ -25,10 +27,10 @@ all: checkdeps build bench
 bench: bench_verified bench_canonical_c bench_gibbon_c
 
 bench_verified:
-	$(HCTOOL) $(HCTOOLEXEC) $(F_MUTABLE_ARRAYS) benchrunner -- FillArray 1000000
-	$(HCTOOL) $(HCTOOLEXEC) $(F_MUTABLE_ARRAYS) benchrunner -- Insertionsort 10
-	$(HCTOOL) $(HCTOOLEXEC) $(F_MUTABLE_ARRAYS) benchrunner -- Insertionsort 100
-	$(HCTOOL) $(HCTOOLEXEC) $(F_MUTABLE_ARRAYS) benchrunner -- Insertionsort 1000
+	$(HCTOOL) $(HCTOOLEXEC)  benchrunner -- FillArray 1000000
+	$(HCTOOL) $(HCTOOLEXEC)  benchrunner -- Insertionsort 10
+	$(HCTOOL) $(HCTOOLEXEC)  benchrunner -- Insertionsort 100
+	$(HCTOOL) $(HCTOOLEXEC)  benchrunner -- Insertionsort 1000
 
 bench_gibbon_c:
 	$(HCTOOL) $(HCTOOLEXEC) criterion-interactive ./benchmarks/c/cbench.exe gib_fillarray int64 1000000
