@@ -37,10 +37,10 @@ data Array a = Array { lower :: {-# UNPACK #-} !Int
                      , upper :: {-# UNPACK #-} !Int
                      , arr   :: Array# a
                      }
-
+  deriving Show
 
 instance NFData a => NFData (Array a) where
-  rnf x = seq x ()
+  rnf (Array lo hi arr) = rnf lo `seq` rnf hi `seq` ()
 
 {-# INLINE make #-}
 make :: Int -> a -> Array a
@@ -49,33 +49,33 @@ make s x = Array 0 s (make# s x)
 
 {-# INLINE size #-}
 size :: Array a -> Int
-size (Array _ _ arr) = size# arr
+size (Array lo hi arr) = hi-lo
 
 {-# INLINE get #-}
 get :: Array a -> Int -> a
-get (Array _ _ arr) i =
+get (Array lo hi arr) i =
   seq
 #ifdef RUNTIME_CHECKS
-  if i < l || i > r
-  then (error $ "get: index out of bounds: " ++ show i ++ "," ++ show l ++ "," ++ show r)
+  if i < lo || i > hi
+  then (error $ "get: index out of bounds: " ++ show i ++ "," ++ show lo ++ "," ++ show hi)
   else ()
 #else
   ()
 #endif
-  get# arr i
+  get# arr (lo+i)
 
 {-# INLINE set #-}
 set :: Array a -> Int -> a -> Array a
-set (Array l r arr) i a =
+set (Array lo hi arr) i a =
   seq
 #ifdef RUNTIME_CHECKS
-  if i < l || i > r
-  then (error $ "get: index out of bounds: " ++ show i ++ "," ++ show l ++ "," ++ show r)
+  if i < lo || i > hi
+  then (error $ "get: index out of bounds: " ++ show i ++ "," ++ show lo ++ "," ++ show hi)
   else ()
 #else
   ()
 #endif
-  Array l r (set# arr i a)
+  Array lo hi (set# arr (lo+i) a)
 
 slice :: Array a -> Int -> Int -> Array a
 slice (Array l r a) l' r' = Array (l+l') (l+r') a
@@ -107,7 +107,10 @@ toList arr =
 --------------------------------------------------------------------------------
 
 -- | A mutable array holding @a@s
-newtype Array# a = Array# (GHC.MutableArray# GHC.RealWorld a)
+data Array# a = Array# (GHC.MutableArray# GHC.RealWorld a)
+
+instance Show a => Show (Array# a) where
+  show = show . toList#
 
 -- The NOINLINE pragmas prevent the runRW# effect from being reordered.
 
@@ -136,3 +139,14 @@ size# :: Array# a -> Int
 size# (Array# arr) =
   let !s = GHC.sizeofMutableArray# arr
   in GHC.I# s
+
+toList# :: Array# a -> [a]
+toList# arr =
+  let ixs = [0..(size# arr - 1)]
+  in [ get# arr i | i <- ixs ]
+
+fromList# :: [a] -> Array# a
+fromList# [] = make# 0 undefined
+fromList# ls =
+  let a0 = make# (length ls) (head ls)
+  in foldl (\acc (i,x) -> set# acc i x) a0 (zip [0..] ls)
