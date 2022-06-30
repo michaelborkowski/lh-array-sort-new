@@ -3,6 +3,7 @@ module Main where
 import           Criterion          ( Benchmark, bench, bgroup, whnf, nf )
 import           Criterion.Main     ( defaultMain )
 import           Control.DeepSeq    ( NFData, force)
+import           Control.Monad      ( forM_, unless )
 import           Data.Proxy         ( Proxy(..) )
 import           Data.Int           ( Int64 )
 import           Data.List.Split    ( splitOn )
@@ -28,9 +29,17 @@ benchSorts _input_ty input_size fns = do
     let ls :: [a]
         ls = take input_size $ randoms rng
         !input = force (A.fromList ls)
+    forM_ fns $ \(name,fn) ->
+      unless (isSorted (A.toList $ fn input)) (error $ name ++ ": result not sorted.")
     pure $ bgroup "" $ map (go input (show input_size)) fns
   where
     go input str (name,fn) = bench (name ++ "/" ++ str) (nf fn input)
+
+    isSorted :: Ord a => [a] -> Bool
+    isSorted []       = True
+    isSorted [_]      = True
+    isSorted (x:y:xs) = x <= y && isSorted (y:xs)
+
 
 bench_fill_array :: Int -> IO Benchmark
 bench_fill_array input_size = do

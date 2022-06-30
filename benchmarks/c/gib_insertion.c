@@ -39,6 +39,21 @@
  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
  */
 
+static void check_gib_sortedness_int(GibVector *vec)
+{
+    GibInt len = gib_vector_length(vec);
+    GibInt i = 0;
+    GibInt x, y;
+    for (i = 0; i < len-1; i++) {
+        x = *((GibInt *) gib_vector_nth(vec, i));
+        y = *((GibInt *) gib_vector_nth(vec, i+1));
+        if (x > y) {
+            fprintf(stderr, "output not sorted.\n");
+            exit(1);
+        }
+    }
+}
+
 typedef struct GibIntProd_struct {
             GibInt field0;
         } GibIntProd;
@@ -107,9 +122,9 @@ GibVector *isort1_531_794(GibVector *xs_52_928_1105)
 {
     GibInt n_54_929_1107 = gib_vector_length(xs_52_928_1105);
     GibInt *tmp_3;
-    
+
     tmp_3 = (GibInt *) gib_vector_nth(xs_52_928_1105, 0);
-    
+
     GibInt hd_55_930_1110 = *tmp_3;
     GibInt n__101_925_981_1113 =  maxInt(n_54_929_1107, 0);
     GibInt tmp_2 = sizeof(GibInt);
@@ -119,7 +134,7 @@ GibVector *isort1_531_794(GibVector *xs_52_928_1105)
                generate_loop_542_806(vec_102_926_982_1114, 0, n__101_925_981_1113, hd_55_930_1110);
     GibInt fltPrm_1028_1118 = gib_vector_length(xs_52_928_1105);
     GibInt fltAppE_1027_1119 = fltPrm_1028_1118 - 1;
-    
+
     return isort_538_805(xs_52_928_1105, vec1_103_927_983_1115,
                          fltAppE_1027_1119);
 }
@@ -128,7 +143,7 @@ GibVector *generate_loop_542_806(GibVector *vec_252_932_1120,
                                  GibInt end_254_934_1122, GibInt hd_55_935_1123)
 {
     GibBool fltIf_1029_1124 = idx_253_933_1121 == end_254_934_1122;
-    
+
     if (fltIf_1029_1124) {
         return vec_252_932_1120;
     } else {
@@ -136,22 +151,22 @@ GibVector *generate_loop_542_806(GibVector *vec_252_932_1120,
                   gib_vector_inplace_update(vec_252_932_1120, idx_253_933_1121,
                                             &hd_55_935_1123);
         GibInt fltAppE_1031_1129 = idx_253_933_1121 + 1;
-        
+
         return generate_loop_542_806(vec1_257_936_1128, fltAppE_1031_1129,
                                      end_254_934_1122, hd_55_935_1123);
     }
 }
 GibVector *isort_538_805(GibVector *xs_59_937_1130, GibVector *b_60_938_1131,
                          GibInt n_61_939_1132)
-{    
+{
     GibInt len_63_940_1134 = gib_vector_length(xs_59_937_1130);
     GibBool fltIf_1032_1135 = len_63_940_1134 <= 1;
-    
+
     if (fltIf_1032_1135) {
         return xs_59_937_1130;
     } else {
         GibBool fltIf_1033_1136 = n_61_939_1132 == 0;
-        
+
         if (fltIf_1033_1136) {
             return b_60_938_1131;
         } else {
@@ -159,11 +174,11 @@ GibVector *isort_538_805(GibVector *xs_59_937_1130, GibVector *b_60_938_1131,
             GibVector *xs__64_941_1138 =
                        isort_538_805(xs_59_937_1130, b_60_938_1131, fltAppE_1034_1137);
             GibInt *tmp_4;
-            
+
             tmp_4 = (GibInt *) gib_vector_nth(xs_59_937_1130, n_61_939_1132);
-            
+
             GibInt fltAppE_1035_1141 = *tmp_4;
-            
+
             return insert_525_779(xs__64_941_1138, fltAppE_1035_1141,
                                   n_61_939_1132);
         }
@@ -423,6 +438,7 @@ int bench_gibbon_insertion2(int argc, char** argv)
         rounds=0;
         read = getline(&criterion_cmd, &len, stdin);
     }
+    check_gib_sortedness_int(vec2);
 
     printVec_517_770(vec);
     free(criterion_cmd);
