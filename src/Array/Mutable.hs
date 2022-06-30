@@ -4,6 +4,13 @@
 {-# LANGUAGE MagicHash        #-}
 {-# LANGUAGE BangPatterns     #-}
 
+-- The Strict pragma is not just for performance, it's necessary for correctness.
+-- Without it, this implementation contains a bug related to some thunk/effect
+-- remaining unevaluated which causes programs to output wrong answers. Need to
+-- debug this some more, but leaving this pragma here for now.
+{-# LANGUAGE Strict #-}
+
+
 {-|
 
 Most of the source code here is taken from Data.Array.Mutable.Unlifted.Linear
@@ -35,12 +42,16 @@ import qualified GHC.Exts as GHC
 
 data Array a = Array { lower :: {-# UNPACK #-} !Int
                      , upper :: {-# UNPACK #-} !Int
-                     , arr   :: Array# a
+                     , array :: Array# a
                      }
-  deriving Show
+
+instance Show a => Show (Array a) where
+  show (Array l r arr) =
+    "Array { lower = " ++ show l ++ ", upper = " ++ show r ++ ", arr = " ++
+    (show $ toList# arr)
 
 instance NFData a => NFData (Array a) where
-  rnf (Array lo hi arr) = rnf lo `seq` rnf hi `seq` ()
+  rnf (Array lo hi _arr) = rnf lo `seq` rnf hi `seq` ()
 
 {-# INLINE make #-}
 make :: Int -> a -> Array a
@@ -53,7 +64,7 @@ size (Array lo hi arr) = hi-lo
 
 {-# INLINE get #-}
 get :: Array a -> Int -> a
-get (Array lo hi arr) i =
+get (Array lo _hi arr) i =
   seq
 #ifdef RUNTIME_CHECKS
   if i < lo || i > hi
@@ -78,7 +89,7 @@ set (Array lo hi arr) i a =
   Array lo hi (set# arr (lo+i) a)
 
 slice :: Array a -> Int -> Int -> Array a
-slice (Array l r a) l' r' = Array (l+l') (l+r') a
+slice (Array l _r a) l' r' = Array (l+l') (l+r') a
 
 -- PRE-CONDITION: the two slices are backed by the same array and should be contiguous.
 append :: Array a -> Array a -> Array a
@@ -107,10 +118,7 @@ toList arr =
 --------------------------------------------------------------------------------
 
 -- | A mutable array holding @a@s
-data Array# a = Array# (GHC.MutableArray# GHC.RealWorld a)
-
-instance Show a => Show (Array# a) where
-  show = show . toList#
+newtype Array# a = Array# (GHC.MutableArray# GHC.RealWorld a)
 
 -- The NOINLINE pragmas prevent the runRW# effect from being reordered.
 
@@ -149,4 +157,9 @@ fromList# :: [a] -> Array# a
 fromList# [] = make# 0 undefined
 fromList# ls =
   let a0 = make# (length ls) (head ls)
-  in foldl (\acc (i,x) -> set# acc i x) a0 (zip [0..] ls)
+  -- in foldl (\acc (i,x) -> set# acc i x) a0 (zip [0..] ls)
+  in go a0 (zip [0..] ls)
+  where
+    go :: Array# a -> [(Int,a)] -> Array# a
+    go acc []          = acc
+    go acc ((i,x):rst) = go (set# acc i x) rst
