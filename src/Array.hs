@@ -74,6 +74,15 @@ lem_get_slice = _todo
 
 --------------------------------------------------------------------------------
 
+-- This doesn't belong here, but it's here for convenience.
+
+-- | Parallel tuple combinator.
+infixr 1 .||.
+(.||.) :: a -> b -> (a,b)
+a .||. b = (a,b)
+
+--------------------------------------------------------------------------------
+
 -- advanced operations
 
 {-@ reflect swap @-}
