@@ -8,7 +8,7 @@
 -- Without it, this implementation contains a bug related to some thunk/effect
 -- remaining unevaluated which causes programs to output wrong answers. Need to
 -- debug this some more, but leaving this pragma here for now.
-{-# LANGUAGE Strict #-}
+-- {-# LANGUAGE Strict #-}
 
 
 {-|
@@ -42,7 +42,7 @@ import qualified GHC.Exts as GHC
 
 data Array a = Array { lower :: {-# UNPACK #-} !Int
                      , upper :: {-# UNPACK #-} !Int
-                     , array :: Array# a
+                     , array :: {-# UNPACK #-} !(Array# a)
                      }
 
 instance Show a => Show (Array a) where
@@ -60,11 +60,11 @@ make s x = Array 0 s (make# s x)
 
 {-# INLINE size #-}
 size :: Array a -> Int
-size (Array lo hi arr) = hi-lo
+size (Array !lo !hi _arr) = hi-lo
 
 {-# INLINE get #-}
 get :: Array a -> Int -> a
-get (Array lo _hi arr) i =
+get (Array lo _hi !arr) i =
   seq
 #ifdef RUNTIME_CHECKS
   if i < lo || i > hi
@@ -77,7 +77,7 @@ get (Array lo _hi arr) i =
 
 {-# INLINE set #-}
 set :: Array a -> Int -> a -> Array a
-set (Array lo hi arr) i a =
+set (Array lo hi !arr) i !a =
   seq
 #ifdef RUNTIME_CHECKS
   if i < lo || i > hi
@@ -89,17 +89,17 @@ set (Array lo hi arr) i a =
   Array lo hi (set# arr (lo+i) a)
 
 slice :: Array a -> Int -> Int -> Array a
-slice (Array l _r a) l' r' = Array (l+l') (l+r') a
+slice (Array l _r !a) l' r' = Array (l+l') (l+r') a
 
 -- PRE-CONDITION: the two slices are backed by the same array and should be contiguous.
 append :: Array a -> Array a -> Array a
-append (Array l1 _r1 a1) (Array _l2 r2 _a2) = Array l1 r2 a1
+append (Array l1 _r1 !a1) (Array _l2 r2 _a2) = Array l1 r2 a1
 
 size2 :: Array a -> (Int, Array a)
-size2 ar = (size ar, ar)
+size2 !ar = (size ar, ar)
 
 get2 :: Array a -> Int -> (a, Array a)
-get2 ar i = (get ar i, ar)
+get2 !ar i = (get ar i, ar)
 
 fromList :: [a] -> Array a
 fromList [] = Array 0 0 undefined
@@ -132,14 +132,14 @@ make# (GHC.I# s) a =
 
 {-# NOINLINE get# #-}
 get# :: Array# a -> Int -> a
-get# (Array# arr) (GHC.I# i) =
+get# (Array# !arr) (GHC.I# i) =
   case GHC.runRW# (GHC.readArray# arr i) of
-    (# _, ret #) -> ret
+    (# _, !ret #) -> ret
 
 
 {-# NOINLINE set# #-}
 set# :: Array# a -> Int -> a -> Array# a
-set# (Array# arr) (GHC.I# i) a =
+set# (Array# !arr) (GHC.I# i) !a =
   case GHC.runRW# (GHC.writeArray# arr i a) of
     _ -> Array# arr
 
