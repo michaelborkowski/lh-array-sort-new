@@ -3,7 +3,7 @@ OBJFILES = $(CFILES:.c=.o)
 OUT      = cbench.exe
 
 CC = gcc
-CFLAGS = -Wall -Wextra -Wpedantic -O3 -flto -fwhole-program -lm
+CFLAGS = -std=gnu11 -Wall -Wextra -Wpedantic -O3 -flto -fwhole-program -lm
 CDEBUG = -DCBENCH_DEBUG -O0 -g
 
 $(OUT): $(OBJFILES)

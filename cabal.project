@@ -12,6 +12,11 @@ package prof
 
 source-repository-package
     type: git
+    location: https://github.com/rrnewton/criterion-external
+    tag: 201083a35e82343ae638d62711fe83185b8101d4
+
+source-repository-package
+    type: git
     location: https://github.com/ucsd-progsys/liquidhaskell
     tag: 8b5e3640fe06964b27af9f6e44f563d8e6abbfe0
 

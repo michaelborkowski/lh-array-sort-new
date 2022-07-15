@@ -3,6 +3,7 @@ module Main where
 import           Criterion          ( Benchmark, bench, bgroup, whnf, nf )
 import           Criterion.Main     ( defaultMain )
 import           Control.DeepSeq    ( NFData, force)
+import           Control.Monad      ( forM_, unless )
 import           Data.Proxy         ( Proxy(..) )
 import           Data.Int           ( Int64 )
 import           Data.List.Split    ( splitOn )
@@ -31,9 +32,17 @@ benchSorts _input_ty input_size fns = do
     let ls :: [a]
         ls = take input_size $ randoms rng
         !input = force (A.fromList ls)
+    forM_ fns $ \(name,fn) ->
+      unless (isSorted (A.toList $ fn input)) (error $ name ++ ": result not sorted.")
     pure $ bgroup "" $ map (go input (show input_size)) fns
   where
     go input str (name,fn) = bench (name ++ "/" ++ str) (nf fn input)
+
+    isSorted :: Ord a => [a] -> Bool
+    isSorted []       = True
+    isSorted [_]      = True
+    isSorted (x:y:xs) = x <= y && isSorted (y:xs)
+
 
 bench_fill_array :: Int -> IO Benchmark
 bench_fill_array input_size = do
@@ -43,7 +52,7 @@ bench_fill_array input_size = do
   where
     fill (s,x) = A.make s x
 
-data Benchmarks = FillArray | Sorting
+data Benchmarks = FillArray | Insertionsort | Mergesort
   deriving (Eq, Show, Read)
 
 main :: IO ()
@@ -52,7 +61,7 @@ main = do
   let usage = "USAGE: benchrunner -- BENCH_ARGS -- CRITERION_ARGS"
       (benchmark,size,rst) =
         case splitOn ["--"] allargs of
-          [] -> (Sorting,10,[])
+          [] -> (Insertionsort,10,[])
           [(bnch:sz:_)] -> if sz == "--help"
                       then error usage
                       else (read bnch :: Benchmarks, read sz :: Int, [])
@@ -62,19 +71,23 @@ main = do
           _ -> error usage
 
   runbench <-
-    if benchmark == FillArray
-    then bench_fill_array size
-    else benchSorts
+    case benchmark of
+      FillArray -> bench_fill_array size
+      Insertionsort ->
+              benchSorts
                 (Proxy :: Proxy Int64)
                 size
+                [ ("LH/insertion", I.isort_top) ]
+      Mergesort ->
+        benchSorts
+                (Proxy :: Proxy Float)
+                size
                 [
-                  ("LH/insertion1", I.isort1)
-                , ("LH/insertion2", I.isort2)
                 -- ("LH/quick", Q.quickSort)
-                -- , ("LH/merge", M.msort)
                 , ("LH/dps_mergesort", DMS.msort)
                 , ("LH/dps_mergesort_4way", DMS4.msort)
                 , ("LH/dps_mergesort_parallel", DMSP.msort)
                 , ("LH/dps_mergesort_4way_parallel", DMS4P.msort)
                 ]
+                -- [ ("LH/dps_merge", DM.msort) ]
   withArgs rst $ defaultMain [ runbench ]

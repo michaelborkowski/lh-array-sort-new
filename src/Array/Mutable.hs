@@ -4,6 +4,13 @@
 {-# LANGUAGE MagicHash        #-}
 {-# LANGUAGE BangPatterns     #-}
 
+-- The Strict pragma is not just for performance, it's necessary for correctness.
+-- Without it, this implementation contains a bug related to some thunk/effect
+-- remaining unevaluated which causes programs to output wrong answers. Need to
+-- debug this some more, but leaving this pragma here for now.
+-- {-# LANGUAGE Strict #-}
+
+
 {-|
 
 Most of the source code here is taken from Data.Array.Mutable.Unlifted.Linear
@@ -35,12 +42,16 @@ import qualified GHC.Exts as GHC
 
 data Array a = Array { lower :: {-# UNPACK #-} !Int
                      , upper :: {-# UNPACK #-} !Int
-                     , arr   :: Array# a
+                     , array :: {-# UNPACK #-} !(Array# a)
                      }
 
+instance Show a => Show (Array a) where
+  show (Array l r arr) =
+    "Array { lower = " ++ show l ++ ", upper = " ++ show r ++ ", arr = " ++
+    (show $ toList# arr)
 
 instance NFData a => NFData (Array a) where
-  rnf x = seq x ()
+  rnf (Array lo hi _arr) = rnf lo `seq` rnf hi `seq` ()
 
 {-# INLINE make #-}
 make :: Int -> a -> Array a
@@ -49,46 +60,46 @@ make s x = Array 0 s (make# s x)
 
 {-# INLINE size #-}
 size :: Array a -> Int
-size (Array _ _ arr) = size# arr
+size (Array !lo !hi _arr) = hi-lo
 
 {-# INLINE get #-}
 get :: Array a -> Int -> a
-get (Array _ _ arr) i =
+get (Array lo _hi !arr) i =
   seq
 #ifdef RUNTIME_CHECKS
-  if i < l || i > r
-  then (error $ "get: index out of bounds: " ++ show i ++ "," ++ show l ++ "," ++ show r)
+  if i < lo || i > hi
+  then (error $ "get: index out of bounds: " ++ show i ++ "," ++ show lo ++ "," ++ show hi)
   else ()
 #else
   ()
 #endif
-  get# arr i
+  get# arr (lo+i)
 
 {-# INLINE set #-}
 set :: Array a -> Int -> a -> Array a
-set (Array l r arr) i a =
+set (Array lo hi !arr) i !a =
   seq
 #ifdef RUNTIME_CHECKS
-  if i < l || i > r
-  then (error $ "get: index out of bounds: " ++ show i ++ "," ++ show l ++ "," ++ show r)
+  if i < lo || i > hi
+  then (error $ "get: index out of bounds: " ++ show i ++ "," ++ show lo ++ "," ++ show hi)
   else ()
 #else
   ()
 #endif
-  Array l r (set# arr i a)
+  Array lo hi (set# arr (lo+i) a)
 
 slice :: Array a -> Int -> Int -> Array a
-slice (Array l r a) l' r' = Array (l+l') (l+r') a
+slice (Array l _r !a) l' r' = Array (l+l') (l+r') a
 
 -- PRE-CONDITION: the two slices are backed by the same array and should be contiguous.
 append :: Array a -> Array a -> Array a
-append (Array l1 _r1 a1) (Array _l2 r2 _a2) = Array l1 r2 a1
+append (Array l1 _r1 !a1) (Array _l2 r2 _a2) = Array l1 r2 a1
 
 size2 :: Array a -> (Int, Array a)
-size2 ar = (size ar, ar)
+size2 !ar = (size ar, ar)
 
 get2 :: Array a -> Int -> (a, Array a)
-get2 ar i = (get ar i, ar)
+get2 !ar i = (get ar i, ar)
 
 fromList :: [a] -> Array a
 fromList [] = Array 0 0 undefined
@@ -121,14 +132,14 @@ make# (GHC.I# s) a =
 
 {-# NOINLINE get# #-}
 get# :: Array# a -> Int -> a
-get# (Array# arr) (GHC.I# i) =
+get# (Array# !arr) (GHC.I# i) =
   case GHC.runRW# (GHC.readArray# arr i) of
-    (# _, ret #) -> ret
+    (# _, !ret #) -> ret
 
 
 {-# NOINLINE set# #-}
 set# :: Array# a -> Int -> a -> Array# a
-set# (Array# arr) (GHC.I# i) a =
+set# (Array# !arr) (GHC.I# i) !a =
   case GHC.runRW# (GHC.writeArray# arr i a) of
     _ -> Array# arr
 
@@ -136,3 +147,19 @@ size# :: Array# a -> Int
 size# (Array# arr) =
   let !s = GHC.sizeofMutableArray# arr
   in GHC.I# s
+
+toList# :: Array# a -> [a]
+toList# arr =
+  let ixs = [0..(size# arr - 1)]
+  in [ get# arr i | i <- ixs ]
+
+fromList# :: [a] -> Array# a
+fromList# [] = make# 0 undefined
+fromList# ls =
+  let a0 = make# (length ls) (head ls)
+  -- in foldl (\acc (i,x) -> set# acc i x) a0 (zip [0..] ls)
+  in go a0 (zip [0..] ls)
+  where
+    go :: Array# a -> [(Int,a)] -> Array# a
+    go acc []          = acc
+    go acc ((i,x):rst) = go (set# acc i x) rst

@@ -11,7 +11,7 @@ module Array
     Array
 
     -- * Construction and querying
-  , make, size, get, set, slice, append, swap
+  , make, size, get, set, slice, append
 
     -- * Linear versions
   , size2, get2
@@ -44,10 +44,49 @@ import           ProofCombinators
 
 --------------------------------------------------------------------------------
 
+{-
+
+[2022.06.23] CSK:
+--------------------
+
+Previously lem_slice_append and lem_get_slice were defined in this module and
+they operated on the abstract Array type. All they did was call the corresponding
+lemmas that work on lists, which are defined in Array.List. We were using toList
+to convert the abstract array type to a list. But this was causing some problems
+with LH (I think?). So their definitons were moved into Array.List. However, we
+need these lemmas to be defined even when compiling with -fmutable-arrays since
+some proofs in the the Equivalence module use them. I'm including the following
+placeholder definitions to get the project to compile with -fmutable-arrays.
+These won't pass the Liquid checker of course, so I'm disabling it for now.
+
+Relevant commit:
+https://github.com/ucsd-progsys/lh-array-sort/commit/6bd6b8936e3367a9365fc1f5cdf666f65b0575c7
+
+-}
+
+#ifdef MUTABLE_ARRAYS
+lem_slice_append :: Array a -> Array a -> Proof
+lem_slice_append = _todo
+
+lem_get_slice :: Array a -> Int -> Int -> Int -> Proof
+lem_get_slice = _todo
+#endif
+
+--------------------------------------------------------------------------------
+
+-- This doesn't belong here, but it's here for convenience.
+
+-- | Parallel tuple combinator.
+infixr 1 .||.
+(.||.) :: a -> b -> (a,b)
+a .||. b = (a,b)
+
+--------------------------------------------------------------------------------
+
 -- advanced operations
 
 {-@ reflect swap @-}
-{-@ swap :: xs:(Array a) -> { i:Int | 0 <= i && i < size xs } 
+{-@ swap :: xs:(Array a) -> { i:Int | 0 <= i && i < size xs }
                          -> { j:Int | 0 <= j && j < size xs }
                          -> { ys:(Array a) | size xs == size ys && token xs == token ys &&
                                              left xs == left ys && right xs == right ys } @-}

@@ -24,13 +24,17 @@ int main(int argc, char** argv)
     if (strcmp(argv[1], "gib_fillarray") == 0) {
         printf("benchmarking gibbon fill array.\n");
         bench_gibbon_fillarray(argc,argv);
-    } else if (strcmp(argv[1], "gib_insertion1") == 0) {
+    } else if (strcmp(argv[1], "gib_insertionsort1") == 0) {
         printf("benchmarking gibbon insertionsort1.\n");
         bench_gibbon_insertion1(argc,argv);
-    } else if (strcmp(argv[1], "gib_insertion2") == 0) {
+    } else if (strcmp(argv[1], "gib_insertionsort2") == 0) {
         printf("benchmarking gibbon insertionsort2.\n");
         bench_gibbon_insertion1(argc,argv);
-    } else if (strcmp(argv[1], "fillarray") == 0) {
+    } else if (strcmp(argv[1], "gib_mergesort") == 0) {
+        printf("benchmarking gibbon mergesort.\n");
+        // bench_gibbon_mergesort(argc,argv);
+    }
+    else if (strcmp(argv[1], "fillarray") == 0) {
         printf("benchmarking canonical fill array.\n");
         bench_canonical_fillarray(argc,argv);
     } else {
@@ -45,6 +49,8 @@ int main(int argc, char** argv)
 int compare_int64s(const void* a, const void* b);
 int compare_ints(const void* a, const void* b);
 int compare_doubles(const void* a, const void* b);
+static void check_glibc_sortedness(void *const pbase, size_t total_elems, size_t size,
+                    __compar_fn_t cmp);
 
 int bench_canonical_sorting(int argc, char** argv)
 {
@@ -58,7 +64,7 @@ int bench_canonical_sorting(int argc, char** argv)
     __compar_fn_t cmp_fn;
     sort_fn_t sort_fn;
 
-    if (strcmp(algo,"insertion") == 0) {
+    if (strcmp(algo,"insertionsort") == 0) {
         printf("benchmarking glibc insertion sort:\n");
         sort_fn = insertionsort_glibc;
     } else {
@@ -128,6 +134,7 @@ int bench_canonical_sorting(int argc, char** argv)
         rounds=0;
         read = getline(&criterion_cmd, &len, stdin);
     }
+    check_glibc_sortedness(array, N, elt_size, cmp_fn);
 
     free(criterion_cmd);
     free(array);
@@ -243,4 +250,21 @@ int compare_doubles(const void* a, const void* b)
     if (arg1 < arg2) return -1;
     if (arg1 > arg2) return 1;
     return 0;
+}
+
+static void check_glibc_sortedness(void *const pbase, size_t total_elems, size_t size,
+                    __compar_fn_t cmp)
+{
+    char *base_ptr = (char *) pbase;
+    char *const end_ptr1 = &base_ptr[size * (total_elems - 1)];
+    char *run_ptr;
+    run_ptr = base_ptr;
+    char *tmp_ptr = base_ptr;
+    while ((run_ptr += size) <= end_ptr1) {
+        tmp_ptr = run_ptr - size;
+        if ((*cmp) ((void *) run_ptr, (void *) tmp_ptr) > 0) {
+            fprintf(stderr, "output not sorted.\n");
+            exit(1);
+        }
+    }
 }

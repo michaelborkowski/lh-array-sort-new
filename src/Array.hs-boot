@@ -36,6 +36,9 @@ get2 :: Array a -> Int -> (a, Array a)
 fromList :: [a] -> Array a
 toList :: Array a -> [a]
 
+-- This doesn't belong here, but it's here for convenience.
+-- Parallel tuple combinator.
+(.||.) :: a -> b -> (a,b)
 
 --------------------------------------------------------------------------------
 

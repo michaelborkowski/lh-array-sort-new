@@ -2,7 +2,10 @@ resolver: lts-18.27
 compiler: ghc-8.10.7
 
 packages:
-- . 
+- .
+- ./benchrunner
+- ./benchmarks/haskell
+- ./prof
 
 extra-deps:
 # Required for the 8.10.1 build
@@ -11,6 +14,9 @@ extra-deps:
 #- Diff-0.3.4
 #- aeson-1.4.7.1
 #- th-compat-0.1.2@sha256:3d55de1adc542c1a870c9ada90da2fbbe5f4e8bcd3eed545a55c3df9311b32a8,2854
+
+- git: https://github.com/rrnewton/criterion-external
+  commit: 201083a35e82343ae638d62711fe83185b8101d4
 
 - git: https://github.com/ucsd-progsys/liquidhaskell
   commit: 8b5e3640fe06964b27af9f6e44f563d8e6abbfe0
