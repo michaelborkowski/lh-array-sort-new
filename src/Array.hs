@@ -162,3 +162,14 @@ lma_swap_eql xs i j k = () ? lma_gns xs' j k xi
   where
     xi   = get xs  i
     xs'  = set xs  i (get xs j)
+
+#ifndef MUTABLE_ARRAYS
+{-@ lem_get_slice :: xs:_ -> { l:Nat | l <= size xs } -> { r:Nat | l < r && r <= size xs }
+                          -> { i:Nat | l <= i && i < r }
+                          -> { pf:_ | get (slice xs l r) (i - l) == get xs i } @-}
+lem_get_slice :: Array a -> Int -> Int -> Int -> Proof
+lem_get_slice arr l r i = () ? lem_getList_take (drop l lst) (r - l) (i - l)
+                             ? lem_getList_drop lst          l       i
+  where
+    lst = toList arr
+#endif

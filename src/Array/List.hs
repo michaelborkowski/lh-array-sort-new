@@ -8,6 +8,7 @@
 
 {-@ infixr ++  @-}  -- TODO: Silly to have to rewrite this annotation!
 
+{-# LANGUAGE CPP           #-}
 {-# LANGUAGE GADTs         #-}
 {-# LANGUAGE DeriveGeneric #-}
 
@@ -51,7 +52,7 @@ data Array a = Arr {  lst   :: [a]  -- lst only contains from left ... right-1
                    ,  left  :: Int
                    ,  right :: Int
                    ,  tok   :: Int }
-               deriving Show
+               deriving (Eq, Show)
 
 -- newtype Ur a = Ur a
 
@@ -108,6 +109,7 @@ fromList ls = Arr ls 0 (length ls) t
   where
     t = unsafePerformIO (randomIO :: IO Int)
 
+{-@ reflect toList @-}
 {-@ toList :: xs:_ -> { xls:[a] | xls == lst xs && len xls == size xs } @-}
 toList :: Array a -> [a]
 toList (Arr ls _ _ _) = ls
@@ -153,7 +155,8 @@ set (Arr arr l r t) n y = Arr (setList arr n y) l r t
 {-@ slice :: xs:_ -> { l:Nat | l <= size xs } -> { r:Nat | l <= r && r <= size xs }
                   -> { ys:_ | size ys == r-l         && token xs == token ys &&
                               left ys == left xs + l && right ys == left xs + r &&
-                                                        right ys == right xs - size xs + r } @-}
+                                                        right ys == right xs - size xs + r && 
+                              toList ys == take (r - l) (drop l (toList xs)) } @-}
 slice :: Array a -> Int -> Int -> Array a
 slice (Arr lst l r t) l' r' = Arr lst' (l+l') (l+r') t
   where
@@ -188,7 +191,8 @@ drop n (x:xs) = drop (n-1) xs
 {-@ append :: xs:Array a
         -> { ys:Array a | token xs == token ys && right xs == left ys }
         -> { zs:Array a | token xs == token zs && size zs == size xs + size ys &&
-                          left xs == left zs && right ys == right zs } @-}
+                          left xs == left zs && right ys == right zs &&
+                          toList zs == conc (toList xs) (toList ys) } @-}
 append :: Array a -> Array a -> Array a
 append (Arr arr1 l1 _r1 t) (Arr arr2 _l2 r2 _t) = Arr (conc arr1 arr2) l1 r2 t
 
@@ -255,13 +259,6 @@ lem_getList_drop (x:xs) n i | n == 0    = ()
 lem_getList_take :: [a] -> Int -> Int -> Proof
 lem_getList_take (x:xs) n i | i == 0    = ()
                             | otherwise = () ? lem_getList_take xs (n-1) (i-1)
-
-{-@ lem_get_slice :: xs:_ -> { l:Nat | l <= size xs } -> { r:Nat | l < r && r <= size xs }
-                  -> { i:Nat | l <= i && i < r }
-                  -> { pf:_ | get (slice xs l r) (i - l) == get xs i } @-}
-lem_get_slice :: Array a -> Int -> Int -> Int -> Proof
-lem_get_slice (Arr lst _ _ _) l r i = () ? lem_getList_take (drop l lst) (r - l) (i - l)
-                                         ? lem_getList_drop lst          l       i
 
 {-@ lem_take_all :: xs:_ -> { pf:_ | take (len xs) xs == xs } @-}
 lem_take_all :: [a] -> Proof

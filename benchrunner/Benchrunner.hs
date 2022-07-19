@@ -84,7 +84,7 @@ main = do
                 size
                 [
                 -- ("LH/quick", Q.quickSort)
-                , ("LH/dps_mergesort", DMS.msort)
+                  ("LH/dps_mergesort", DMS.msort)
                 , ("LH/dps_mergesort_4way", DMS4.msort)
                 , ("LH/dps_mergesort_parallel", DMSP.msort)
                 , ("LH/dps_mergesort_4way_parallel", DMS4P.msort)

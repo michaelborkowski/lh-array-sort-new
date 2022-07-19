@@ -39,6 +39,7 @@ import qualified GHC.Exts as GHC
 --------------------------------------------------------------------------------
 -- Mutable, lifted array API
 --------------------------------------------------------------------------------
+{-@ data Array a = Array { left :: _, right :: _, arr :: _ } @-}
 
 data Array a = Array { lower :: {-# UNPACK #-} !Int
                      , upper :: {-# UNPACK #-} !Int
@@ -94,6 +95,10 @@ slice (Array l _r !a) l' r' = Array (l+l') (l+r') a
 -- PRE-CONDITION: the two slices are backed by the same array and should be contiguous.
 append :: Array a -> Array a -> Array a
 append (Array l1 _r1 !a1) (Array _l2 r2 _a2) = Array l1 r2 a1
+
+-- token xs == token ys 
+-- lem_slice_append :: Array a -> Array a -> ()
+-- lem_slice_append xs ys  = ()
 
 size2 :: Array a -> (Int, Array a)
 size2 !ar = (size ar, ar)
