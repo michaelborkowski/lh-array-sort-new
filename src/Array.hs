@@ -22,6 +22,9 @@ module Array
     -- * Advanced operations
   , splitMid, swap
 
+    -- * Parallel tuple operator
+  , (.||.)
+
     -- * LiqidHaskell lemmas
   , lma_gs, lma_gns, lma_swap, lma_swap_eql, lem_slice_append, lem_get_slice
   ) where
@@ -35,6 +38,9 @@ import           Array.List ( lma_gs_list, lma_gns_list
 
 #ifdef MUTABLE_ARRAYS
 import           Array.Mutable
+import           Control.Parallel.Strategies (runEval, rpar, rseq)
+--import           Control.DeepSeq ( NFData(..) )
+--import qualified Control.Monad.Par as P (runPar, spawnP, spawn_, get)
 #else
 import           Array.List
 #endif
@@ -78,8 +84,25 @@ lem_get_slice = _todo
 
 -- | Parallel tuple combinator.
 infixr 1 .||.
+#ifdef MUTABLE_ARRAYS
+(.||.) :: {-(NFData a, NFData b) =>-} a -> b -> (a,b)
+a .||. b = runEval $ do
+             a' <- rpar a
+             b' <- rpar b
+             rseq a'
+             rseq b'
+             return (a', b')  
+{-a .||. b = P.runPar $ do
+               a'  <- P.spawn_ a
+               b'  <- P.spawn_ b
+               a'' <- P.get a'
+               b'' <- P.get b'
+               return (a'', b'') -}
+#else
+{-@ (.||.) :: x:a -> y:b -> { tup:_ | x == fst tup && y = snd tup } @-}
 (.||.) :: a -> b -> (a,b)
 a .||. b = (a,b)
+#endif
 
 --------------------------------------------------------------------------------
 

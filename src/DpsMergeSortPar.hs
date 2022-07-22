@@ -15,17 +15,8 @@ import           Order
 
 #ifdef MUTABLE_ARRAYS
 import           Array.Mutable as A
-import           Control.Parallel (par, pseq)
 #else
 import           Array.List as A
-
-{-@ par  :: a -> y:b -> { v:b | v = y } @-}
-par :: a -> b -> b
-par x y = y
-
-{-@ pseq :: a -> y:b -> { v:b | v = y } @-}
-pseq :: a -> b -> b
-pseq x y = y
 #endif
 
 -- DPS mergesort
@@ -45,15 +36,14 @@ msortSwap src tmp =
   then let (src'', tmp'') = copy src' tmp 0 0 in
        (src'', tmp'')
   else
-    let (src1, src2) = splitMid src'
-        (tmp1, tmp2) = splitMid tmp
-        (src1', tmp1') = msortInplace src1 tmp1
-        (src2', tmp2') = msortInplace src2 tmp2
+    let (src1, src2)  = splitMid src'
+        (tmp1, tmp2)  = splitMid tmp
+        ((src1', tmp1'), (src2', tmp2')) 
+                      = msortInplace src1 tmp1 .||. msortInplace src2 tmp2
         tmp3' = A.append tmp1' tmp2' 
         (src'', tmp4) = merge src1' src2' tmp3'
-    in  ((src1', tmp1') `par` (src2', tmp2')) `pseq`
-          (src'', tmp4)  ? lem_toBag_splitMid src -- tmp4 holds the sorted data
-                         ? lem_toBag_splitMid tmp
+    in  (src'', tmp4)  ? lem_toBag_splitMid src -- tmp4 holds the sorted data
+                       ? lem_toBag_splitMid tmp
 
 {-@ msortInplace :: xs:Array a 
       -> { ys:(Array a ) | A.size ys  == A.size xs   && left xs == left ys && 
@@ -70,15 +60,14 @@ msortInplace src tmp =
   if len <= 1
   then (src', tmp)
   else
-    let (src1, src2) = splitMid src'
-        (tmp1, tmp2) = splitMid tmp
-        (src1', tmp1') = msortSwap src1 tmp1
-        (src2', tmp2') = msortSwap src2 tmp2
+    let (src1, src2)   = splitMid src'
+        (tmp1, tmp2)   = splitMid tmp
+        ((src1', tmp1'), (src2', tmp2')) 
+                       = msortSwap src1 tmp1 .||. msortSwap src2 tmp2
         src3' = A.append src1' src2'  
         (tmp'', src4') = merge tmp1' tmp2' src3' 
-    in  ((src1', tmp1') `par` (src2', tmp2')) `pseq`
-          (src4', tmp'')  ? lem_toBag_splitMid src -- src4' holds the sorted data
-                          ? lem_toBag_splitMid tmp
+    in  (src4', tmp'')  ? lem_toBag_splitMid src -- src4' holds the sorted data
+                        ? lem_toBag_splitMid tmp
 
 {-@ msort' :: { xs:(Array a) | A.size xs > 0 && left xs == 0 && right xs == size xs }
            -> { y:a | y == A.get xs 0 }
@@ -88,7 +77,7 @@ msort' :: (Show a, Ord a) => A.Array a -> a -> A.Array a
 msort' src anyVal =
   let (len, src') = A.size2 src
       (src'', _tmp) = msortInplace src' (A.make len anyVal) in
-  _tmp `pseq` src''
+  _tmp `seq` src''
 
 -- finally, the top-level merge sort function 
 {-@ msort :: { xs:(A.Array a) | left xs == 0 && right xs == size xs }

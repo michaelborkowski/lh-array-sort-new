@@ -31,6 +31,8 @@ bench_verified:
 	$(HCTOOL) $(HCTOOLEXEC)  benchrunner -- Insertionsort 10
 	$(HCTOOL) $(HCTOOLEXEC)  benchrunner -- Insertionsort 100
 	$(HCTOOL) $(HCTOOLEXEC)  benchrunner -- Insertionsort 1000
+	$(HCTOOL) $(HCTOOLEXEC)  benchrunner -- Mergesort 1000
+	$(HCTOOL) $(HCTOOLEXEC)  benchrunner -- Mergesort 10000
 
 bench_gibbon_c:
 	$(HCTOOL) $(HCTOOLEXEC) criterion-interactive ./benchmarks/c/cbench.exe gib_fillarray int64 1000000
