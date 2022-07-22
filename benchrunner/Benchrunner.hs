@@ -17,6 +17,7 @@ import qualified DpsMergeSort as DMS
 import qualified DpsMergeSort4 as DMS4
 import qualified DpsMergeSortPar as DMSP
 import qualified DpsMergeSort4Par as DMS4P
+import qualified CilkSort as C
 import qualified Array as A
 
 --------------------------------------------------------------------------------
@@ -52,7 +53,7 @@ bench_fill_array input_size = do
   where
     fill (s,x) = A.make s x
 
-data Benchmarks = FillArray | Insertionsort | Mergesort
+data Benchmarks = FillArray | Insertionsort | Mergesort | Quicksort | Cilksort
   deriving (Eq, Show, Read)
 
 main :: IO ()
@@ -83,11 +84,20 @@ main = do
                 (Proxy :: Proxy Float)
                 size
                 [
-                -- ("LH/quick", Q.quickSort)
                   ("LH/dps_mergesort", DMS.msort)
                 , ("LH/dps_mergesort_4way", DMS4.msort)
                 , ("LH/dps_mergesort_parallel", DMSP.msort)
                 , ("LH/dps_mergesort_4way_parallel", DMS4P.msort)
                 ]
                 -- [ ("LH/dps_merge", DM.msort) ]
+      Quicksort ->
+        benchSorts
+                (Proxy :: Proxy Float)
+                size
+                [ ("LH/quick", Q.quickSort) ]
+      Cilksort ->
+        benchSorts
+                (Proxy :: Proxy Float)
+                size
+                [ ("LH/cilk", C.cilkSort) ]
   withArgs rst $ defaultMain [ runbench ]

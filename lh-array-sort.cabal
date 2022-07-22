@@ -35,6 +35,7 @@ library
       DpsMergeSort4Par
       Properties
       QuickSort
+      CilkSort
   other-modules:
       Array.List
       Array.Mutable
