@@ -22,7 +22,7 @@ copy src dst i j =
   else (src', dst)
 
 -- DPS merge
-merge' :: Ord a =>
+merge' :: (Show a, Ord a) =>
   A.Array a -> A.Array a -> A.Array a ->
   Int -> Int -> Int ->
   (A.Array a, A.Array a)
@@ -31,10 +31,12 @@ merge' src1 src2 dst i1 i2 j =
       (len2, src2') = A.size2 src2 in
   if i1 >= len1
   then
-    let (src2'1, dst') = copy src2' dst i2 j in (A.append src1' src2'1, dst')
+    -- let (src2'1, dst') = copy src2' dst i2 j in (A.append src1' src2'1, dst')
+    let (src2'1, dst') = copy2 src2' i2 dst j (len2-i2+1) in (A.append src1' src2'1, dst')
   else if i2 >= len2
   then
-    let (src1'1, dst') = copy src1' dst i1 j in (A.append src1'1 src2', dst')
+    -- let (src1'1, dst') = copy src1' dst i1 j in (A.append src1'1 src2', dst')
+    let (src1'1, dst') = copy2 src1' i1 dst j (len1-i1+1) in (A.append src1'1 src2', dst')
   else
     let (v1, src1'1) = A.get2 src1' i1
         (v2, src2'1) = A.get2 src2' i2 in
@@ -46,7 +48,7 @@ merge' src1 src2 dst i1 i2 j =
              (src'', dst'') =  merge' src1'1 src2'1 dst' i1 (i2 + 1) (j + 1)
          in (src'', dst'')
 
-merge :: Ord a => A.Array a -> A.Array a -> A.Array a -> (A.Array a, A.Array a)
+merge :: (Show a, Ord a) => A.Array a -> A.Array a -> A.Array a -> (A.Array a, A.Array a)
 merge src1 src2 dst = merge' src1 src2 dst 0 0 0   -- the 0's are relative to the current
                                                    --   slices, not absolute indices
 
@@ -56,8 +58,9 @@ merge src1 src2 dst = merge' src1 src2 dst 0 0 0   -- the 0's are relative to th
 msortSwap :: (Show a, Ord a) => A.Array a -> A.Array a -> (A.Array a, A.Array a)
 msortSwap src tmp =
   let (len, src') = A.size2 src in
-  if len <= 1
+  if len == 1
   then let (src'', tmp'') = copy src' tmp 0 0 in
+  -- then let (src'', tmp'') = copy2 src' 0 tmp 0 1 in
        (src'', tmp'')
   else
     let (src1, src2) = splitMid src'
@@ -76,8 +79,8 @@ msortInplace src tmp =
   let (len, src') = A.size2 src in
   if len <= 1
   then (src', tmp)
-  else if len <= switchToQuickSort
-  then (isort_top src, tmp)
+  -- else if len <= switchToQuickSort
+  -- then (isort_top src, tmp)
   else
     let (src1, src2) = splitMid src'
         (tmp1, tmp2) = splitMid tmp
