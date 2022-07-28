@@ -13,8 +13,7 @@ executable prof
                        , vector
     main-is:             Main.hs
     other-modules:       Array
-                         DpsMergeSort
-                         Insertion
+                         Sort
     default-language:    Haskell2010
     default-extensions:  TupleSections
                          BangPatterns
