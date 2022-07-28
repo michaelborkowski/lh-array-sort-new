@@ -19,6 +19,7 @@ Flag mutable-arrays
 library
 
   if flag(mutable-arrays)
+    ghc-options: -O2
     cpp-options: -DMUTABLE_ARRAYS
 
   exposed-modules:
