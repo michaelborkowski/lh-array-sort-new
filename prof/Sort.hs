@@ -13,8 +13,9 @@ import qualified Data.Vector.Unboxed as V
 msortSwap :: (Show a, Ord a) => A.Array a -> A.Array a -> (A.Array a, A.Array a)
 msortSwap src tmp =
   let (len, src') = A.size2 src in
-  if len <= 1
-  then let (src'', tmp'') = copy src' tmp 0 0 in
+  if len == 1
+  -- then let (src'', tmp'') = copy src' tmp 0 0 in
+  then let (src'', tmp'') = A.copy2 src' 0 tmp 0 1 in
        (src'', tmp'')
   else
     let (src1, src2) = A.splitMid src'
@@ -55,6 +56,8 @@ msort src =
 
 --------------------------------------------------------------------------------
 
+{-
+
 -- copy sets dst[j..] <- src[i..]
 copy :: Ord a => A.Array a -> A.Array a -> Int -> Int -> (A.Array a, A.Array a)
 copy src dst i j =
@@ -67,6 +70,8 @@ copy src dst i j =
     (src'2, dst'2)
   else (src', dst)
 
+-}
+
 -- DPS merge
 merge' :: Ord a =>
   A.Array a -> A.Array a -> A.Array a ->
@@ -77,10 +82,12 @@ merge' src1 src2 dst i1 i2 j =
       (len2, src2') = A.size2 src2 in
   if i1 >= len1
   then
-    let (src2'1, dst') = copy src2' dst i2 j in (A.append src1' src2'1, dst')
+    -- let (src2'1, dst') = copy src2' dst i2 j in (A.append src1' src2'1, dst')
+    let (src2'1, dst') = A.copy2 src2' i2 dst j (len2-i2+1) in (A.append src1' src2'1, dst')
   else if i2 >= len2
   then
-    let (src1'1, dst') = copy src1' dst i1 j in (A.append src1'1 src2', dst')
+    -- let (src1'1, dst') = copy src1' dst i1 j in (A.append src1'1 src2', dst')
+    let (src1'1, dst') = A.copy2 src1' i1 dst j (len1-i1+1) in (A.append src1'1 src2', dst')
   else
     let (v1, src1'1) = A.get2 src1' i1
         (v2, src2'1) = A.get2 src2' i2 in

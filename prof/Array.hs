@@ -74,6 +74,12 @@ set (Array lo hi !arr) i !a =
 #endif
   Array lo hi (set# arr (lo+i) a)
 
+{-# INLINE copy2 #-}
+copy2 :: Array a -> Int -> Array a -> Int -> Int -> (Array a, Array a)
+copy2 s@(Array lo1 _hi1 src) src_offset d@(Array lo2 _hi2 dst) dst_offset n =
+  case copy# src (lo1+src_offset) dst (lo2+dst_offset) n of
+    dst_arr' -> (s, d { array = dst_arr' })
+
 slice :: Array a -> Int -> Int -> Array a
 slice (Array l _r !a) l' r' = Array (l+l') (l+r') a
 
@@ -139,6 +145,12 @@ set# :: Array# a -> Int -> a -> Array# a
 set# (Array# !arr) (GHC.I# i) !a =
   case GHC.runRW# (GHC.writeArray# arr i a) of
     _ -> Array# arr
+
+{-# NOINLINE copy# #-}
+copy# :: Array# a -> Int -> Array# a -> Int -> Int -> Array# a
+copy# (Array# !src) (GHC.I# src_offset) (Array# !dst) (GHC.I# dst_offset) (GHC.I# n) =
+  case GHC.runRW# (GHC.copyMutableArray# src src_offset dst dst_offset n) of
+    _ -> Array# dst
 
 size# :: Array# a -> Int
 size# (Array# arr) =
