@@ -9,7 +9,7 @@ package lh-array-sort
 
 package prof
     ghc-options: -O2
-    -- ghc-options: -ddump-simpl -ddump-to-file -dsuppress-all
+    ghc-options: -ddump-simpl -ddump-to-file -dsuppress-all
     -- ghc-options: -with-rtsopts="-p"
     -- profiling: True
 

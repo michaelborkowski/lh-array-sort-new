@@ -116,9 +116,11 @@ splitMid xs = (slice xs 0 m, slice xs m n)
 
 {-# INLINE swap #-}
 swap :: Array a -> Int -> Int -> Array a
-swap xs i j = let xi  = get xs i
-                  xs' = set xs i (get xs j)
-               in set xs' j xi
+swap xs i j =
+  let xi  = get xs i
+      xs' = set xs i (get xs j)
+      xs'' = set xs' j xi
+  in xs''
 
 
 --------------------------------------------------------------------------------

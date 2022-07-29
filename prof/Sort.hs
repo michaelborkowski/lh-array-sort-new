@@ -1,6 +1,6 @@
 {-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE MagicHash    #-}
-{-# LANGUAGE Strict       #-}
+-- {-# LANGUAGE Strict       #-}
 
 module Sort where
 
@@ -10,28 +10,30 @@ import           Prelude
 -- import qualified Data.Vector.Unboxed as V
 -- import qualified GHC.Exts as GHC
 
+import           Debug.Trace
+
 --------------------------------------------------------------------------------
 
 -- DPS mergesort
 msortSwap :: (Show a, Ord a) => A.Array a -> A.Array a -> (A.Array a, A.Array a)
-msortSwap src tmp =
-  let (len, src') = A.size2 src in
+msortSwap !src !tmp =
+  let !(len, src') = A.size2 src in
   if len == 1
   -- then let (src'', tmp'') = copy src' tmp 0 0 in
-  then let (src'', tmp'') = A.copy2 src' 0 tmp 0 1 in
+  then let !(src'', tmp'') = A.copy2 src' 0 tmp 0 1 in
        (src'', tmp'')
   else
     let (src1, src2) = A.splitMid src'
         (tmp1, tmp2) = A.splitMid tmp
         (src1', tmp1') = msortInplace src1 tmp1
         (src2', tmp2') = msortInplace src2 tmp2
-        tmp3' = A.append tmp1' tmp2'
-        (src'', tmp4) = merge src1' src2' tmp3'
+        !tmp3' = A.append tmp1' tmp2'
+        !(src'', tmp4) = merge src1' src2' tmp3'
     in (src'', tmp4)
 
 msortInplace :: (Show a, Ord a) => A.Array a -> A.Array a -> (A.Array a, A.Array a)
-msortInplace src tmp =
-  let (len, src') = A.size2 src in
+msortInplace !src !tmp =
+  let !(len, src') = A.size2 src in
   -- if len <= 2048
   -- then (isort2 src', tmp)
   if len == 1
@@ -41,8 +43,8 @@ msortInplace src tmp =
         (tmp1, tmp2) = A.splitMid tmp
         (src1', tmp1') = msortSwap src1 tmp1
         (src2', tmp2') = msortSwap src2 tmp2
-        src3' = A.append src1' src2'
-        (tmp'', src4') = merge tmp1' tmp2' src3'
+        !src3' = A.append src1' src2'
+        !(tmp'', src4') = merge tmp1' tmp2' src3'
     in (src4', tmp'')
 
 msort' :: (Show a, Ord a) => A.Array a -> a -> A.Array a
@@ -88,26 +90,26 @@ merge' :: Ord a =>
   A.Array a -> A.Array a -> A.Array a ->
   Int -> Int -> Int ->
   (A.Array a, A.Array a)
-merge' src1 src2 dst i1 i2 j =
-  let (len1, src1') = A.size2 src1
-      (len2, src2') = A.size2 src2 in
+merge' !src1 !src2 !dst i1 i2 j =
+  let !(len1, src1') = A.size2 src1
+      !(len2, src2') = A.size2 src2 in
   if i1 >= len1
   then
     -- let (src2'1, dst') = copy src2' dst i2 j in (A.append src1' src2'1, dst')
-    let (src2'1, dst') = A.copy2 src2' i2 dst j (len2-i2+1) in (A.append src1' src2'1, dst')
+    let !(src2'1, dst') = A.copy2 src2' i2 dst j (len2-i2+1) in (A.append src1' src2'1, dst')
   else if i2 >= len2
   then
     -- let (src1'1, dst') = copy src1' dst i1 j in (A.append src1'1 src2', dst')
-    let (src1'1, dst') = A.copy2 src1' i1 dst j (len1-i1+1) in (A.append src1'1 src2', dst')
+    let !(src1'1, dst') = A.copy2 src1' i1 dst j (len1-i1+1) in (A.append src1'1 src2', dst')
   else
-    let (v1, src1'1) = A.get2 src1' i1
-        (v2, src2'1) = A.get2 src2' i2 in
+    let !(v1, src1'1) = A.get2 src1' i1
+        !(v2, src2'1) = A.get2 src2' i2 in
     if v1 < v2
-    then let dst' = A.set dst j v1
-             (src'', dst'') =  merge' src1'1 src2'1 dst' (i1 + 1) i2 (j + 1) in
+    then let dst' = A.set dst j  v1
+             !(src'', dst'') =  merge' src1'1 src2'1 dst' (i1 + 1) i2 (j + 1) in
          (src'', dst'')
     else let dst' = A.set dst j v2
-             (src'', dst'') =  merge' src1'1 src2'1 dst' i1 (i2 + 1) (j + 1) in
+             !(src'', dst'') =  merge' src1'1 src2'1 dst' i1 (i2 + 1) (j + 1) in
          (src'', dst'')
 
 {-# INLINE merge #-}
@@ -177,7 +179,6 @@ isort2 xs = go 1 xs
 
 --------------------------------------------------------------------------------
 
-
 quickSort :: Ord a => A.Array a -> A.Array a
 quickSort xs = quickSortBtw xs 0 (A.size xs)
 
@@ -200,8 +201,7 @@ shuffleBtw xs i j =
         then (zs, jl)
         else let (vl, zs') = A.get2 zs jl in
           if vl <= piv
-          then goShuffle zs' (jl+1)
-                             jr
+          then goShuffle zs' (jl+1) jr
           else let (vr, zs'') = A.get2 zs jr in
             if vr >  piv
             then goShuffle zs'' jl     (jr-1)
