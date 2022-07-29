@@ -82,6 +82,7 @@ copy2 s@(Array (GHC.I# lo1) _hi1 src) (GHC.I# src_offset)
   = case copy# src (lo1 GHC.+# src_offset) dst (lo2 GHC.+# dst_offset) n of
       dst_arr' -> (s, d { array = dst_arr' })
 
+{-# INLINE slice #-}
 slice :: Array a -> Int -> Int -> Array a
 slice (Array l _r !a) l' r' = Array (l+l') (l+r') a
 
@@ -106,12 +107,14 @@ toList arr =
   let ixs = [0..(size arr - 1)]
   in [ get arr i | i <- ixs ]
 
+{-# INLINE splitMid #-}
 splitMid :: Ord a => Array a -> (Array a, Array a)
 splitMid xs = (slice xs 0 m, slice xs m n)
   where
     n = size xs
     m = n `div` 2
 
+{-# INLINE swap #-}
 swap :: Array a -> Int -> Int -> Array a
 swap xs i j = let xi  = get xs i
                   xs' = set xs i (get xs j)

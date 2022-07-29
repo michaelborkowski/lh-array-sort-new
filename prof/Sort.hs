@@ -47,6 +47,8 @@ msort' src anyVal =
   _tmp `seq` src''
 
 -- finally, the top-level merge sort function
+{-# SPECIALISE msort :: A.Array Float -> A.Array Float #-}
+{-# SPECIALISE msort :: A.Array Int -> A.Array Int #-}
 msort :: (Show a, Ord a) => A.Array a -> A.Array a
 msort src =
   let (len, src') = A.size2 src in
@@ -99,6 +101,7 @@ merge' src1 src2 dst i1 i2 j =
              (src'', dst'') =  merge' src1'1 src2'1 dst' i1 (i2 + 1) (j + 1) in
          (src'', dst'')
 
+{-# INLINE merge #-}
 merge :: Ord a => A.Array a -> A.Array a -> A.Array a -> (A.Array a, A.Array a)
 merge src1 src2 dst = merge' src1 src2 dst 0 0 0   -- the 0's are relative to the current
                                                    --   slices, not absolute indices
