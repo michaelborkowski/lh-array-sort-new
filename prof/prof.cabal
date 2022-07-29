@@ -22,4 +22,3 @@ executable prof
                          ScopedTypeVariables
                          DeriveGeneric
     ghc-options:         -Wall -Wcompat
-    ghc-options:         -O2 -ddump-simpl -ddump-to-file -dsuppress-all

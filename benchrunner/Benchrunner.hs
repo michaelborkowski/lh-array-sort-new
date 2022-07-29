@@ -94,10 +94,10 @@ main = do
         benchSorts
                 (Proxy :: Proxy Float)
                 size
-                [ ("LH/quick", Q.quickSort) ]
+                [ ("LH/quickSort", Q.quickSort) ]
       Cilksort ->
         benchSorts
                 (Proxy :: Proxy Float)
                 size
-                [ ("LH/cilk", C.cilkSort) ]
+                [ ("LH/cilkSort", C.cilkSort) ]
   withArgs rst $ defaultMain [ runbench ]
