@@ -3,11 +3,13 @@ packages: .
           ./benchmarks/haskell
           ./prof
 
--- package lh-array-sort
---     ghc-options: -O2 -ddump-simpl -ddump-to-file -dsuppress-all
+package lh-array-sort
+    ghc-options: -O2
+    -- ghc-options: -ddump-simpl -ddump-to-file -dsuppress-all
 
 package prof
-    ghc-options: -O2 -ddump-simpl -ddump-to-file -dsuppress-all
+    ghc-options: -O2
+    -- ghc-options: -ddump-simpl -ddump-to-file -dsuppress-all
     -- profiling: True
 
 source-repository-package
@@ -32,7 +34,7 @@ source-repository-package
     tag: 08fa6b6e0001c2da6b96a135523ca56107a3c0d6
 
 source-repository-package
-    type:git 
+    type:git
     location: https://github.com/facundominguez/rest
     tag: 31e974979c90e910efe5199ee0d3721b791667f6
 
