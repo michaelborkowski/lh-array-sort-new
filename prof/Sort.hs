@@ -1,11 +1,14 @@
 {-# LANGUAGE BangPatterns #-}
+{-# LANGUAGE MagicHash    #-}
+{-# LANGUAGE Strict       #-}
 
 module Sort where
 
 import qualified Array as A
 
 import           Prelude
-import qualified Data.Vector.Unboxed as V
+-- import qualified Data.Vector.Unboxed as V
+-- import qualified GHC.Exts as GHC
 
 --------------------------------------------------------------------------------
 
@@ -29,7 +32,9 @@ msortSwap src tmp =
 msortInplace :: (Show a, Ord a) => A.Array a -> A.Array a -> (A.Array a, A.Array a)
 msortInplace src tmp =
   let (len, src') = A.size2 src in
-  if len <= 1
+  -- if len <= 2048
+  -- then (isort2 src', tmp)
+  if len == 1
   then (src', tmp)
   else
     let (src1, src2) = A.splitMid src'
@@ -43,7 +48,11 @@ msortInplace src tmp =
 msort' :: (Show a, Ord a) => A.Array a -> a -> A.Array a
 msort' src anyVal =
   let (len, src') = A.size2 src
-      (src'', _tmp) = msortInplace src' (A.make len anyVal) in
+      tmp = A.make len anyVal
+      (src'', _tmp) = msortInplace src' tmp in
+      -- src_copy = A.make len (A.get src 0)
+      -- (_, src_copy') = A.copy2 src 0 src_copy 0 len
+      -- (src'', _tmp) = msortInplace src_copy' tmp in
   _tmp `seq` src''
 
 -- finally, the top-level merge sort function
@@ -103,5 +112,64 @@ merge' src1 src2 dst i1 i2 j =
 
 {-# INLINE merge #-}
 merge :: Ord a => A.Array a -> A.Array a -> A.Array a -> (A.Array a, A.Array a)
-merge src1 src2 dst = merge' src1 src2 dst 0 0 0   -- the 0's are relative to the current
-                                                   --   slices, not absolute indices
+merge src1 src2 dst = merge' src1 src2 dst 0 0 0
+
+{-
+
+merge' :: Ord a =>
+  A.Array a -> A.Array a -> A.Array a ->
+  GHC.Int# -> GHC.Int# -> GHC.Int# ->
+  (A.Array a, A.Array a)
+merge' src1 src2 dst i1 i2 j =
+  let (len1, src1') = A.size2 src1
+      (len2, src2') = A.size2 src2 in
+  if (GHC.I# i1) >= len1
+  then
+    -- let (src2'1, dst') = copy src2' dst i2 j in (A.append src1' src2'1, dst')
+    let (src2'1, dst') = A.copy2 src2' (GHC.I# i2) dst (GHC.I# j) (len2-(GHC.I# i2)+1) in (A.append src1' src2'1, dst')
+  else if (GHC.I# i2) >= len2
+  then
+    -- let (src1'1, dst') = copy src1' dst i1 j in (A.append src1'1 src2', dst')
+    let (src1'1, dst') = A.copy2 src1' (GHC.I# i1) dst (GHC.I# j) (len1-(GHC.I# i1)+1) in (A.append src1'1 src2', dst')
+  else
+    let (v1, src1'1) = A.get2 src1' (GHC.I# i1)
+        (v2, src2'1) = A.get2 src2' (GHC.I# i2) in
+    if v1 < v2
+    then let dst' = A.set dst (GHC.I# j) v1
+             (src'', dst'') =  merge' src1'1 src2'1 dst' (i1 GHC.+# 1#) i2 (j GHC.+# 1#) in
+         (src'', dst'')
+    else let dst' = A.set dst (GHC.I# j) v2
+             (src'', dst'') =  merge' src1'1 src2'1 dst' i1 (i2 GHC.+# 1#) (j GHC.+# 1#) in
+         (src'', dst'')
+
+merge :: Ord a => A.Array a -> A.Array a -> A.Array a -> (A.Array a, A.Array a)
+merge src1 src2 dst = merge' src1 src2 dst 0# 0# 0#
+
+-}
+
+--------------------------------------------------------------------------------
+
+{- in place insertion sort; doesn't copy the input array -}
+{-# INLINE isort2 #-}
+{-# SPECIALISE isort2 :: A.Array Float -> A.Array Float #-}
+isort2 :: Ord a => A.Array a -> A.Array a
+isort2 xs = go 1 xs
+  where
+    !n = A.size xs
+    go i ys =
+      if i == n
+      then ys
+      else go (i+1) (shift i ys)
+
+    -- shift j ys@(A.Arr ls s e) =
+    shift !j ys =
+      if j == 0
+      -- then (A.Arr ls s e)
+      then ys
+      else let a = A.get ys j
+               b = A.get ys (j-1)
+           in if a > b
+              -- then (A.Arr ls s e)
+              then ys
+              else let ys' = A.set (A.set ys j b) (j-1) a
+                   in shift (j-1) ys'
