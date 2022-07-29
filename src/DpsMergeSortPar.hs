@@ -10,6 +10,7 @@ import           Language.Haskell.Liquid.ProofCombinators hiding ((?))
 import           ProofCombinators
 import           Array 
 import           DpsMerge
+import qualified DpsMergeSort as Seq
 import           Equivalence
 import           Order
 
@@ -18,6 +19,9 @@ import           Array.Mutable as A
 #else
 import           Array.List as A
 #endif
+
+#define KILO     1024
+#define	SEQSIZE  64 
 
 -- DPS mergesort
 {-@ msortSwap :: xs:Array a 
@@ -39,7 +43,7 @@ msortSwap src tmp =
     let (src1, src2)  = splitMid src'
         (tmp1, tmp2)  = splitMid tmp
         ((src1', tmp1'), (src2', tmp2')) 
-                      = msortInplace src1 tmp1 .||. msortInplace src2 tmp2
+                      = msortInplace src1 tmp1 .|*|. msortInplace src2 tmp2
         tmp3' = A.append tmp1' tmp2' 
         (src'', tmp4) = merge src1' src2' tmp3'
     in  (src'', tmp4)  ? lem_toBag_splitMid src -- tmp4 holds the sorted data
@@ -57,13 +61,14 @@ msortSwap src tmp =
 msortInplace :: (Show a, Ord a) => A.Array a -> A.Array a -> (A.Array a, A.Array a)
 msortInplace src tmp =
   let (len, src') = A.size2 src in
-  if len <= 1
-  then (src', tmp)
+  if len <= SEQSIZE
+  then let (src'', tmp'') = Seq.msortInplace src' tmp
+       in  (src'', tmp'')
   else
     let (src1, src2)   = splitMid src'
         (tmp1, tmp2)   = splitMid tmp
         ((src1', tmp1'), (src2', tmp2')) 
-                       = msortSwap src1 tmp1 .||. msortSwap src2 tmp2
+                       = msortSwap src1 tmp1 .|*|. msortSwap src2 tmp2
         src3' = A.append src1' src2'  
         (tmp'', src4') = merge tmp1' tmp2' src3' 
     in  (src4', tmp'')  ? lem_toBag_splitMid src -- src4' holds the sorted data
