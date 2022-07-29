@@ -173,3 +173,43 @@ isort2 xs = go 1 xs
               then ys
               else let ys' = A.set (A.set ys j b) (j-1) a
                    in shift (j-1) ys'
+
+
+--------------------------------------------------------------------------------
+
+
+quickSort :: Ord a => A.Array a -> A.Array a
+quickSort xs = quickSortBtw xs 0 (A.size xs)
+
+quickSortBtw :: Ord a => A.Array a -> Int -> Int -> A.Array a
+quickSortBtw xs i j  =
+  if j - i < 2
+  then xs
+  else let (xs', i_piv) = shuffleBtw xs i j   -- isPartitionedBtw xs' i i_piv j
+           xs''         = quickSortBtw xs'  i           i_piv
+           xs'''        = quickSortBtw xs'' (i_piv + 1) j
+        in xs'''
+
+shuffleBtw :: Ord a => A.Array a -> Int -> Int -> (A.Array a, Int)
+shuffleBtw xs i j =
+  let
+      (piv, xs1) = A.get2 xs (j-1)        -- fix xs[j-1] as the pivot
+      -- at return, all of ws[i:ip] <= ws[j-1] and all of ws[ip:j-1] > ws[j-1].
+      goShuffle zs jl jr    =   -- BOTH bounds inclusive here
+        if jl > jr
+        then (zs, jl)
+        else let (vl, zs') = A.get2 zs jl in
+          if vl <= piv
+          then goShuffle zs' (jl+1)
+                             jr
+          else let (vr, zs'') = A.get2 zs jr in
+            if vr >  piv
+            then goShuffle zs'' jl     (jr-1)
+            else let zs''' = A.swap zs'' jl jr
+                  in goShuffle zs''' jl (jr-1)
+
+      (xs', ip)  = goShuffle xs1 i (j-2)  -- BOTH bounds inclusive
+      xs''       = if ip < j-1
+                   then A.swap xs' ip (j-1)
+                   else xs'
+   in (xs'', ip)

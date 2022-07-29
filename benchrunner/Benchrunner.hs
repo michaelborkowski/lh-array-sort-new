@@ -49,7 +49,7 @@ bench_fill_array input_size = do
   where
     fill (s,x) = A.make s x
 
-data Benchmarks = FillArray | Insertionsort | Mergesort
+data Benchmarks = FillArray | Insertionsort | Mergesort | Quicksort
   deriving (Eq, Show, Read)
 
 main :: IO ()
@@ -80,4 +80,9 @@ main = do
                 (Proxy :: Proxy Float)
                 size
                 [ ("LH/dps_merge", DM.msort) ]
+      Quicksort ->
+        benchSorts
+                (Proxy :: Proxy Float)
+                size
+                [ ("LH/quickSort", Q.quickSort) ]
   withArgs rst $ defaultMain [ runbench ]
