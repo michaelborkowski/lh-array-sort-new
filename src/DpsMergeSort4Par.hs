@@ -16,12 +16,13 @@ import           Order
 
 #ifdef MUTABLE_ARRAYS
 import           Array.Mutable as A
+import           Control.DeepSeq ( NFData(..) )
 #else
 import           Array.List as A
 #endif
 
 #define KILO     1024
-#define SEQSIZE  64
+#define SEQSIZE  4096
 
 -- DPS mergesort -- unfold twice, merge twice 
 {-@ msortInplace :: xs:Array a 
@@ -33,7 +34,7 @@ import           Array.List as A
                                        left zs == left xs && right zs == right xs &&
                                        left ts == left ys && right ts == right ys }> 
        / [A.size xs] @-}
-msortInplace :: (Show a, Ord a) => A.Array a -> A.Array a -> (A.Array a, A.Array a)
+msortInplace :: (Show a, Ord a, NFData a) => A.Array a -> A.Array a -> (A.Array a, A.Array a)
 msortInplace src tmp =
   let (len, src') = A.size2 src in
   if len <= SEQSIZE
@@ -47,12 +48,15 @@ msortInplace src tmp =
         (tmp1, tmp2)     = splitMid tmpA
         (tmp3, tmp4)     = splitMid tmpB
         (((src1', tmp1'), (src2', tmp2')), ((src3', tmp3'), (src4', tmp4'))) 
-                         = (msortInplace src1 tmp1 .||. msortInplace src2 tmp2) .|*|.
-                           (msortInplace src3 tmp3 .||. msortInplace src4 tmp4)
+                         = tuple4 (msortInplace src1) tmp1 (msortInplace src2) tmp2
+                                  (msortInplace src3) tmp3 (msortInplace src4) tmp4
+--                         = (msortInplace src1 tmp1 .||. msortInplace src2 tmp2) .|*|.
+  --                         (msortInplace src3 tmp3 .||. msortInplace src4 tmp4)
         tmpA'            = A.append tmp1' tmp2'
         tmpB'            = A.append tmp3' tmp4'
         ((srcA'', tmpA''), (srcB'', tmpB'')) 
-                         = merge src1' src2' tmpA' .|*|. merge src3' src4' tmpB'
+                         = tuple2 (merge src1' src2') tmpA' (merge src3' src4') tmpB'
+--                         = merge src1' src2' tmpA' .|*|. merge src3' src4' tmpB'
         src''            = A.append srcA'' srcB''
         (tmp''', src''') = merge tmpA'' tmpB'' src''
     in  (src''', tmp''') ? lem_toBag_splitMid src 
@@ -66,7 +70,7 @@ msortInplace src tmp =
            -> { y:a | y == A.get xs 0 }
            -> { zs:(Array a) | toBag xs == toBag zs && isSorted' zs &&
                                A.size xs == A.size zs && token xs == token zs } @-}
-msort' :: (Show a, Ord a) => A.Array a -> a -> A.Array a
+msort' :: (Show a, Ord a, NFData a) => A.Array a -> a -> A.Array a
 msort' src anyVal =
   let (len, src') = A.size2 src
       (src'', _tmp) = msortInplace src' (A.make len anyVal) in
@@ -76,7 +80,7 @@ msort' src anyVal =
 {-@ msort :: { xs:(A.Array a) | left xs == 0 && right xs == size xs }
                     -> { ys:_ | toBag xs == toBag ys && isSorted' ys &&
                                 A.size xs == A.size ys && token xs == token ys  } @-}
-msort :: (Show a, Ord a) => A.Array a -> A.Array a
+msort :: (Show a, Ord a, NFData a) => A.Array a -> A.Array a
 msort src =
   let (len, src') = A.size2 src in
       if len == 0 then src'

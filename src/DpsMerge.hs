@@ -32,7 +32,8 @@ import           Array.List as A
                     A.size (snd t) == A.size dst } / [size src - i] @-}
 copy :: Ord a => A.Array a -> A.Array a -> Int -> Int -> (A.Array a, A.Array a)
 copy src dst i j =
-  let (len, src') = A.size2 src in
+  let (len, src') = A.size2 src in   A.copy2 src i dst j (len - i)
+{-  let (len, src') = A.size2 src in
   if i < len
   then
     let (v, src'1)     = A.get2 src' i 
@@ -51,7 +52,7 @@ copy src dst i j =
                                === B.put (A.get dst'2 j) (toBagBtw dst'2 (j+1) (A.size dst)) 
                                === toBagBtw dst'2 j (A.size dst) )
                        ? lem_equal_slice_narrow dst'1 dst'2 0 0 j (j+1) 
-  else (src', dst)
+  else (src', dst) -}
 
 -- DPS merge
 {-@ merge' :: { xs1:(Array a) | isSorted' xs1 }

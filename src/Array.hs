@@ -11,7 +11,7 @@ module Array
     Array
 
     -- * Construction and querying
-  , make, size, get, set, slice, append
+  , make, size, get, set, slice, append,    copy2
 
     -- * Linear versions
   , size2, get2
@@ -23,7 +23,7 @@ module Array
   , splitMid, swap
 
     -- * Parallel tuple operator
-  , (.||.), (.|*|.)
+  , (.||.), tuple2, tuple4
 
     -- * LiqidHaskell lemmas
   , lma_gs, lma_gns, lma_swap, lma_swap_eql, lem_slice_append, lem_get_slice
@@ -40,7 +40,7 @@ import           Array.List ( lma_gs_list, lma_gns_list
 import           Array.Mutable
 import           Control.DeepSeq ( NFData(..) )
 import           Control.Parallel.Strategies (runEval, rpar, rseq)
-import qualified Control.Monad.Par as P (runPar, spawnP, spawn_, get)
+import qualified Control.Monad.Par as P (runPar, spawnP, spawn_, get, fork, put, new)
 #else
 import           Array.List
 #endif
@@ -79,6 +79,11 @@ lem_get_slice = _todo
 #endif
 
 --------------------------------------------------------------------------------
+-- tuple2 :: NFData a => (Array a -> (Array a, Array a)) -> Array a -> Array a
+--               -> ( (Array a, Array a), (Array a, Array a))
+-- tuple4 :: NFData a => (Array a -> (Array a, Array a))
+--               -> Array a -> Array a -> Array a -> Array a
+--               -> ( (Array a, Array a), (Array a, Array a), (Array a, Array a), (Array a, Array a))
 
 -- This doesn't belong here, but it's here for convenience.
 
@@ -87,40 +92,76 @@ lem_get_slice = _todo
 --   but .||. can be used to get more than 2 way parallelism
 infixr 1 .||.
 #ifdef MUTABLE_ARRAYS
-(.||.) :: {-(NFData a, NFData b) =>-} a -> b -> (a,b)
-a .||. b = runEval $ do
-             a' <- rpar a
-             b' <- rpar b
-             return (a', b')  
-(.|*|.) :: {-(NFData a, NFData b) =>-} a -> b -> (a,b)
-a .|*|. b = runEval $ do
-             a' <- rpar a
-             b' <- rpar b
-             rseq a'
-             rseq b'
-             return (a', b')  
-{-  this is what we want to use, but doesn't run quite yet 
-a .||. b = P.runPar $ do
-               a'  <- P.spawn_ a
-               b'  <- P.spawn_ b
-               a'' <- P.get a'
-               b'' <- P.get b'
-               return (a'', b'') 
-a .|*|. b = P.runPar $ do
-               a'  <- P.spawn_ a
-               b'  <- P.spawn_ b
-               a'' <- P.get a'
-               b'' <- P.get b'
-               return (a'', b'') 
+tuple2 :: (NFData a, NFData b) => (a -> b) -> a -> (a -> b) -> a -> (b, b)
+tuple2 f x g y = P.runPar $ do
+                     fx  <- P.spawn_ $ return (f x)
+                     gy  <- P.spawn_ $ return (g y)
+                     fx' <- P.get fx
+                     gy' <- P.get gy
+                     return (fx', gy')
+{-
+                     i   <- P.new
+                     j   <- P.new
+                     P.fork (P.put i (f x))
+                     P.fork (P.put j (g y))
+                     fx <- P.get i
+                     gy <- P.get j
+                     return (fx, gy) 
 -}
+
+tuple4 :: (NFData a, NFData b) => (a -> b) -> a -> (a -> b) -> a
+                               -> (a -> b) -> a -> (a -> b) -> a -> ((b, b), (b, b))
+tuple4 f x g y h z j w = P.runPar $ do
+                             fx  <- P.spawn_ $ return (f x)
+                             gy  <- P.spawn_ $ return (g y)
+                             hz  <- P.spawn_ $ return (h z)
+                             jw  <- P.spawn_ $ return (j w)
+                             fx' <- P.get fx
+                             gy' <- P.get gy
+                             hz' <- P.get hz
+                             jw' <- P.get jw
+                             return ((fx', gy'), (hz', jw'))
+{-
+tuple4 f x g y h z j w = P.runPar $ do
+                             i   <- P.new
+                             k   <- P.new
+                             m   <- P.new
+                             n   <- P.new
+                             P.fork (P.put i (f x))
+                             P.fork (P.put k (g y))
+                             P.fork (P.put m (h z))
+                             P.fork (P.put n (j w))
+                             fx  <- P.get i
+                             gy  <- P.get k
+                             hz  <- P.get m
+                             jw  <- P.get n
+                             return ((fx, gy), (hz, jw))
+-}
+{-
+-}
+(.||.) :: (NFData a, NFData b) => a -> b -> (a,b)
+{-  this is what we want to use, but doesn't run quite yet -}
+a .||. b = P.runPar $ do          -- or P.spawn_ ?
+               a'  <- P.spawnP a
+               b'  <- P.spawnP b
+               a'' <- P.get a'
+               b'' <- P.get b'
+               return (a'', b'') 
 #else
+{-@ tuple2 :: f:_ -> x:a -> g:_ -> y:a -> { tup:_ | fst tup == f x && snd tup == g y } @-} 
+tuple2 :: (a -> b) -> a -> (a -> b) -> a -> (b, b)
+tuple2 f x g y = (f x, g y)
+
+{-@ tuple4 :: f:_ -> x:a -> g:_ -> y:a -> h:_ -> z:a -> j:_ -> w:a 
+                  -> { tup:_ | fst (fst tup) == f x && snd (fst tup) == g y &&
+                               fst (snd tup) == h z && snd (snd tup) == j w } @-}
+tuple4 :: (a -> b) -> a -> (a -> b) -> a 
+       -> (a -> b) -> a -> (a -> b) -> a -> ((b, b), (b, b))
+tuple4 f x g y h z j w = ((f x, g y), (h z, j w))
+
 {-@ (.||.) :: x:a -> y:b -> { tup:_ | x == fst tup && y = snd tup } @-}
 (.||.) :: a -> b -> (a,b)
 a .||. b = (a,b)
-
-{-@ (.|*|.) :: x:a -> y:b -> { tup:_ | x == fst tup && y = snd tup } @-}
-(.|*|.) :: a -> b -> (a,b)
-a .|*|. b = (a,b)
 #endif
 
 --------------------------------------------------------------------------------
