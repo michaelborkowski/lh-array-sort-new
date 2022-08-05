@@ -22,5 +22,6 @@ executable benchrunner
                         RecordWildCards
                         ScopedTypeVariables
                         DeriveGeneric
-    ghc-options:        -Wall -Wcompat
+    ghc-options:        -Wall -Wcompat 
+                        -threaded -rtsopts 
                         -fdefer-typed-holes

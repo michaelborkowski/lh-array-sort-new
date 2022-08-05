@@ -1,5 +1,6 @@
 HC = ghc
 CC = gcc
+RTFLAGS = +RTS -N6
 
 # Flag to decide whether we're using stack or cabal.
 ifeq ($(STACK),1)
@@ -27,19 +28,20 @@ all: checkdeps build bench
 bench: bench_verified bench_canonical_c bench_gibbon_c
 
 bench_verified:
-	$(HCTOOL) $(HCTOOLEXEC)  benchrunner -- FillArray 1000000
-	$(HCTOOL) $(HCTOOLEXEC)  benchrunner -- Insertionsort 10
-	$(HCTOOL) $(HCTOOLEXEC)  benchrunner -- Insertionsort 100
-	$(HCTOOL) $(HCTOOLEXEC)  benchrunner -- Insertionsort 1000
-	$(HCTOOL) $(HCTOOLEXEC)  benchrunner -- Mergesort 1000
-	$(HCTOOL) $(HCTOOLEXEC)  benchrunner -- Mergesort 10000
-	$(HCTOOL) $(HCTOOLEXEC)  benchrunner -- Mergesort 100000
-#	$(HCTOOL) $(HCTOOLEXEC)  benchrunner -- Quicksort 1000
-#	$(HCTOOL) $(HCTOOLEXEC)  benchrunner -- Quicksort 10000
-#	$(HCTOOL) $(HCTOOLEXEC)  benchrunner -- Quicksort 100000
-	$(HCTOOL) $(HCTOOLEXEC)  benchrunner -- Cilksort 1000
-	$(HCTOOL) $(HCTOOLEXEC)  benchrunner -- Cilksort 10000
-	$(HCTOOL) $(HCTOOLEXEC)  benchrunner -- Cilksort 100000
+	$(HCTOOL) $(HCTOOLEXEC)  benchrunner $(RTFLAGS) -- FillArray 1000000
+	$(HCTOOL) $(HCTOOLEXEC)  benchrunner $(RTFLAGS) -- Insertionsort 10
+	$(HCTOOL) $(HCTOOLEXEC)  benchrunner $(RTFLAGS) -- Insertionsort 100
+	$(HCTOOL) $(HCTOOLEXEC)  benchrunner $(RTFLAGS) -- Insertionsort 1000
+	$(HCTOOL) $(HCTOOLEXEC)  benchrunner $(RTFLAGS) -- Mergesort 10000
+	$(HCTOOL) $(HCTOOLEXEC)  benchrunner $(RTFLAGS) -- Mergesort 100000
+	$(HCTOOL) $(HCTOOLEXEC)  benchrunner $(RTFLAGS) -- Mergesort 1000000
+	$(HCTOOL) $(HCTOOLEXEC)  benchrunner $(RTFLAGS) -- Mergesort 4000000
+#	$(HCTOOL) $(HCTOOLEXEC)  benchrunner $(RTFLAGS) -- Quicksort 1000
+#	$(HCTOOL) $(HCTOOLEXEC)  benchrunner $(RTFLAGS) -- Quicksort 10000
+#	$(HCTOOL) $(HCTOOLEXEC)  benchrunner $(RTFLAGS) -- Quicksort 100000
+	$(HCTOOL) $(HCTOOLEXEC)  benchrunner $(RTFLAGS) -- Cilksort 1000
+	$(HCTOOL) $(HCTOOLEXEC)  benchrunner $(RTFLAGS) -- Cilksort 10000
+	$(HCTOOL) $(HCTOOLEXEC)  benchrunner $(RTFLAGS) -- Cilksort 100000
 
 bench_gibbon_c:
 	$(HCTOOL) $(HCTOOLEXEC) criterion-interactive ./benchmarks/c/cbench.exe gib_fillarray int64 1000000
