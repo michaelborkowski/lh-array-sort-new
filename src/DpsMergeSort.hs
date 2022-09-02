@@ -2,13 +2,14 @@
 {-@ LIQUID "--reflection"  @-}
 
 {-# LANGUAGE CPP #-}
+{-# LANGUAGE BangPatterns #-}
 
 module DpsMergeSort where
 
 import qualified Language.Haskell.Liquid.Bag as B
 import           Language.Haskell.Liquid.ProofCombinators hiding ((?))
 import           ProofCombinators
-import           Array 
+import           Array
 import           DpsMerge
 import           Equivalence
 import           Order
@@ -20,43 +21,43 @@ import           Array.List as A
 #endif
 
 -- DPS mergesort
-{-@ msortSwap :: xs:Array a 
-      -> { ys:(Array a ) | A.size ys  == A.size xs   && left xs == left ys && 
+{-@ msortSwap :: xs:Array a
+      -> { ys:(Array a ) | A.size ys  == A.size xs   && left xs == left ys &&
                            right xs == right ys }
       -> (Array a, Array a)<{\zs ts -> toBag xs == toBag ts && isSorted' ts &&
                                        token xs == token zs && token ys == token ts &&
                                        A.size xs == A.size zs && A.size ys == A.size ts &&
                                        left zs == left xs && right zs == right xs &&
-                                       left ts == left ys && right ts == right ys }> 
+                                       left ts == left ys && right ts == right ys }>
        / [A.size xs] @-}
 msortSwap :: (Show a, Ord a) => A.Array a -> A.Array a -> (A.Array a, A.Array a)
-msortSwap src tmp =
-  let (len, src') = A.size2 src in
+msortSwap !src !tmp =
+  let !(len, src') = A.size2 src in
   if len <= 1
-  then let (src'', tmp'') = copy src' tmp 0 0 in
+  then let !(src'', tmp'') = copy src' tmp 0 0 in
        (src'', tmp'')
   else
     let (src1, src2) = splitMid src'
         (tmp1, tmp2) = splitMid tmp
         (src1', tmp1') = msortInplace src1 tmp1
         (src2', tmp2') = msortInplace src2 tmp2
-        tmp3' = A.append tmp1' tmp2' 
-        (src'', tmp4) = merge src1' src2' tmp3'
+        !tmp3' = A.append tmp1' tmp2'
+        !(src'', tmp4) = merge src1' src2' tmp3'
     in (src'', tmp4)  ? lem_toBag_splitMid src -- tmp4 holds the sorted data
                       ? lem_toBag_splitMid tmp
 
-{-@ msortInplace :: xs:Array a 
-      -> { ys:(Array a ) | A.size ys  == A.size xs   && left xs == left ys && 
+{-@ msortInplace :: xs:Array a
+      -> { ys:(Array a ) | A.size ys  == A.size xs   && left xs == left ys &&
                       right xs == right ys }
       -> (Array a, Array a)<{\zs ts -> toBag xs == toBag zs && isSorted' zs &&
                                        token xs == token zs && token ys == token ts &&
                                        A.size xs == A.size zs && A.size ys == A.size ts &&
                                        left zs == left xs && right zs == right xs &&
-                                       left ts == left ys && right ts == right ys }> 
+                                       left ts == left ys && right ts == right ys }>
        / [A.size xs] @-}
 msortInplace :: (Show a, Ord a) => A.Array a -> A.Array a -> (A.Array a, A.Array a)
-msortInplace src tmp =
-  let (len, src') = A.size2 src in
+msortInplace !src !tmp =
+  let !(len, src') = A.size2 src in
   if len <= 1
   then (src', tmp)
   else
@@ -64,8 +65,8 @@ msortInplace src tmp =
         (tmp1, tmp2) = splitMid tmp
         (src1', tmp1') = msortSwap src1 tmp1
         (src2', tmp2') = msortSwap src2 tmp2
-        src3' = A.append src1' src2'  
-        (tmp'', src4') = merge tmp1' tmp2' src3' 
+        !src3' = A.append src1' src2'
+        !(tmp'', src4') = merge tmp1' tmp2' src3'
     in (src4', tmp'')  ? lem_toBag_splitMid src -- src4' holds the sorted data
                        ? lem_toBag_splitMid tmp
 
@@ -79,10 +80,13 @@ msort' src anyVal =
       (src'', _tmp) = msortInplace src' (A.make len anyVal) in
   _tmp `seq` src''
 
--- finally, the top-level merge sort function 
+-- finally, the top-level merge sort function
 {-@ msort :: { xs:(A.Array a) | left xs == 0 && right xs == size xs }
                     -> { ys:_ | toBag xs == toBag ys && isSorted' ys &&
                                 A.size xs == A.size ys && token xs == token ys  } @-}
+
+{-# SPECIALISE msort :: A.Array Float -> A.Array Float #-}
+{-# SPECIALISE msort :: A.Array Int -> A.Array Int #-}
 msort :: (Show a, Ord a) => A.Array a -> A.Array a
 msort src =
   let (len, src') = A.size2 src in
@@ -108,7 +112,7 @@ merge_par src1 src2 dst =
              in if n1 == 0
                 then let (_src2', dst') = copy src2 dst 0 0
                      in dst'
-                else if n2 == 0
+                else if nn2 == 0
                      then let (_src1', dst') = copy src1 dst 0 0
                           in dst'
                      else let mid1 = n1 `div` 2
@@ -162,4 +166,3 @@ binarySearch ls query = go 0 (A.size ls)
         pivot = A.get ls mid
 
 END UNUSED SECTION -}
-

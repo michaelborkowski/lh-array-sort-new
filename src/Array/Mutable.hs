@@ -56,7 +56,7 @@ instance NFData a => NFData (Array a) where
 {-# INLINE make #-}
 make :: Int -> a -> Array a
 make 0 _ = Array 0 0 undefined
-make s x = Array 0 s (make# s x)
+make (GHC.I# s) x = Array 0 (GHC.I# s) (make# s x)
 
 {-# INLINE size #-}
 size :: Array a -> Int
@@ -64,7 +64,7 @@ size (Array !lo !hi _arr) = hi-lo
 
 {-# INLINE get #-}
 get :: Array a -> Int -> a
-get (Array lo _hi !arr) i =
+get (Array (GHC.I# lo) _hi !arr) (GHC.I# i) =
   seq
 #ifdef RUNTIME_CHECKS
   if i < lo || i > hi
@@ -73,11 +73,11 @@ get (Array lo _hi !arr) i =
 #else
   ()
 #endif
-  get# arr (lo+i)
+  get# arr (lo GHC.+# i)
 
 {-# INLINE set #-}
 set :: Array a -> Int -> a -> Array a
-set (Array lo hi !arr) i !a =
+set (Array (GHC.I# lo) hi !arr) (GHC.I# i) !a =
   seq
 #ifdef RUNTIME_CHECKS
   if i < lo || i > hi
@@ -86,8 +86,17 @@ set (Array lo hi !arr) i !a =
 #else
   ()
 #endif
-  Array lo hi (set# arr (lo+i) a)
+  Array (GHC.I# lo) hi (set# arr (lo GHC.+# i) a)
 
+{-# INLINE copy2 #-}
+copy2 :: Array a -> Int -> Array a -> Int -> Int -> (Array a, Array a)
+copy2 s@(Array (GHC.I# lo1) _hi1 src) (GHC.I# src_offset)
+      d@(Array (GHC.I# lo2) _hi2 dst) (GHC.I# dst_offset)
+      (GHC.I# n)
+  = case copy# src (lo1 GHC.+# src_offset) dst (lo2 GHC.+# dst_offset) n of
+      dst_arr' -> (s, d { array = dst_arr' })
+
+{-# INLINE slice #-}
 slice :: Array a -> Int -> Int -> Array a
 slice (Array l _r !a) l' r' = Array (l+l') (l+r') a
 
@@ -123,25 +132,31 @@ newtype Array# a = Array# (GHC.MutableArray# GHC.RealWorld a)
 -- The NOINLINE pragmas prevent the runRW# effect from being reordered.
 
 {-# NOINLINE make# #-}
-make# :: Int -> a -> Array# a
-make# (GHC.I# s) a =
+make# :: GHC.Int# -> a -> Array# a
+make# s a =
   GHC.runRW# $ \st ->
     case GHC.newArray# s a st of
       (# _, arr #) -> Array# arr
 
 
 {-# NOINLINE get# #-}
-get# :: Array# a -> Int -> a
-get# (Array# !arr) (GHC.I# i) =
+get# :: Array# a -> GHC.Int# -> a
+get# (Array# !arr) i =
   case GHC.runRW# (GHC.readArray# arr i) of
     (# _, !ret #) -> ret
 
 
 {-# NOINLINE set# #-}
-set# :: Array# a -> Int -> a -> Array# a
-set# (Array# !arr) (GHC.I# i) !a =
+set# :: Array# a -> GHC.Int# -> a -> Array# a
+set# (Array# !arr) i !a =
   case GHC.runRW# (GHC.writeArray# arr i a) of
     _ -> Array# arr
+
+{-# NOINLINE copy# #-}
+copy# :: Array# a -> GHC.Int# -> Array# a -> GHC.Int# -> GHC.Int# -> Array# a
+copy# (Array# !src) src_offset (Array# !dst) dst_offset n =
+  case GHC.runRW# (GHC.copyMutableArray# src src_offset dst dst_offset n) of
+    _ -> Array# dst
 
 size# :: Array# a -> Int
 size# (Array# arr) =
@@ -151,15 +166,16 @@ size# (Array# arr) =
 toList# :: Array# a -> [a]
 toList# arr =
   let ixs = [0..(size# arr - 1)]
-  in [ get# arr i | i <- ixs ]
+  in [ get# arr i | (GHC.I# i) <- ixs ]
 
 fromList# :: [a] -> Array# a
-fromList# [] = make# 0 undefined
+fromList# [] = make# 0# undefined
 fromList# ls =
-  let a0 = make# (length ls) (head ls)
+  let (GHC.I# len)= (length ls)
+      a0 = make# len (head ls)
   -- in foldl (\acc (i,x) -> set# acc i x) a0 (zip [0..] ls)
   in go a0 (zip [0..] ls)
   where
     go :: Array# a -> [(Int,a)] -> Array# a
     go acc []          = acc
-    go acc ((i,x):rst) = go (set# acc i x) rst
+    go acc ((GHC.I# i,x):rst) = go (set# acc i x) rst
