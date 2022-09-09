@@ -11,9 +11,12 @@ executable prof
                        , split
                        , random
                        , vector
+                       , monad-par
+                       , time
     main-is:             Main.hs
     other-modules:       Array
                          Sort
+                         Measure
     default-language:    Haskell2010
     default-extensions:  TupleSections
                          BangPatterns
@@ -21,4 +24,4 @@ executable prof
                          RecordWildCards
                          ScopedTypeVariables
                          DeriveGeneric
-    ghc-options:         -Wall -Wcompat
+    ghc-options:         -Wall -Wcompat -O2 -threaded -rtsopts

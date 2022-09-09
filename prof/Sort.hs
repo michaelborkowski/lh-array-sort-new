@@ -1,6 +1,6 @@
 {-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE MagicHash    #-}
--- {-# LANGUAGE Strict       #-}
+{-# LANGUAGE Strict       #-}
 
 module Sort where
 
@@ -11,6 +11,8 @@ import           Prelude
 -- import qualified GHC.Exts as GHC
 
 import           Debug.Trace
+
+import qualified Control.Monad.Par as P
 
 --------------------------------------------------------------------------------
 
@@ -65,6 +67,77 @@ msort src =
   let (len, src') = A.size2 src in
       if len == 0 then src'
       else let (x0, src'') = A.get2 src' 0 in msort' src'' x0
+
+
+--------------------------------------------------------------------------------
+
+-- DPS mergesort
+msortSwap_par :: (Show a, Ord a) => Int -> A.Array a -> A.Array a -> P.Par (A.Array a, A.Array a)
+msortSwap_par cutoff !src !tmp =
+  let !(len, src') = A.size2 src in
+  if len == 1
+  -- then let (src'', tmp'') = copy src' tmp 0 0 in
+  then do let !(src'', tmp'') = A.copy2 src' 0 tmp 0 1
+          pure (src'', tmp'')
+  else do
+    let (src1, src2) = A.splitMid src'
+        (tmp1, tmp2) = A.splitMid tmp
+
+        -- (src1', tmp1') = msortInplace src1 tmp1
+        -- (src2', tmp2') = msortInplace src2 tmp2
+    f1 <- P.spawn_ (msortInplace_par cutoff src1 tmp1)
+    f2 <- P.spawn_ (msortInplace_par cutoff src2 tmp2)
+    (src1', tmp1') <- P.get f1
+    (src2', tmp2') <- P.get f2
+
+    let !tmp3' = A.append tmp1' tmp2'
+        !(src'', tmp4) = merge_par src1' src2' tmp3'
+    pure (src'', tmp4)
+
+msortInplace_par :: (Show a, Ord a) => Int -> A.Array a -> A.Array a -> P.Par (A.Array a, A.Array a)
+msortInplace_par cutoff !src !tmp =
+  let !(len, src') = A.size2 src in
+  if len <= cutoff
+  then pure (isort2 src', tmp)
+  -- if len == 1
+  -- then pure (src', tmp)
+  else do
+    let (src1, src2) = A.splitMid src'
+        (tmp1, tmp2) = A.splitMid tmp
+
+        -- (src1', tmp1') = msortSwap src1 tmp1
+        -- (src2', tmp2') = msortSwap src2 tmp2
+    f1 <- P.spawn_ (msortSwap_par cutoff src1 tmp1)
+    f2 <- P.spawn_ (msortSwap_par cutoff src2 tmp2)
+    (src1', tmp1') <- P.get f1
+    (src2', tmp2') <- P.get f2
+
+    let !src3' = A.append src1' src2'
+        -- !(tmp'', src4') = merge tmp1' tmp2' src3'
+        !(tmp'', src4') = merge_par tmp1' tmp2' src3'
+    pure (src4', tmp'')
+
+msort'_par :: (Show a, Ord a) => Int -> A.Array a -> a -> P.Par (A.Array a)
+msort'_par cutoff src anyVal = do
+  let (len, src') = A.size2 src
+      tmp = A.make len anyVal
+
+  (src'', _tmp) <- msortInplace_par cutoff src' tmp
+
+      -- src_copy = A.make len (A.get src 0)
+      -- (_, src_copy') = A.copy2 src 0 src_copy 0 len
+      -- (src'', _tmp) = msortInplace src_copy' tmp in
+  pure (_tmp `seq` src'')
+
+-- finally, the top-level merge sort function
+{-# SPECIALISE msort_par :: Int -> A.Array Float -> P.Par (A.Array Float) #-}
+{-# SPECIALISE msort_par :: Int -> A.Array Int -> P.Par (A.Array Int) #-}
+msort_par :: (Show a, Ord a) => Int -> A.Array a -> P.Par (A.Array a)
+msort_par cutoff src =
+  let (len, src') = A.size2 src in
+      if len == 0 then pure src'
+      else do let (x0, src'') = A.get2 src' 0
+              msort'_par cutoff src'' x0
 
 
 --------------------------------------------------------------------------------
@@ -148,6 +221,66 @@ merge :: Ord a => A.Array a -> A.Array a -> A.Array a -> (A.Array a, A.Array a)
 merge src1 src2 dst = merge' src1 src2 dst 0# 0# 0#
 
 -}
+
+
+goto_seqmerge :: Int
+goto_seqmerge = 4
+
+merge_par :: (Show a, Ord a) => A.Array a -> A.Array a -> A.Array a -> (A.Array a, A.Array a)
+merge_par !src1 !src2 !dst =
+    if A.size dst < goto_seqmerge
+    then merge src1 src2 dst
+    else let !(n1, src1') = A.size2 src1
+             !(n2, src2') = A.size2 src2
+             !(n3, dst') = A.size2 dst
+             in if n1 == 0
+                then let !(src2'1, dst'') = A.copy2 src2' 0 dst' 0 n2
+                     in (A.append src1' src2'1, dst'')
+                else if n2 == 0
+                     then let !(src1'1, dst'') = A.copy2 src1' 0 dst' 0 n1
+                          in (A.append src1'1 src2', dst'')
+                     else let mid1 = n1 `div` 2
+                              pivot = A.get src1' mid1
+                              mid2 = binarySearch src2' pivot
+                              src1_l = slice2 0 mid1 src1'
+                              src1_r = slice2 (mid1+1) (n1 - (mid1+1)) src1'
+                              src2_l = slice2 0 mid2 src2'
+                              src2_r = slice2 mid2 (n2-mid2) src2'
+                              !dst1 = A.set dst' (mid1+mid2) pivot
+                              dst_l = slice2 0 (mid1+mid2) dst1
+                              dst_r = slice2 (mid1+mid2+1) (n3 - (mid1+mid2+1)) dst1
+                              !(src_l, dst2) = merge_par src1_l src2_l dst_l
+                              !(src_r, dst3) = merge_par src1_r src2_r dst_r
+                              src''' = A.append src_l src_r
+                              dst''' = A.append dst2 dst3
+                          in  -- traceShow (mid1,mid2,pivot,dst1,A.set dst' (mid1+mid2) pivot)
+                              (src''', dst''')
+  where
+    {-# INLINE slice2 #-}
+    slice2 :: Int -- starting index
+           -> Int -- length of slice
+           -> A.Array a
+           -> A.Array a
+    slice2 i n (A.Array l r !ls) =
+        let l' = l + i
+            r' = l + i + n
+        in if l' > r || r' > r
+        then error $ "slice2: out of bound, in=" ++ show (l,r) ++ ", slice=" ++ show (l',r')
+        else A.Array l' r' ls
+
+binarySearch :: Ord a => A.Array a -> a -> Int
+binarySearch ls query = go 0 (A.size ls)
+  where
+    go lo hi = if n == 0
+               then lo
+               else if query < pivot
+                    then go lo mid
+                    else go (mid+1) hi
+      where
+        n = hi - lo
+        mid = lo + n `div` 2
+        pivot = A.get ls mid
+
 
 --------------------------------------------------------------------------------
 
