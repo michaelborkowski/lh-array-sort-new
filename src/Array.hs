@@ -14,7 +14,7 @@ module Array
   , make, size, get, set, slice, append,    copy2
 
     -- * Linear versions
-  , size2, get2
+  ,      size2, get2,     slice2
 
     -- * Convert to/from lists
   , fromList, toList
@@ -99,15 +99,6 @@ tuple2 f x g y = P.runPar $ do
                      fx' <- P.get fx
                      gy' <- P.get gy
                      return (fx', gy')
-{-
-                     i   <- P.new
-                     j   <- P.new
-                     P.fork (P.put i (f x))
-                     P.fork (P.put j (g y))
-                     fx <- P.get i
-                     gy <- P.get j
-                     return (fx, gy) 
--}
 
 tuple4 :: (NFData a, NFData b) => (a -> b) -> a -> (a -> b) -> a
                                -> (a -> b) -> a -> (a -> b) -> a -> ((b, b), (b, b))
@@ -121,24 +112,7 @@ tuple4 f x g y h z j w = P.runPar $ do
                              hz' <- P.get hz
                              jw' <- P.get jw
                              return ((fx', gy'), (hz', jw'))
-{-
-tuple4 f x g y h z j w = P.runPar $ do
-                             i   <- P.new
-                             k   <- P.new
-                             m   <- P.new
-                             n   <- P.new
-                             P.fork (P.put i (f x))
-                             P.fork (P.put k (g y))
-                             P.fork (P.put m (h z))
-                             P.fork (P.put n (j w))
-                             fx  <- P.get i
-                             gy  <- P.get k
-                             hz  <- P.get m
-                             jw  <- P.get n
-                             return ((fx, gy), (hz, jw))
--}
-{-
--}
+
 (.||.) :: (NFData a, NFData b) => a -> b -> (a,b)
 {-  this is what we want to use, but doesn't run quite yet -}
 a .||. b = P.runPar $ do          -- or P.spawn_ ?
@@ -174,9 +148,10 @@ a .||. b = (a,b)
                          -> { ys:(Array a) | size xs == size ys && token xs == token ys &&
                                              left xs == left ys && right xs == right ys } @-}
 swap :: Array a -> Int -> Int -> Array a
-swap xs i j = let xi  = get xs i
-                  xs' = set xs i (get xs j)
-               in set xs' j xi
+swap xs i j = let xi   = get xs i
+                  xs'  = set xs i (get xs j)
+                  xs'' = set xs' j xi
+               in xs''
 
 
 {-@ reflect splitMid @-}

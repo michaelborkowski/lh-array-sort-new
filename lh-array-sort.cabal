@@ -29,6 +29,7 @@ library
       Insertion
       LinearMerge
       DpsMerge
+      DpsMergePar
       DpsMergeSort
       DpsMergeSort4
       DpsMergeSortPar

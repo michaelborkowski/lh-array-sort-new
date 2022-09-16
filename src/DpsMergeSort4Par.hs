@@ -9,7 +9,7 @@ import qualified Language.Haskell.Liquid.Bag as B
 import           Language.Haskell.Liquid.ProofCombinators hiding ((?))
 import           ProofCombinators
 import           Array 
-import           DpsMerge
+import           DpsMergePar
 import qualified DpsMergeSort4 as Seq
 import           Equivalence
 import           Order
@@ -55,10 +55,10 @@ msortInplace src tmp =
         tmpA'            = A.append tmp1' tmp2'
         tmpB'            = A.append tmp3' tmp4'
         ((srcA'', tmpA''), (srcB'', tmpB'')) 
-                         = tuple2 (merge src1' src2') tmpA' (merge src3' src4') tmpB'
+                         = tuple2 (merge_par src1' src2') tmpA' (merge_par src3' src4') tmpB'
 --                         = merge src1' src2' tmpA' .|*|. merge src3' src4' tmpB'
         src''            = A.append srcA'' srcB''
-        (tmp''', src''') = merge tmpA'' tmpB'' src''
+        (tmp''', src''') = merge_par tmpA'' tmpB'' src''
     in  (src''', tmp''') ? lem_toBag_splitMid src 
                          ? lem_toBag_splitMid tmp
                          ? lem_toBag_splitMid srcA

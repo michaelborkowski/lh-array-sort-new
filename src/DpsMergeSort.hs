@@ -34,7 +34,7 @@ msortSwap :: (Show a, Ord a) => A.Array a -> A.Array a -> (A.Array a, A.Array a)
 msortSwap !src !tmp =
   let !(len, src') = A.size2 src in
   if len <= 1
-  then let !(src'', tmp'') = copy src' tmp 0 0 in
+  then let !(src'', tmp'') = copy2 src' 0 tmp 0 len in
        (src'', tmp'')
   else
     let (src1, src2) = splitMid src'

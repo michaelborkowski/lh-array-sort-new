@@ -79,6 +79,14 @@ lem_isSortedBtw_compose xs i j k | i == j      = ()
                                  | otherwise   = () ? lem_isSortedBtw_right   xs i j
                                                     ? lem_isSortedBtw_compose xs i (j-1) k
 
+{-@ lem_isSorted_copy :: { xs:_ | isSorted' xs } -> { xi:Nat | xi <= size xs } -> ys:_
+        -> { yi:Nat | yi <= size ys && isSortedBtw ys 0 yi }
+        -> { n:Nat  | xi + n == size xs && yi + n == size xs &&
+                      ( xi == size xs || yi == 0 || get xs xi >= get ys (j-1) ) }
+        -> { zs:_   | isSorted' (copy xs xi ys yi n) } @-}
+lem_isSorted_copy :: Array a -> Int -> Array a -> Int -> Int -> Proof
+lem_isSorted_copy = undefined -- TODO
+
 -- lemma showing set preserves sortedness of indices before n, and if the new 
 -- element is greater than the previous, xs is sorted up to n+1
 {-@ lma_set_ps :: xs:_ -> n:{m:Nat | m < size xs && m > 0 } -> x:{(isSortedFstN xs n) && ((x >= (get xs (n-1))))} 

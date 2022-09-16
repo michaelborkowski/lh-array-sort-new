@@ -151,6 +151,23 @@ set (Arr arr l r t) n y = Arr (setList arr n y) l r t
 
   -- slices, splits, and appends
 
+{-@ reflect copy @-}
+{-@ copy :: xs:_ -> { xi:Nat | xi <= size xs } -> ys:_
+                 -> { yi:Nat | yi <= size ys } 
+                 -> { n:Nat  | xi + n <= size xs && yi + n <= size xs }
+                 -> { zs:_   | size ys == size zs && token ys == token zs } @-}
+copy :: Array a -> Int -> Array a -> Int -> Int -> Array a
+copy xs xi ys yi 0 = ys
+copy xs xi ys yi n = set (copy xs xi ys yi (n-1)) (yi + n - 1) (get xs (xi + n - 1))
+
+{-@ reflect copy2 @-}
+{-@ copy2 :: xs:_ -> { xi:Nat | xi <= size xs } -> ys:_
+                  -> { yi:Nat | yi <= size ys }
+                  -> { n:Nat  | xi + n <= size xs && yi + n <= size xs }
+                  -> { zs:_   | xs == fst zs && snd zs == copy xs xi ys yi n } @-}
+copy2 :: Array a -> Int -> Array a -> Int -> Int -> (Array a, Array a)
+copy2 xs xi ys yi n = (xs, copy xs xi ys yi n)
+
 {-@ reflect slice @-} -- need axiom for the token being the same
 {-@ slice :: xs:_ -> { l:Nat | l <= size xs } -> { r:Nat | l <= r && r <= size xs }
                   -> { ys:_ | size ys == r-l         && token xs == token ys &&

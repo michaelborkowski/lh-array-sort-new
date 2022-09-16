@@ -101,6 +101,10 @@ copy2 s@(Array (GHC.I# lo1) _hi1 src) (GHC.I# src_offset)
 slice :: Array a -> Int -> Int -> Array a
 slice (Array l _r !a) l' r' = Array (l+l') (l+r') a
 
+{-# INLINE slice2 #-}
+slice2 :: Array a -> Int -> Int -> (Array a, Array a)
+slice2 !ar l' r' = (slice ar l' r', ar)
+
 -- PRE-CONDITION: the two slices are backed by the same array and should be contiguous.
 append :: Array a -> Array a -> Array a
 append (Array l1 _r1 !a1) (Array _l2 r2 _a2) = Array l1 r2 a1

@@ -32,6 +32,8 @@ bench_verified:
 	$(HCTOOL) $(HCTOOLEXEC)  benchrunner $(RTFLAGS) -- Insertionsort 10
 	$(HCTOOL) $(HCTOOLEXEC)  benchrunner $(RTFLAGS) -- Insertionsort 100
 	$(HCTOOL) $(HCTOOLEXEC)  benchrunner $(RTFLAGS) -- Insertionsort 1000
+	$(HCTOOL) $(HCTOOLEXEC)  benchrunner $(RTFLAGS) -- Mergesort 20
+	$(HCTOOL) $(HCTOOLEXEC)  benchrunner $(RTFLAGS) -- Mergesort 100
 	$(HCTOOL) $(HCTOOLEXEC)  benchrunner $(RTFLAGS) -- Mergesort 10000
 	$(HCTOOL) $(HCTOOLEXEC)  benchrunner $(RTFLAGS) -- Mergesort 100000
 	$(HCTOOL) $(HCTOOLEXEC)  benchrunner $(RTFLAGS) -- Mergesort 1000000

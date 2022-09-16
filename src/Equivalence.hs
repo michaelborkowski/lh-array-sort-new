@@ -334,6 +334,15 @@ lem_equal_slice_sorted' xs ys i j i' j'
     | otherwise      = () ? lem_equal_slice_narrow' xs ys i j i' j'
                           ? lem_equal_slice_sorted' xs ys (i+1) j (i'+1) j'
 
+{-@ lem_copy_equal_slice :: xs:_ -> { xi:Nat | xi <= size xs } -> ys:_
+        -> { yi:Nat | yi <= size ys }
+        -> { n:Nat  | xi + n <= size xs && yi + n <= size xs }
+        -> { zs:_   | toSlice (copy xs xi ys yi n) 0 yi == toSlice ys 0 yi && 
+                      toSlice (copy xs xi ys yi n) yi (yi+n) == toSlice xs xi (xi+n) &&
+                      toSlice (copy xs xi ys yi n) (yi+n) (size ys) == toSlice ys (yi+n) (size ys) } @-}
+lem_copy_equal_slice :: Array a -> Int -> Array a -> Int -> Int -> Proof
+lem_copy_equal_slice = undefined -- TODO
+
   -- | Elvis's bags 
 
 {-@ reflect toBagLeft @-}
