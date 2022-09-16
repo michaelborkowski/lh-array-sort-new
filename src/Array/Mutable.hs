@@ -66,7 +66,6 @@ size (Array !lo !hi _arr) = hi-lo
 {-# INLINE get #-}
 get :: Array a -> Int -> a
 get (Array (GHC.I# lo) _hi !arr) (GHC.I# i) =
---get (Array lo _hi !arr) i =
   seq
 #ifdef RUNTIME_CHECKS
   if i < lo || i > hi
@@ -76,12 +75,10 @@ get (Array (GHC.I# lo) _hi !arr) (GHC.I# i) =
   ()
 #endif
   get# arr (lo GHC.+# i)
---  get# arr (lo+i)
 
 {-# INLINE set #-}
 set :: Array a -> Int -> a -> Array a
 set (Array (GHC.I# lo) hi !arr) (GHC.I# i) !a =
---set (Array lo hi !arr) i !a =
   seq
 #ifdef RUNTIME_CHECKS
   if i < lo || i > hi
@@ -91,7 +88,6 @@ set (Array (GHC.I# lo) hi !arr) (GHC.I# i) !a =
   ()
 #endif
   Array (GHC.I# lo) hi (set# arr (lo GHC.+# i) a)
---  Array lo hi (set# arr (lo+i) a)
 
 {-# INLINE copy2 #-}
 copy2 :: Array a -> Int -> Array a -> Int -> Int -> (Array a, Array a)
@@ -180,7 +176,7 @@ toList# arr =
 fromList# :: [a] -> Array# a
 fromList# [] = make# 0# undefined
 fromList# ls =
-  let (GHC.I# len) = length ls
+  let (GHC.I# len)= (length ls)
       a0 = make# len (head ls)
   -- in foldl (\acc (i,x) -> set# acc i x) a0 (zip [0..] ls)
   in go a0 (zip [0..] ls)
