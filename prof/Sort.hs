@@ -12,6 +12,7 @@ import           Prelude
 
 import           Debug.Trace
 import           GHC.Stack
+import           Data.List (intercalate)
 
 import qualified Control.Monad.Par as P
 
@@ -164,17 +165,21 @@ merge' :: (HasCallStack, Ord a, Show a) =>
   A.Array a -> A.Array a -> A.Array a ->
   Int -> Int -> Int ->
   (A.Array a, A.Array a)
-merge' !src1 !src2 !dst i1 i2 j =
+merge' !src1 !src2 !dst i1 i2 j = traceShow ("merge", A.toList src1, A.toList src2, dst) $
   let !(len1, src1') = A.size2 src1
       !(len2, src2') = A.size2 src2 in
   if i1 >= len1
   then
     -- let (src2'1, dst') = copy src2' dst i2 j in (A.append src1' src2'1, dst')
-    let !(src2'1, dst') = A.copy2 src2' i2 dst j (len2-i2) in (A.append src1' src2'1, dst')
+    let !(src2'1, dst') = A.copy2 src2' i2 dst j (len2-i2)
+    in traceShow ("copy", A.toList src2', (i2,j,len2-i2), dst') $
+         (A.append src1' src2'1, dst')
   else if i2 >= len2
   then
     -- let (src1'1, dst') = copy src1' dst i1 j in (A.append src1'1 src2', dst')
-    let !(src1'1, dst') = A.copy2 src1' i1 dst j (len1-i1) in (A.append src1'1 src2', dst')
+    let !(src1'1, dst') = A.copy2 src1' i1 dst j (len1-i1)
+    in traceShow ("copy", A.toList src1', (i1,j,len1-i1), dst') $
+         (A.append src1'1 src2', dst')
   else
     let !(v1, src1'1) = A.get2 src1' i1
         !(v2, src2'1) = A.get2 src2' i2 in
@@ -226,6 +231,8 @@ merge src1 src2 dst = merge' src1 src2 dst 0# 0# 0#
 goto_seqmerge :: Int
 goto_seqmerge = 4
 
+{-
+
 merge_par :: (HasCallStack, Show a, Ord a) => A.Array a -> A.Array a -> A.Array a -> (A.Array a, A.Array a)
 merge_par !src1 !src2 !dst = -- traceShow ("merge_par", A.toList src1, A.toList src2, dst) $
     if A.size dst < goto_seqmerge
@@ -271,6 +278,48 @@ merge_par !src1 !src2 !dst = -- traceShow ("merge_par", A.toList src1, A.toList 
                           in  -- traceShow (mid1,mid2,pivot,dst1,A.set dst' (mid1+mid2) pivot)
                              -- trace ("pivot=" ++ show pivot) $
                               (src''', dst''')
+
+-}
+
+
+merge_par :: (Show a, Ord a) => A.Array a -> A.Array a -> A.Array a -> (A.Array a, A.Array a)
+merge_par !src1 !src2 !dst = traceShow ("merge_par", A.toList src1, A.toList src2, dst) $
+    if A.size dst < goto_seqmerge
+    then merge src1 src2 dst
+    else let !(n1, src1') = A.size2 src1
+             !(n2, src2') = A.size2 src2
+             !(n3, dst')  = A.size2 dst
+             in if n1 == 0
+                then let !(src2'1, dst'') = A.copy2 src2' 0 dst' 0 n2
+                     in (A.append src1' src2'1, dst'')
+                else if n2 == 0
+                     then let !(src1'1, dst'') = A.copy2 src1' 0 dst' 0 n1
+                          in (A.append src1'1 src2', dst'')
+                     else let mid1            = n1 `div` 2
+
+                              (pivot, src1'1) = A.get2 src1' mid1
+                              (mid2,  src2'1) = binarySearch src2' pivot
+
+                              -- (src1_l, src1'2) = A.slice2 src1'1 0 mid1
+                              -- (src1_r, src1'3) = A.slice2 src1'2 mid1 (n1 - mid1 + 1)
+                              -- (src2_l, src2'2) = A.slice2 src2'1 0 mid2
+                              -- (src2_r, src2'3) = A.slice2 src2'2 mid2 (n2 - mid2 + 1)
+
+                              (src1_l, src1_r) = A.splitAt mid1 src1'1
+                              (src2_l, src2_r) = A.splitAt mid2 src2'1
+
+                              -- !dst''           = A.set dst' (mid1+mid2) pivot
+
+                              (dst_l, dst'1)  = A.slice2 dst'  0 (mid1+mid2)
+                              (dst_r, dst'2)  = A.slice2 dst'1 (mid1+mid2) (n3 - (mid1+mid2))
+
+                              !(src_l, dst_l') = merge_par src1_l src2_l dst_l
+                              !(src_r, dst_r') = merge_par src1_r src2_r dst_r
+                              src'''          = A.append src_l  src_r
+                              dst'''          = A.append dst_l' dst_r'
+                           in trace ("pivot=" ++ show pivot ++ ", mid1=" ++ show mid1 ++ ", mid2=" ++ show mid2
+                                     ++ ", arrays=" ++ show (map A.toList [src1_l, src1_r, src2_l, src2_r]) ) $
+                                (src''', dst''')
 
 
 binarySearch :: Ord a => A.Array a -> a -> (Int, A.Array a)
