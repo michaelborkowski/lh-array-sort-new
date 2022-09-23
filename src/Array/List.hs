@@ -190,7 +190,9 @@ slice (Arr lst l r t) l' r' = Arr lst' (l+l') (l+r') t
 
 {-@ reflect slice2 @-}
 {-@ slice2 :: xs:_ -> { l:Nat | l <= size xs } -> { r:Nat | l <= r && r <= size xs } 
-                  -> (Array a, Array a)<{\ ys zs -> xs == zs && ys = slice xs l r }> @-}
+                  -> (Array a, Array a)<{\ ys zs -> xs == zs && ys = slice xs l r &&
+                                                    left ys == left xs + l && right ys == left xs + r &&
+                                                    right ys == right xs - size xs + r }> @-}
 slice2 :: Array a -> Int -> Int -> (Array a, Array a)
 slice2 xs l r = (slice xs l r, xs)
 
@@ -213,6 +215,7 @@ drop 0 xs     = xs
 drop n (x:xs) = drop (n-1) xs
 
 -- PRE-CONDITION: the two slices are backed by the same array.
+-- removed for the parallel merge: 
 {-@ reflect append @-}
 {-@ append :: xs:Array a
         -> { ys:Array a | token xs == token ys && right xs == left ys }

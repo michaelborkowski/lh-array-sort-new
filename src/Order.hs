@@ -57,6 +57,20 @@ lem_isSortedBtw_build_right xs i j | i     == j  = ()
                                    | i + 1 == j  = ()
                                    | otherwise   = () ? lem_isSortedBtw_build_right xs (i+1) j
 
+{-@ lem_isSortedBtw_set_right :: xs:(Array a) -> {i:Int | 0 <= i } 
+                                -> { j:Int | i <= j && j < size xs && isSortedBtw xs i j }
+                                -> { v:a   | ( i == j || get xs (j-1) <= v ) }
+                                -> { pf:_  | isSortedBtw (set xs j v) i (j+1) } / [j-i] @-}
+lem_isSortedBtw_set_right :: Ord a => Array a -> Int -> Int -> a -> Proof
+lem_isSortedBtw_set_right xs i j v 
+    | i     == j  = ()
+    | i + 1 == j  = () ? lma_gns xs j i     v
+                       ? lma_gs  xs (i+1)   v
+    | otherwise   = () ? lem_isSortedBtw_set_right xs (i+1) j v
+                      -- IH gives us: isSortedBtw (set xs j v) (i+1) v where i < j-1
+                       ? lma_gns xs j i     v
+                       ? lma_gns xs j (i+1) v
+
 {-@ lem_isSortedBtw_narrow :: xs:(Array a) -> { i:Int | 0 <= i }
                                            -> { i':Int | i <= i' } -> { j':Int | i' <= j' }
                                            -> { j:Int | j' <= j && j <= size xs && isSortedBtw xs i j }
@@ -79,17 +93,41 @@ lem_isSortedBtw_compose xs i j k | i == j      = ()
                                  | otherwise   = () ? lem_isSortedBtw_right   xs i j
                                                     ? lem_isSortedBtw_compose xs i (j-1) k
 
-{-
 {-@ lem_isSorted_copy :: { xs:_ | isSorted' xs } -> { xi:Nat | xi <= size xs } -> ys:_
         -> { yi:Nat | yi <= size ys && isSortedBtw ys 0 yi }
-        -> { n:Nat  | xi + n == size xs && yi + n == size xs &&
-                      ( xi == size xs || yi == 0 || get xs xi >= get ys (j-1) ) }
-        -> { zs:_   | isSorted' (copy xs xi ys yi n) } @-}
-lem_isSorted_copy :: Array a -> Int -> Array a -> Int -> Int -> Proof
+        -> { n:Nat  | xi + n <= size xs && yi + n <= size ys &&
+                      ( xi == size xs || yi == 0 || get xs xi >= get ys (yi-1) ) }
+        -> { zs:_   | isSortedBtw (copy xs xi ys yi n) 0 (yi+n)} / [n] @-}
+lem_isSorted_copy :: Ord a => Array a -> Int -> Array a -> Int -> Int -> Proof
 lem_isSorted_copy xs xi ys yi 0 = ()
-lem_isSorted_copy xs xi ys yi n = () ? lem_
--}
+lem_isSorted_copy xs xi ys yi 1 
+    = () ? lem_isSorted_copy xs xi ys yi 0
+        -- IH gives us:  isSortedBtw (copy xs xi ys yi 0) 0 yi
+        -- To get:       isSortedBtw (copy xs xi ys yi 1) 0 (yi+1)
+         ? lem_isSortedBtw_set_right (copy xs xi ys yi 0) 0 (yi) (get xs xi)
+lem_isSorted_copy xs xi ys yi n 
+    = () ? lem_isSorted_copy xs xi ys yi (n-1)
+         ? lem_isSortedBtw_set_right (copy xs xi ys yi (n-1)) 0 (yi+n-1) (get xs (xi+n-1)
+             ? lma_gs                (copy xs xi ys yi (n-2))   (yi+n-2) (get xs (xi+n-2))
+             ? lem_isSortedBtw_narrow xs 0 (xi+n-2) (xi+n) (size xs) )
 
+{-@ lem_isSortedBtw_slice' :: { xs:(Array a) | isSorted' xs} -> { i:Int | 0 <= i }
+                                    -> { j:Int | i <= j && j <= size xs }
+                                    -> { i':Int | 0 <= i' } -> { j':Int | i' <= j' && j' <= j-i }
+                                    -> { pf:_  | isSortedBtw (slice xs i j) i' j' } / [ j'- i' ] @-}
+lem_isSortedBtw_slice' :: Ord a => Array a -> Int -> Int -> Int -> Int -> Proof
+lem_isSortedBtw_slice' xs i j i' j'
+    | i' + 1 >= j'  = ()
+    | otherwise     = () ? lem_isSortedBtw_slice' xs i j (i'+1) j'
+                         ? lem_get_slice xs i j (i+i')
+                         ? lem_get_slice xs i j (i+i'+1)
+                         ? lem_isSortedBtw_narrow xs 0 (i+i') (i+j') (size xs)
+
+{-@ lem_isSortedBtw_slice :: { xs:(Array a) | isSorted' xs} -> { i:Int | 0 <= i }
+                                    -> { j:Int | i <= j && j <= size xs}
+                                    -> { pf:_  | isSorted' (slice xs i j) } @-}
+lem_isSortedBtw_slice :: Ord a => Array a -> Int -> Int -> Proof
+lem_isSortedBtw_slice xs i j = lem_isSortedBtw_slice' xs i j 0 (j-i)
 
 -- lemma showing set preserves sortedness of indices before n, and if the new 
 -- element is greater than the previous, xs is sorted up to n+1
