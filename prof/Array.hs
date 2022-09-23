@@ -21,6 +21,7 @@ module Array where
 
 import           Control.DeepSeq ( NFData(..) )
 import qualified GHC.Exts as GHC
+import           GHC.Stack
 
 --------------------------------------------------------------------------------
 -- Mutable, lifted array API
@@ -87,8 +88,17 @@ slice :: Array a -> Int -> Int -> Array a
 slice (Array l _r !a) l' r' = Array (l+l') (l+r') a
 
 -- PRE-CONDITION: the two slices are backed by the same array and should be contiguous.
-append :: Array a -> Array a -> Array a
-append (Array l1 _r1 !a1) (Array _l2 r2 _a2) = Array l1 r2 a1
+append :: HasCallStack => Array a -> Array a -> Array a
+append (Array l1 r1 !a1) (Array _l2 r2 _a2) =
+  seq
+#ifdef RUNTIME_CHECKS
+  (if r1 + 1 == l2
+  then ()
+  else (error $ "append: not contiguous: " ++ show (l1,r1) ++ " and " ++ show (l2,r2)))
+#else
+  ()
+#endif
+  Array l1 r2 a1
 
 size2 :: Array a -> (Int, Array a)
 size2 !ar = (size ar, ar)
@@ -114,6 +124,13 @@ splitMid xs = (slice xs 0 m, slice xs m n)
     n = size xs
     m = n `div` 2
 
+{-# INLINE splitAt #-}
+splitAt :: Ord a => Int -> Array a -> (Array a, Array a)
+splitAt m xs = (slice xs 0 m, slice xs m n)
+  where
+    n = size xs
+
+
 {-# INLINE swap #-}
 swap :: Array a -> Int -> Int -> Array a
 swap xs i j =
@@ -121,6 +138,11 @@ swap xs i j =
       xs' = set xs i (get xs j)
       xs'' = set xs' j xi
   in xs''
+
+
+{-# INLINE slice2 #-}
+slice2 :: Array a -> Int -> Int -> (Array a, Array a)
+slice2 !ar l' r' = (slice ar l' r', ar)
 
 
 --------------------------------------------------------------------------------
