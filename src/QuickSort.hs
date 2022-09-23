@@ -3,6 +3,7 @@
 {-@ LIQUID "--short-names" @-}
 
 {-# LANGUAGE CPP #-}
+{-# LANGUAGE Strict #-}
 
 module QuickSort where
 

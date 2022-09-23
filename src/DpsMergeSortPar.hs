@@ -34,7 +34,12 @@ import           Array.List as A
                                        left zs == left xs && right zs == right xs &&
                                        left ts == left ys && right ts == right ys }> 
        / [A.size xs] @-}
-msortSwap :: (Show a, Ord a, NFData a) => A.Array a -> A.Array a -> (A.Array a, A.Array a)
+#ifdef MUTABLE_ARRAYS
+msortSwap :: (Show a, Ord a, NFData a) => 
+#else
+msortSwap :: (Show a, Ord a) =>
+#endif
+    A.Array a -> A.Array a -> (A.Array a, A.Array a)
 msortSwap src tmp =
   let (len, src') = A.size2 src in
   if len <= 1
@@ -60,7 +65,12 @@ msortSwap src tmp =
                                        left zs == left xs && right zs == right xs &&
                                        left ts == left ys && right ts == right ys }> 
        / [A.size xs] @-}
-msortInplace :: (Show a, Ord a, NFData a) => A.Array a -> A.Array a -> (A.Array a, A.Array a)
+#ifdef MUTABLE_ARRAYS       
+msortInplace :: (Show a, Ord a, NFData a) => 
+#else
+msortInplace :: (Show a, Ord a) =>
+#endif
+  A.Array a -> A.Array a -> (A.Array a, A.Array a)
 msortInplace src tmp =
   let (len, src') = A.size2 src in
   if len <= SEQSIZE
@@ -81,7 +91,12 @@ msortInplace src tmp =
            -> { y:a | y == A.get xs 0 }
            -> { zs:(Array a) | toBag xs == toBag zs && isSorted' zs &&
                                A.size xs == A.size zs && token xs == token zs } @-}
-msort' :: (Show a, Ord a, NFData a) => A.Array a -> a -> A.Array a
+#ifdef MUTABLE_ARRAYS
+msort' :: (Show a, Ord a, NFData a) => 
+#else
+msort' :: (Show a, Ord a) =>
+#endif
+  A.Array a -> a -> A.Array a
 msort' src anyVal =
   let (len, src') = A.size2 src
       (src'', _tmp) = msortInplace src' (A.make len anyVal) in
@@ -91,7 +106,12 @@ msort' src anyVal =
 {-@ msort :: { xs:(A.Array a) | left xs == 0 && right xs == size xs }
                     -> { ys:_ | toBag xs == toBag ys && isSorted' ys &&
                                 A.size xs == A.size ys && token xs == token ys  } @-}
-msort :: (Show a, Ord a, NFData a) => A.Array a -> A.Array a
+#ifdef MUTABLE_ARRAYS
+msort :: (Show a, Ord a, NFData a) => 
+#else
+msort :: (Show a, Ord a) =>
+#endif
+  A.Array a -> A.Array a
 msort src =
   let (len, src') = A.size2 src in
       if len == 0 then src'

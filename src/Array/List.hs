@@ -154,17 +154,26 @@ set (Arr arr l r t) n y = Arr (setList arr n y) l r t
 {-@ reflect copy @-}
 {-@ copy :: xs:_ -> { xi:Nat | xi <= size xs } -> ys:_
                  -> { yi:Nat | yi <= size ys } 
-                 -> { n:Nat  | xi + n <= size xs && yi + n <= size xs }
-                 -> { zs:_   | size ys == size zs && token ys == token zs } @-}
+                 -> { n:Nat  | xi + n <= size xs && yi + n <= size ys }
+                 -> { zs:_   | size ys == size zs && token ys == token zs &&
+                               left ys == left zs && right ys == right zs } / [n] @-}
 copy :: Array a -> Int -> Array a -> Int -> Int -> Array a
 copy xs xi ys yi 0 = ys
 copy xs xi ys yi n = set (copy xs xi ys yi (n-1)) (yi + n - 1) (get xs (xi + n - 1))
+--            *or*   copy xs xi (set ys (yi + n - 1) (get xs (xi + n - 1))) yi (n-1)
+-- alternative would be
+-- copy xs xi ys yi 0 = ys
+-- copy xs xi ys yi n | xi == size xs  = ys
+--                    | otherwise      = set (copy xs (xi+1) ys (yi+1) (n-1)) yi (get xs xi)
+--            *or*                       copy xs (xi+1) (set ys yi (get xs xi)) (yi+1) (n-1)
 
 {-@ reflect copy2 @-}
 {-@ copy2 :: xs:_ -> { xi:Nat | xi <= size xs } -> ys:_
                   -> { yi:Nat | yi <= size ys }
-                  -> { n:Nat  | xi + n <= size xs && yi + n <= size xs }
-                  -> { zs:_   | xs == fst zs && snd zs == copy xs xi ys yi n } @-}
+                  -> { n:Nat  | xi + n <= size xs && yi + n <= size ys }
+                  -> { zs:_   | xs == fst zs && snd zs == copy xs xi ys yi n &&
+                                size (snd zs) == size ys && token (snd zs) == token ys &&
+                                left (snd zs) == left ys && right (snd zs) == right ys } @-}
 copy2 :: Array a -> Int -> Array a -> Int -> Int -> (Array a, Array a)
 copy2 xs xi ys yi n = (xs, copy xs xi ys yi n)
 

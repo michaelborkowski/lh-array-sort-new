@@ -252,7 +252,7 @@ lem_appendList_injective (x:xs) y (x':xs') y' = () ? lem_appendList_injective xs
 
 {-@ lem_toSlice_right :: xs:(Array a) -> { i:Int | 0 <= i } -> { j:Int | i < j && j <= A.size xs }
                       -> { pf:_ | toSlice xs i j == appendList (toSlice xs i (j-1)) [A.get xs (j-1)] } / [j - i] @-}
-lem_toSlice_right :: Ord a => Array a -> Int -> Int -> Proof
+lem_toSlice_right :: Eq a => Array a -> Int -> Int -> Proof
 lem_toSlice_right xs i j | i + 1 == j  = ()
                          | otherwise   = () ? lem_toSlice_right xs (i+1) j
 
@@ -261,7 +261,7 @@ lem_toSlice_right xs i j | i + 1 == j  = ()
                         -> { i:Int | 0 <= i } -> { i':Int | i <= i' } -> { j':Int | i' <= j' }
                         -> { j:Int | j' <= j && j <= A.size xs && toSlice xs i j == toSlice ys i j }
                         -> { pf:_  | toSlice xs i' j' == toSlice ys i' j' } / [ i' - i + j - j'] @-}
-lem_equal_slice_narrow :: Ord a => Array a -> Array a -> Int -> Int -> Int -> Int -> Proof
+lem_equal_slice_narrow :: Eq a => Array a -> Array a -> Int -> Int -> Int -> Int -> Proof
 lem_equal_slice_narrow xs ys i i' j' j
     | i < i'      = () ? lem_equal_slice_narrow xs ys (i+1) i' j' j
     | j' < j      = () ? lem_equal_slice_narrow xs ys i i' j' (j-1
@@ -277,7 +277,7 @@ lem_equal_slice_narrow xs ys i i' j' j
                     -> i':Nat -> { j':Int | i' < j' && j' <= A.size ys && j - i == j' - i' &&
                                             toSlice xs i j == toSlice ys i' j' }
                     -> { pf:_  | toSlice xs (i+1) j == toSlice ys (i'+1) j' } / [ i' - i + j - j'] @-}
-lem_equal_slice_narrow' :: Ord a => Array a -> Array a -> Int -> Int -> Int -> Int -> Proof
+lem_equal_slice_narrow' :: Eq a => Array a -> Array a -> Int -> Int -> Int -> Int -> Proof
 lem_equal_slice_narrow' xs ys i j i' j' = ()
 {-    | i < i'      = () ? lem_equal_slice_narrow xs ys (i+1) i' j' j
     | j' < j      = () ? lem_equal_slice_narrow xs ys i i' j' (j-1
@@ -294,12 +294,25 @@ lem_equal_slice_narrow' xs ys i j i' j' = ()
 lem_equal_slice_bag :: Ord a => Array a -> Array a -> Int -> Int -> Proof
 lem_equal_slice_bag xs ys i j | i == j    = ()
                               | otherwise = () ? lem_equal_slice_bag xs ys (i+1) j
+
+{-@ lem_equal_slice_bag' :: xs:(Array a) -> ys:(Array a) 
+                    -> { i:Int  | 0 <= i }  
+                    -> { j:Int  | i <= j && j <= A.size xs }
+                    -> { i':Int | 0 <= i' } 
+                    -> { j':Int | i' <= j' && j' <= A.size ys && j - i == j' - i' &&
+                                  toSlice  xs i j == toSlice  ys i' j' }
+                    -> { pf:_   | toBagBtw xs i j == toBagBtw ys i' j' } / [j' - i'] @-}
+lem_equal_slice_bag' :: Ord a => Array a -> Array a -> Int -> Int -> Int -> Int -> Proof
+lem_equal_slice_bag' xs ys i j i' j'  
+    | i'  >= j'   = ()
+    | otherwise   = () ? lem_equal_slice_narrow' xs ys i j i' j'
+                       ? lem_equal_slice_bag' xs ys (i+1) j (i'+1) j'                              
  
 {-@ lem_toSlice_swap :: xs:(Array a) -> { il:Int | 0 <= il } -> { i:Int | il <= i }
         -> { j:Int | i <= j } -> { ir:Int | j < ir && ir <= A.size xs }
         -> { pf:_  | toSlice xs 0 il == toSlice (swap xs i j) 0   il &&
                      toSlice xs ir (A.size xs) == toSlice (swap xs i j) ir (A.size xs) } / [il+(A.size xs)-ir] @-}
-lem_toSlice_swap :: Ord a => Array a -> Int -> Int -> Int -> Int -> Proof
+lem_toSlice_swap :: Eq a => Array a -> Int -> Int -> Int -> Int -> Proof
 lem_toSlice_swap xs il i j ir
     | 0 < il           = () ? lem_toSlice_swap  xs (il-1) i j ir
                             ? lma_swap_eql      xs        i j (il-1)
@@ -334,14 +347,28 @@ lem_equal_slice_sorted' xs ys i j i' j'
     | otherwise      = () ? lem_equal_slice_narrow' xs ys i j i' j'
                           ? lem_equal_slice_sorted' xs ys (i+1) j (i'+1) j'
 
-{-@ lem_copy_equal_slice :: xs:_ -> { xi:Nat | xi <= size xs } -> ys:_
-        -> { yi:Nat | yi <= size ys }
-        -> { n:Nat  | xi + n <= size xs && yi + n <= size xs }
+{-@ lem_copy_equal_slice :: xs:_ -> { xi:Nat | xi <= A.size xs } -> ys:_
+        -> { yi:Nat | yi <= A.size ys }
+        -> { n:Nat  | xi + n <= A.size xs && yi + n <= A.size ys }
         -> { zs:_   | toSlice (copy xs xi ys yi n) 0 yi == toSlice ys 0 yi && 
                       toSlice (copy xs xi ys yi n) yi (yi+n) == toSlice xs xi (xi+n) &&
-                      toSlice (copy xs xi ys yi n) (yi+n) (size ys) == toSlice ys (yi+n) (size ys) } @-}
-lem_copy_equal_slice :: Array a -> Int -> Array a -> Int -> Int -> Proof
-lem_copy_equal_slice = undefined -- TODO
+                      toSlice (copy xs xi ys yi n) (yi+n) (A.size ys) 
+                                     == toSlice ys (yi+n) (A.size ys) } / [n] @-} {- -}
+lem_copy_equal_slice :: Eq a => Array a -> Int -> Array a -> Int -> Int -> Proof
+lem_copy_equal_slice xs xi ys yi 0 = ()
+lem_copy_equal_slice xs xi ys yi n 
+    = () ? lem_copy_equal_slice xs xi ys yi (n-1)
+         ? lem_toSlice_set_left  (copy xs xi ys yi (n-1)) (yi+n-1) (get xs (xi+n-1)) 0 yi
+         ? lem_toSlice_set_right (copy xs xi ys yi (n-1)) (yi+n-1) (get xs (xi+n-1)) (yi+n) (A.size ys)
+           {- IH gives us: toSlice (copy xs xi ys yi (n-1)) yi (yi+n-1) == toSlice xs xi (xi+n-1) -}
+           {-   to show LHS == toSlice (copy xs xi ys yi n) yi (yi+n-1) : -}
+         ? lem_toSlice_set_left  (copy xs xi ys yi (n-1)) (yi+n-1) (get xs (xi+n-1)) yi (yi+n-1)
+           {-   to show get (copy xs xi ys yi n) (yi+n) = get xs (xi+n) : -}
+         ? lem_toSlice_right xs xi (xi+n)
+         ? lem_toSlice_right (copy xs xi ys yi n) yi (yi+n)   
+         ? lma_gs (copy xs xi ys yi (n-1)) (yi + n - 1) (get xs (xi + n - 1))
+    
+
 
   -- | Elvis's bags 
 

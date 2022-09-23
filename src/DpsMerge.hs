@@ -19,6 +19,15 @@ import           Array.Mutable as A
 import           Array.List as A
 #endif
 
+{- @ copy :: src:(Array a) -> { dst:(Array a) | size dst >= size src }
+         -> { i:Nat | i >= 0 && i <= size src && isSorted' src }
+         -> { j:Nat | j >= 0 && j <= size dst && (size dst) - j == (size src) - i &&
+                      isSortedBtw dst 0 j &&
+                      ( i == size src || j == 0 || A.get src i >= A.get dst (j-1) )}
+         -> { t:_ | toBagBtw src i (size src) == toBagBtw (snd t) j (size dst) &&
+                    toSlice dst 0 j == toSlice (snd t) 0 j &&
+                    isSorted' (snd t)  }  @-}
+
 -- DPS merge
 {-@ merge' :: { xs1:(Array a) | isSorted' xs1 }
            -> { xs2:(Array a) | isSorted' xs2 && token xs1 == token xs2 && right xs1 == left xs2 }
@@ -31,12 +40,11 @@ import           Array.List as A
                          ( j == 0 || i2 == size xs2 || A.get xs2 i2 >= A.get zs (j-1) ) }
            -> { t:_    | B.union (toBag xs1) (toBag xs2) == toBag (snd t)  &&
                          toSlice zs 0 j == toSlice (snd t) 0 j &&
-                         isSorted' (snd t) &&
                          fst t == A.append xs1 xs2 &&
                          token xs1 == token (fst t) &&
-                         token (snd t) == token zs &&
-                         left (snd t) == left zs  && right (snd t) == right zs  &&
-                         size (snd t) == size zs } / [size zs - j] @-}
+                         size (snd t) == size zs && token (snd t) == token zs &&
+                         left (snd t) == left zs && right (snd t) == right zs  } / [size zs - j] @-} {-
+                         isSorted' (snd t) && -}
 merge' :: Ord a =>
   A.Array a -> A.Array a -> A.Array a ->
   Int -> Int -> Int ->
@@ -46,20 +54,26 @@ merge' !src1 !src2 !dst i1 i2 j =
       !(len2, src2') = A.size2 src2 in
   if i1 >= len1
   then
-    let !(src2'1, dst') = A.copy2 src2' i2 dst j (len2-i2+1) in (A.append src1' src2'1, dst')
+    let !(src2'1, dst') = A.copy2 src2' i2 dst j (len2-i2) in (A.append src1' src2'1, dst')
     -- let !(src2'1, dst') = copy src2' dst i2 j in (A.append src1' src2'1, dst')
-                       {- equivalence -}      ? lem_toBagBtw_compose' src1 0 i1 len1
-                                              ? lem_toBagBtw_compose' src2 0 i2 len2
-                                              ? lem_toBagBtw_compose' dst' 0 j  (A.size dst')
-                                              ? lem_equal_slice_bag   dst dst' 0 j
+            {- equivalence -}     ? lem_toBagBtw_compose' src1 0 i1 len1
+                                  ? lem_toBagBtw_compose' src2 0 i2 len2
+                                  ? lem_toBagBtw_compose' dst' 0 j  (A.size dst')
+                                  ? lem_equal_slice_bag   dst   dst' 0 (j
+                                      ? lem_copy_equal_slice  src2' i2 dst j (len2-i2) )
+                                  ? lem_equal_slice_bag'  src2' dst' i2 len2 j (A.size dst')
+                                                  -- ? lem_copy_equal_slice  src2' i2 dst j (len2-i2) )
   else if i2 >= len2
   then
-    let !(src1'1, dst') = A.copy2 src1' i1 dst j (len1-i1+1) in (A.append src1'1 src2', dst')
+    let !(src1'1, dst') = A.copy2 src1' i1 dst j (len1-i1) in (A.append src1'1 src2', dst')
     -- let !(src1'1, dst') = copy src1' dst i1 j in (A.append src1'1 src2', dst')
-                       {- equivalence -}      ? lem_toBagBtw_compose' src1 0 i1 len1
-                                              ? lem_toBagBtw_compose' src2 0 i2 len2
-                                              ? lem_toBagBtw_compose' dst' 0 j  (A.size dst')
-                                              ? lem_equal_slice_bag   dst dst' 0 j
+            {- equivalence -}     ? lem_toBagBtw_compose' src1 0 i1 len1
+                                  ? lem_toBagBtw_compose' src2 0 i2 len2
+                                  ? lem_toBagBtw_compose' dst' 0 j  (A.size dst')
+                                  ? lem_equal_slice_bag   dst   dst' 0 (j
+                                      ? lem_copy_equal_slice  src1' i1 dst j (len1-i1) )
+                                  ? lem_equal_slice_bag'  src1' dst'  i1 len1 j (A.size dst') {-
+                                                  ? lem_copy_equal_slice  src1' i1 dst j (A.size dst)-}
   else
     let !(v1, src1'1) = A.get2 src1' i1
         !(v2, src2'1) = A.get2 src2' i2 in
