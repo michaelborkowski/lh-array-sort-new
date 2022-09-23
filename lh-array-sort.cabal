@@ -23,6 +23,7 @@ library
 
   exposed-modules:
       Array
+      Properties
       Order
       Equivalence
 --      Merge
@@ -34,9 +35,8 @@ library
       DpsMergeSort4
       DpsMergeSortPar
       DpsMergeSort4Par
-      Properties
-      QuickSort
-      CilkSort
+--      QuickSort
+--      CilkSort
   other-modules:
       Array.List
       Array.Mutable
@@ -57,4 +57,4 @@ library
   ghc-options: -Wall -Wcompat    -threaded 
                -fdefer-typed-holes
   if !flag(mutable-arrays)
-               -fplugin=LiquidHaskell
+    ghc-options: -fplugin=LiquidHaskell
