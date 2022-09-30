@@ -101,27 +101,30 @@ main = do
       ls = take input_size $ randoms rng
       !input = force (A.fromList ls)
 
-  let iters = 1
-      cutoff = 4
+  let iters = 9
+      cutoff = 8192
 
+{-
+  -- for debugging
   let src  = A.fromList [1,3,5,2,4,6,8]
       (left,right) = A.splitMid src
       dst = A.make 7 0
       (merged, dst') = merge_par left right dst
   print merged
   print dst'
+-}
 
-  -- -- msort
-  -- putStrLn "msort:\n--------------------"
-  -- (res0, t0, t_all) <- M.bench msort input iters
-  -- unless (isSorted (A.toList res0)) (error $ "msort: result not sorted.")
-  -- print (t0, t_all)
+  -- msort
+  putStrLn "msort:\n--------------------"
+  (res0, t0, t_all) <- M.bench msort input iters
+  unless (isSorted (A.toList res0)) (error $ "msort: result not sorted.")
+  print (t0, t_all)
 
-  -- -- msort_par
-  -- putStrLn "msort_par:\n--------------------"
-  -- (res0, t0, t_all) <- M.benchPar msort_par input iters cutoff
-  -- unless (isSorted (A.toList res0)) (error $ "msort_par: result not sorted." ++ show res0)
-  -- print (t0, t_all)
+  -- msort_par
+  putStrLn "msort_par:\n--------------------"
+  (res0, t0, t_all) <- M.benchPar msort_par input iters cutoff
+  unless (isSorted (A.toList res0)) (error $ "msort_par: result not sorted." ++ show res0)
+  print (t0, t_all)
 
  where
   -- go input str (name,fn) = bench (name ++ "/" ++ str) (nf fn input)

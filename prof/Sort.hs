@@ -7,6 +7,7 @@ module Sort where
 import qualified Array as A
 
 import           Prelude
+import           GHC.Conc
 -- import qualified Data.Vector.Unboxed as V
 -- import qualified GHC.Exts as GHC
 
@@ -23,9 +24,10 @@ msortSwap :: (Show a, Ord a) => A.Array a -> A.Array a -> (A.Array a, A.Array a)
 msortSwap !src !tmp =
   let !(len, src') = A.size2 src in
   if len == 1
-  -- then let (src'', tmp'') = copy src' tmp 0 0 in
   then let !(src'', tmp'') = A.copy2 src' 0 tmp 0 1 in
        (src'', tmp'')
+  -- if len <= 2048
+  -- then (isort2 src', tmp)
   else
     let (src1, src2) = A.splitMid src'
         (tmp1, tmp2) = A.splitMid tmp
@@ -38,10 +40,10 @@ msortSwap !src !tmp =
 msortInplace :: (Show a, Ord a) => A.Array a -> A.Array a -> (A.Array a, A.Array a)
 msortInplace !src !tmp =
   let !(len, src') = A.size2 src in
-  -- if len <= 2048
-  -- then (isort2 src', tmp)
-  if len == 1
-  then (src', tmp)
+  if len <= goto_isort
+  then (isort2 src', tmp)
+  -- if len == 1
+  -- then (src', tmp)
   else
     let (src1, src2) = A.splitMid src'
         (tmp1, tmp2) = A.splitMid tmp
@@ -71,114 +73,25 @@ msort src =
       else let (x0, src'') = A.get2 src' 0 in msort' src'' x0
 
 
---------------------------------------------------------------------------------
-
--- DPS mergesort
-msortSwap_par :: (Show a, Ord a) => Int -> A.Array a -> A.Array a -> P.Par (A.Array a, A.Array a)
-msortSwap_par cutoff !src !tmp =
-  let !(len, src') = A.size2 src in
-  if len == 1
-  -- then let (src'', tmp'') = copy src' tmp 0 0 in
-  then do let !(src'', tmp'') = A.copy2 src' 0 tmp 0 1
-          pure (src'', tmp'')
-  else do
-    let (src1, src2) = A.splitMid src'
-        (tmp1, tmp2) = A.splitMid tmp
-
-        -- (src1', tmp1') = msortInplace src1 tmp1
-        -- (src2', tmp2') = msortInplace src2 tmp2
-    f1 <- P.spawn_ (msortInplace_par cutoff src1 tmp1)
-    f2 <- P.spawn_ (msortInplace_par cutoff src2 tmp2)
-    (src1', tmp1') <- P.get f1
-    (src2', tmp2') <- P.get f2
-
-    let !tmp3' = A.append tmp1' tmp2'
-        !(src'', tmp4) = merge_par src1' src2' tmp3'
-    pure (src'', tmp4)
-
-msortInplace_par :: (Show a, Ord a) => Int -> A.Array a -> A.Array a -> P.Par (A.Array a, A.Array a)
-msortInplace_par cutoff !src !tmp =
-  let !(len, src') = A.size2 src in
-  if len <= cutoff
-  then pure (isort2 src', tmp)
-  -- if len == 1
-  -- then pure (src', tmp)
-  else do
-    let (src1, src2) = A.splitMid src'
-        (tmp1, tmp2) = A.splitMid tmp
-
-        -- (src1', tmp1') = msortSwap src1 tmp1
-        -- (src2', tmp2') = msortSwap src2 tmp2
-    f1 <- P.spawn_ (msortSwap_par cutoff src1 tmp1)
-    f2 <- P.spawn_ (msortSwap_par cutoff src2 tmp2)
-    (src1', tmp1') <- P.get f1
-    (src2', tmp2') <- P.get f2
-
-    let !src3' = A.append src1' src2'
-        -- !(tmp'', src4') = merge tmp1' tmp2' src3'
-        !(tmp'', src4') = merge_par tmp1' tmp2' src3'
-    pure (src4', tmp'')
-
-msort'_par :: (Show a, Ord a) => Int -> A.Array a -> a -> P.Par (A.Array a)
-msort'_par cutoff src anyVal = do
-  let (len, src') = A.size2 src
-      tmp = A.make len anyVal
-
-  (src'', _tmp) <- msortInplace_par cutoff src' tmp
-
-      -- src_copy = A.make len (A.get src 0)
-      -- (_, src_copy') = A.copy2 src 0 src_copy 0 len
-      -- (src'', _tmp) = msortInplace src_copy' tmp in
-  pure (_tmp `seq` src'')
-
--- finally, the top-level merge sort function
-{-# SPECIALISE msort_par :: Int -> A.Array Float -> P.Par (A.Array Float) #-}
-{-# SPECIALISE msort_par :: Int -> A.Array Int -> P.Par (A.Array Int) #-}
-msort_par :: (Show a, Ord a) => Int -> A.Array a -> P.Par (A.Array a)
-msort_par cutoff src =
-  let (len, src') = A.size2 src in
-      if len == 0 then pure src'
-      else do let (x0, src'') = A.get2 src' 0
-              msort'_par cutoff src'' x0
-
-
---------------------------------------------------------------------------------
-
-{-
-
--- copy sets dst[j..] <- src[i..]
-copy :: Ord a => A.Array a -> A.Array a -> Int -> Int -> (A.Array a, A.Array a)
-copy src dst i j =
-  let (len, src') = A.size2 src in
-  if i < len
-  then
-    let (v, src'1)     = A.get2 src' i
-        dst'1          = A.set  dst  j v
-        (src'2, dst'2) = copy src'1 dst'1 (i + 1) (j + 1) in
-    (src'2, dst'2)
-  else (src', dst)
-
--}
-
 -- DPS merge
 merge' :: (HasCallStack, Ord a, Show a) =>
   A.Array a -> A.Array a -> A.Array a ->
   Int -> Int -> Int ->
   (A.Array a, A.Array a)
-merge' !src1 !src2 !dst i1 i2 j = traceShow ("merge", A.toList src1, A.toList src2, dst) $
+merge' !src1 !src2 !dst i1 i2 j = -- traceShow ("merge", A.toList src1, A.toList src2, dst) $
   let !(len1, src1') = A.size2 src1
       !(len2, src2') = A.size2 src2 in
   if i1 >= len1
   then
     -- let (src2'1, dst') = copy src2' dst i2 j in (A.append src1' src2'1, dst')
     let !(src2'1, dst') = A.copy2 src2' i2 dst j (len2-i2)
-    in traceShow ("copy", A.toList src2', (i2,j,len2-i2), dst') $
+    in -- traceShow ("copy", A.toList src2', (i2,j,len2-i2), dst') $
          (A.append src1' src2'1, dst')
   else if i2 >= len2
   then
     -- let (src1'1, dst') = copy src1' dst i1 j in (A.append src1'1 src2', dst')
     let !(src1'1, dst') = A.copy2 src1' i1 dst j (len1-i1)
-    in traceShow ("copy", A.toList src1', (i1,j,len1-i1), dst') $
+    in -- traceShow ("copy", A.toList src1', (i1,j,len1-i1), dst') $
          (A.append src1'1 src2', dst')
   else
     let !(v1, src1'1) = A.get2 src1' i1
@@ -195,26 +108,95 @@ merge' !src1 !src2 !dst i1 i2 j = traceShow ("merge", A.toList src1, A.toList sr
 merge :: (HasCallStack, Ord a, Show a) => A.Array a -> A.Array a -> A.Array a -> (A.Array a, A.Array a)
 merge src1 src2 dst = merge' src1 src2 dst 0 0 0
 
+--------------------------------------------------------------------------------
+
+-- DPS mergesort
+msortSwap_par :: (Show a, Ord a) => A.Array a -> A.Array a -> P.Par (A.Array a, A.Array a)
+msortSwap_par !src !tmp =
+  let !(len, src') = A.size2 src in
+  if len == 1
+  -- then let (src'', tmp'') = copy src' tmp 0 0 in
+  then do let !(src'', tmp'') = A.copy2 src' 0 tmp 0 1
+          pure (src'', tmp'')
+  else do
+    let (src1, src2) = A.splitMid src'
+        (tmp1, tmp2) = A.splitMid tmp
+
+        -- (src1', tmp1') = msortInplace src1 tmp1
+        -- (src2', tmp2') = msortInplace src2 tmp2
+    f1 <- P.spawn_ (msortInplace_par src1 tmp1)
+    f2 <- P.spawn_ (msortInplace_par src2 tmp2)
+    (src1', tmp1') <- P.get f1
+    (src2', tmp2') <- P.get f2
+
+    let !tmp3' = A.append tmp1' tmp2'
+    !(src'', tmp4) <- merge_par src1' src2' tmp3'
+    pure (src'', tmp4)
+
+msortInplace_par :: (Show a, Ord a) => A.Array a -> A.Array a -> P.Par (A.Array a, A.Array a)
+msortInplace_par !src !tmp =
+  let !(len, src') = A.size2 src in
+  if len <= goto_isort
+  then pure (isort2 src', tmp)
+  else do
+    let (src1, src2) = A.splitMid src'
+        (tmp1, tmp2) = A.splitMid tmp
+
+        -- (src1', tmp1') = msortSwap src1 tmp1
+        -- (src2', tmp2') = msortSwap src2 tmp2
+    f1 <- P.spawn_ (msortSwap_par src1 tmp1)
+    f2 <- P.spawn_ (msortSwap_par src2 tmp2)
+    (src1', tmp1') <- P.get f1
+    (src2', tmp2') <- P.get f2
+
+    let !src3' = A.append src1' src2'
+        -- !(tmp'', src4') = merge tmp1' tmp2' src3'
+    !(tmp'', src4') <- merge_par tmp1' tmp2' src3'
+    pure (src4', tmp'')
+
+msort'_par :: (Show a, Ord a) => A.Array a -> a -> P.Par (A.Array a)
+msort'_par src anyVal = do
+  let (len, src') = A.size2 src
+      tmp = A.make len anyVal
+
+  (src'', _tmp) <- msortInplace_par src' tmp
+
+      -- src_copy = A.make len (A.get src 0)
+      -- (_, src_copy') = A.copy2 src 0 src_copy 0 len
+      -- (src'', _tmp) = msortInplace src_copy' tmp in
+  pure (_tmp `seq` src'')
+
+-- finally, the top-level merge sort function
+{-# SPECIALISE msort_par :: A.Array Float -> P.Par (A.Array Float) #-}
+{-# SPECIALISE msort_par :: A.Array Int -> P.Par (A.Array Int) #-}
+msort_par :: (Show a, Ord a) => A.Array a -> P.Par (A.Array a)
+msort_par src =
+  let (len, src') = A.size2 src in
+      if len == 0 then pure src'
+      else do let (x0, src'') = A.get2 src' 0
+              msort'_par src'' x0
+
+goto_isort :: Int
+goto_isort = 8192
+
 goto_seqmerge :: Int
-goto_seqmerge = 4
+goto_seqmerge = 4196
 
-{-
-
-merge_par :: (HasCallStack, Show a, Ord a) => A.Array a -> A.Array a -> A.Array a -> (A.Array a, A.Array a)
-merge_par !src1 !src2 !dst = -- traceShow ("merge_par", A.toList src1, A.toList src2, dst) $
+merge_par :: (HasCallStack, Show a, Ord a) => A.Array a -> A.Array a -> A.Array a -> P.Par (A.Array a, A.Array a)
+merge_par !src1 !src2 !dst =
     if A.size dst < goto_seqmerge
-    then merge src1 src2 dst
+    then pure $ merge src1 src2 dst
     else let !(n1, src1') = A.size2 src1
              !(n2, src2') = A.size2 src2
-             -- !(n3, dst') = A.size2 dst
              dst' = dst
              in if n1 == 0
-                then let !(src2'1, dst'') = A.copy2 src2' 0 dst' 0 n2
-                     in (A.append src1' src2'1, dst'')
+                then do let !(src2'1, dst'') = A.copy2 src2' 0 dst' 0 n2
+                        pure (A.append src1' src2'1, dst'')
                 else if n2 == 0
-                     then let !(src1'1, dst'') = A.copy2 src1' 0 dst' 0 n1
-                          in (A.append src1'1 src2', dst'')
-                     else let mid1 = n1 `div` 2
+                     then do let !(src1'1, dst'') = A.copy2 src1' 0 dst' 0 n1
+                             pure (A.append src1'1 src2', dst'')
+                     else
+                       do let mid1 = n1 `div` 2
                               pivot = A.get src1' mid1
                               (mid2, src2'') = binarySearch src2' pivot
 
@@ -233,61 +215,20 @@ merge_par !src1 !src2 !dst = -- traceShow ("merge_par", A.toList src1, A.toList 
                               !(dst_r1, dst_r2) = A.splitAt 1 dst_r
 
                               -- sort the sub arrays
-                              !(src_l, dst2) = merge_par src1_l src2_l dst_l
-                              !(src_r, dst3) = merge_par src1_r2 src2_r dst_r2
+                          !(src_l, dst2) <- merge_par src1_l src2_l dst_l
+                          !(src_r, dst3) <- merge_par src1_r2 src2_r dst_r2
 
                               -- append srcs and dsts
-                              src''' = A.append src_l (A.append src1_r1 src_r)
+                          let src''' = A.append src_l (A.append src1_r1 src_r)
                               dst''' = A.append dst2 (A.append dst_r1 dst3)
-                              -- src''' = A.append src_l src_r
-                              -- dst''' = A.append dst2 dst3
 
-                          in  -- traceShow (mid1,mid2,pivot,dst1,A.set dst' (mid1+mid2) pivot)
-                             -- trace ("pivot=" ++ show pivot) $
-                              (src''', dst''')
-
--}
+                          pure (src''', dst''')
 
 
-merge_par :: (Show a, Ord a) => A.Array a -> A.Array a -> A.Array a -> (A.Array a, A.Array a)
-merge_par !src1 !src2 !dst = traceShow ("merge_par", A.toList src1, A.toList src2, dst) $
-    if A.size dst < goto_seqmerge
-    then merge src1 src2 dst
-    else let !(n1, src1') = A.size2 src1
-             !(n2, src2') = A.size2 src2
-             !(n3, dst')  = A.size2 dst
-             in if n1 == 0
-                then let !(src2'1, dst'') = A.copy2 src2' 0 dst' 0 n2
-                     in (A.append src1' src2'1, dst'')
-                else if n2 == 0
-                     then let !(src1'1, dst'') = A.copy2 src1' 0 dst' 0 n1
-                          in (A.append src1'1 src2', dst'')
-                     else let mid1            = n1 `div` 2
 
-                              (pivot, src1'1) = A.get2 src1' mid1
-                              (mid2,  src2'1) = binarySearch src2' pivot
-
-                              -- (src1_l, src1'2) = A.slice2 src1'1 0 mid1
-                              -- (src1_r, src1'3) = A.slice2 src1'2 mid1 (n1 - mid1 + 1)
-                              -- (src2_l, src2'2) = A.slice2 src2'1 0 mid2
-                              -- (src2_r, src2'3) = A.slice2 src2'2 mid2 (n2 - mid2 + 1)
-
-                              (src1_l, src1_r) = A.splitAt mid1 src1'1
-                              (src2_l, src2_r) = A.splitAt mid2 src2'1
-
-                              -- !dst''           = A.set dst' (mid1+mid2) pivot
-
-                              (dst_l, dst'1)  = A.slice2 dst'  0 (mid1+mid2)
-                              (dst_r, dst'2)  = A.slice2 dst'1 (mid1+mid2) (n3 - (mid1+mid2))
-
-                              !(src_l, dst_l') = merge_par src1_l src2_l dst_l
-                              !(src_r, dst_r') = merge_par src1_r src2_r dst_r
-                              src'''          = A.append src_l  src_r
-                              dst'''          = A.append dst_l' dst_r'
-                           in trace ("pivot=" ++ show pivot ++ ", mid1=" ++ show mid1 ++ ", mid2=" ++ show mid2
-                                     ++ ", arrays=" ++ show (map A.toList [src1_l, src1_r, src2_l, src2_r]) ) $
-                                (src''', dst''')
-
+(.||.) :: a -> b -> (a,b)
+a .||. b = a `par` b `pseq` (a,b)
+  -- (a,b)
 
 binarySearch :: Ord a => A.Array a -> a -> (Int, A.Array a)
 binarySearch ls query = (go 0 (A.size ls), ls)

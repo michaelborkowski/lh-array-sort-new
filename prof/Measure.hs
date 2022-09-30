@@ -18,7 +18,7 @@ median ls = (sort ls) !! (length ls `div` 2)
 
 
 benchPar :: (NFData a, NFData b) =>
-            (Int -> a -> Par b) -> a -> Int -> Int -> IO (b, Double, Double)
+            (a -> Par b) -> a -> Int -> Int -> IO (b, Double, Double)
 benchPar f arg iters cutoff = do
     let !arg2 = force arg
     tups <- mapM (\_ -> dotrialPar f arg2 cutoff) [1..iters]
@@ -53,11 +53,11 @@ benchIO f arg iters = do
 
 {-# NOINLINE dotrialPar #-}
 dotrialPar :: (NFData a, NFData b) =>
-              (Int -> a -> Par b) -> a -> Int -> IO (b, Double)
+              (a -> Par b) -> a -> Int -> IO (b, Double)
 dotrialPar f arg cutoff = do
     performMajorGC
     t1 <- getCurrentTime
-    !a <- evaluate$ runPar $ (f cutoff arg)
+    !a <- evaluate$ runPar $ (f arg)
     t2 <- getCurrentTime
     let delt = fromRational (toRational (diffUTCTime t2 t1))
     putStrLn ("iter time: " ++ show delt)
