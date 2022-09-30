@@ -113,7 +113,7 @@ main = do
       ls = take input_size $ randoms rng
       !input = force (A.fromList ls)
 
-  let iters = 9
+  let iters = 3
       cutoff = 8192
 
 {-
@@ -126,11 +126,12 @@ main = do
   print dst'
 -}
 
+
   -- msort
   putStrLn "msort:\n--------------------"
   (res0, t0, t_all) <- M.bench msort input iters
   unless (isSorted (A.toList res0)) (error $ "msort: result not sorted.")
-  let is_permut = isPermutation input res0
+  let is_permut = isPermutation (A.fromList ls) res0
   _ <- case is_permut of
          Left diff -> error $ "msort: sorted array is not a permutation of the input, missing: " ++ show diff
          Right _   -> pure ()
@@ -140,18 +141,17 @@ main = do
   putStrLn "msort_parmon:\n--------------------"
   (res0, t0, t_all) <- M.benchPar msort_parmon input iters cutoff
   unless (isSorted (A.toList res0)) (error $ "msort_parmon: result not sorted." ++ show res0)
-  let is_permut = isPermutation input res0
+  let is_permut = isPermutation (A.fromList ls) res0
   _ <- case is_permut of
          Left diff -> error $ "msort_parmon: sorted array is not a permutation of the input, missing: " ++ show diff
          Right _   -> pure ()
   print (t0, t_all)
 
-
   -- msort_parpseq
   putStrLn "msort_parpseq:\n--------------------"
   (res0, t0, t_all) <- M.bench msort_parpseq input iters
   unless (isSorted (A.toList res0)) (error $ "msort_parpseq: result not sorted." ++ show res0)
-  let is_permut = isPermutation input res0
+  let is_permut = isPermutation (A.fromList ls) res0
   _ <- case is_permut of
          Left diff -> error $ "msort_parpseq: sorted array is not a permutation of the input, missing: " ++ show diff
          Right _   -> pure ()

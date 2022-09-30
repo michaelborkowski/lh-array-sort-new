@@ -125,7 +125,7 @@ splitMid xs = (slice xs 0 m, slice xs m n)
     m = n `div` 2
 
 {-# INLINE splitAt #-}
-splitAt :: Ord a => Int -> Array a -> (Array a, Array a)
+splitAt :: Int -> Array a -> (Array a, Array a)
 splitAt m xs = (slice xs 0 m, slice xs m n)
   where
     n = size xs
