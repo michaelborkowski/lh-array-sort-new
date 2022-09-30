@@ -157,7 +157,7 @@ merge_par !src1 !src2 !dst =
                          (dst_l, dst_cr)   = A.splitAt (mid1+mid2) dst'
                          (dst_c, dst_r)    = A.splitAt 1           dst_cr
 
-                         !((src1_l',src1_r'), dst_l') 
+                         !((src1_l',src2_l'), dst_l') 
                                            = merge_par (src1_l ? lem_isSortedBtw_slice src1'1 0  mid1)
                                                        (src2_l ? lem_isSortedBtw_slice src2'1 0  mid2)
                                                         dst_l
