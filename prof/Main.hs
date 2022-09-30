@@ -80,7 +80,6 @@ main = do
                             then error usage
                             else (read bnch :: Benchmarks, read sz :: Int, rst')
           _ -> error usage
-{-
 
   runbench <-
     case benchmark of
@@ -94,15 +93,19 @@ main = do
         benchSorts
                 (Proxy :: Proxy Float)
                 size
-                [ ("LH/dps_merge", msort) ]
+                [ ("LH/mergesort", msort)
+                , ("LH/mergesort_parpseq", msort_parpseq1)
+                , ("LH/mergesort_parmon", msort_parmon1)
+                ]
       Quicksort ->
         benchSorts
                 (Proxy :: Proxy Float)
                 size
                 [ ("LH/quicksort", quickSort) ]
-  withArgs rst $ defaultMain [ runbench ]
 
--}
+  -- withArgs rst $ defaultMain [ runbench ]
+
+
 
   let input_size = size
   rng <- newStdGen
@@ -127,17 +130,29 @@ main = do
   putStrLn "msort:\n--------------------"
   (res0, t0, t_all) <- M.bench msort input iters
   unless (isSorted (A.toList res0)) (error $ "msort: result not sorted.")
-  let diff = isPermutation input res0
-  _ <- case diff of
+  let is_permut = isPermutation input res0
+  _ <- case is_permut of
          Left diff -> error $ "msort: sorted array is not a permutation of the input, missing: " ++ show diff
          Right _   -> pure ()
   print (t0, t_all)
 
-  -- msort_par
-  putStrLn "msort_par:\n--------------------"
-  (res0, t0, t_all) <- M.benchPar msort_par input iters cutoff
-  unless (isSorted (A.toList res0)) (error $ "msort_par: result not sorted." ++ show res0)
+  -- msort_parmon
+  putStrLn "msort_parmon:\n--------------------"
+  (res0, t0, t_all) <- M.benchPar msort_parmon input iters cutoff
+  unless (isSorted (A.toList res0)) (error $ "msort_parmon: result not sorted." ++ show res0)
+  let is_permut = isPermutation input res0
+  _ <- case is_permut of
+         Left diff -> error $ "msort_parmon: sorted array is not a permutation of the input, missing: " ++ show diff
+         Right _   -> pure ()
   print (t0, t_all)
 
- where
-  -- go input str (name,fn) = bench (name ++ "/" ++ str) (nf fn input)
+
+  -- msort_parpseq
+  putStrLn "msort_parpseq:\n--------------------"
+  (res0, t0, t_all) <- M.bench msort_parpseq input iters
+  unless (isSorted (A.toList res0)) (error $ "msort_parpseq: result not sorted." ++ show res0)
+  let is_permut = isPermutation input res0
+  _ <- case is_permut of
+         Left diff -> error $ "msort_parpseq: sorted array is not a permutation of the input, missing: " ++ show diff
+         Right _   -> pure ()
+  print (t0, t_all)

@@ -111,8 +111,8 @@ merge src1 src2 dst = merge' src1 src2 dst 0 0 0
 --------------------------------------------------------------------------------
 
 -- DPS mergesort
-msortSwap_par :: (Show a, Ord a) => A.Array a -> A.Array a -> P.Par (A.Array a, A.Array a)
-msortSwap_par !src !tmp =
+msortSwap_parmon :: (Show a, Ord a) => A.Array a -> A.Array a -> P.Par (A.Array a, A.Array a)
+msortSwap_parmon !src !tmp =
   let !(len, src') = A.size2 src in
   if len == 1
   -- then let (src'', tmp'') = copy src' tmp 0 0 in
@@ -124,17 +124,17 @@ msortSwap_par !src !tmp =
 
         -- (src1', tmp1') = msortInplace src1 tmp1
         -- (src2', tmp2') = msortInplace src2 tmp2
-    f1 <- P.spawn_ (msortInplace_par src1 tmp1)
-    f2 <- P.spawn_ (msortInplace_par src2 tmp2)
+    f1 <- P.spawn_ (msortInplace_parmon src1 tmp1)
+    f2 <- P.spawn_ (msortInplace_parmon src2 tmp2)
     (src1', tmp1') <- P.get f1
     (src2', tmp2') <- P.get f2
 
     let !tmp3' = A.append tmp1' tmp2'
-    !(src'', tmp4) <- merge_par src1' src2' tmp3'
+    !(src'', tmp4) <- merge_parmon src1' src2' tmp3'
     pure (src'', tmp4)
 
-msortInplace_par :: (Show a, Ord a) => A.Array a -> A.Array a -> P.Par (A.Array a, A.Array a)
-msortInplace_par !src !tmp =
+msortInplace_parmon :: (Show a, Ord a) => A.Array a -> A.Array a -> P.Par (A.Array a, A.Array a)
+msortInplace_parmon !src !tmp =
   let !(len, src') = A.size2 src in
   if len <= goto_isort
   then pure (isort2 src', tmp)
@@ -144,22 +144,22 @@ msortInplace_par !src !tmp =
 
         -- (src1', tmp1') = msortSwap src1 tmp1
         -- (src2', tmp2') = msortSwap src2 tmp2
-    f1 <- P.spawn_ (msortSwap_par src1 tmp1)
-    f2 <- P.spawn_ (msortSwap_par src2 tmp2)
+    f1 <- P.spawn_ (msortSwap_parmon src1 tmp1)
+    f2 <- P.spawn_ (msortSwap_parmon src2 tmp2)
     (src1', tmp1') <- P.get f1
     (src2', tmp2') <- P.get f2
 
     let !src3' = A.append src1' src2'
         -- !(tmp'', src4') = merge tmp1' tmp2' src3'
-    !(tmp'', src4') <- merge_par tmp1' tmp2' src3'
+    !(tmp'', src4') <- merge_parmon tmp1' tmp2' src3'
     pure (src4', tmp'')
 
-msort'_par :: (Show a, Ord a) => A.Array a -> a -> P.Par (A.Array a)
-msort'_par src anyVal = do
+msort'_parmon :: (Show a, Ord a) => A.Array a -> a -> P.Par (A.Array a)
+msort'_parmon src anyVal = do
   let (len, src') = A.size2 src
       tmp = A.make len anyVal
 
-  (src'', _tmp) <- msortInplace_par src' tmp
+  (src'', _tmp) <- msortInplace_parmon src' tmp
 
       -- src_copy = A.make len (A.get src 0)
       -- (_, src_copy') = A.copy2 src 0 src_copy 0 len
@@ -167,23 +167,20 @@ msort'_par src anyVal = do
   pure (_tmp `seq` src'')
 
 -- finally, the top-level merge sort function
-{-# SPECIALISE msort_par :: A.Array Float -> P.Par (A.Array Float) #-}
-{-# SPECIALISE msort_par :: A.Array Int -> P.Par (A.Array Int) #-}
-msort_par :: (Show a, Ord a) => A.Array a -> P.Par (A.Array a)
-msort_par src =
+{-# SPECIALISE msort_parmon :: A.Array Float -> P.Par (A.Array Float) #-}
+{-# SPECIALISE msort_parmon :: A.Array Int -> P.Par (A.Array Int) #-}
+msort_parmon :: (Show a, Ord a) => A.Array a -> P.Par (A.Array a)
+msort_parmon src =
   let (len, src') = A.size2 src in
       if len == 0 then pure src'
       else do let (x0, src'') = A.get2 src' 0
-              msort'_par src'' x0
+              msort'_parmon src'' x0
 
-goto_isort :: Int
-goto_isort = 8192
+msort_parmon1 :: (Show a, Ord a) => A.Array a -> A.Array a
+msort_parmon1 = P.runPar . msort_parmon
 
-goto_seqmerge :: Int
-goto_seqmerge = 4196
-
-merge_par :: (HasCallStack, Show a, Ord a) => A.Array a -> A.Array a -> A.Array a -> P.Par (A.Array a, A.Array a)
-merge_par !src1 !src2 !dst =
+merge_parmon :: (HasCallStack, Show a, Ord a) => A.Array a -> A.Array a -> A.Array a -> P.Par (A.Array a, A.Array a)
+merge_parmon !src1 !src2 !dst =
     if A.size dst < goto_seqmerge
     then pure $ merge src1 src2 dst
     else let !(n1, src1') = A.size2 src1
@@ -215,8 +212,8 @@ merge_par !src1 !src2 !dst =
                               !(dst_r1, dst_r2) = A.splitAt 1 dst_r
 
                               -- sort the sub arrays
-                          !(src_l, dst2) <- merge_par src1_l src2_l dst_l
-                          !(src_r, dst3) <- merge_par src1_r2 src2_r dst_r2
+                          !(src_l, dst2) <- merge_parmon src1_l src2_l dst_l
+                          !(src_r, dst3) <- merge_parmon src1_r2 src2_r dst_r2
 
                               -- append srcs and dsts
                           let src''' = A.append src_l (A.append src1_r1 src_r)
@@ -224,11 +221,113 @@ merge_par !src1 !src2 !dst =
 
                           pure (src''', dst''')
 
+--------------------------------------------------------------------------------
+
+msortSwap_parpseq :: (Show a, Ord a) => A.Array a -> A.Array a -> (A.Array a, A.Array a)
+msortSwap_parpseq !src !tmp =
+  let !(len, src') = A.size2 src in
+  if len == 1
+  -- then let (src'', tmp'') = copy src' tmp 0 0 in
+  then let !(src'', tmp'') = A.copy2 src' 0 tmp 0 1
+       in (src'', tmp'')
+  else
+    let (src1, src2) = A.splitMid src'
+        (tmp1, tmp2) = A.splitMid tmp
+
+        (!(src1', tmp1'), !(src2', tmp2')) =
+          msortInplace src1 tmp1 .||.
+          msortInplace src2 tmp2
+
+        !tmp3' = A.append tmp1' tmp2'
+        !(src'', tmp4) = merge_parpseq src1' src2' tmp3'
+    in (src'', tmp4)
+
+msortInplace_parpseq :: (Show a, Ord a) => A.Array a -> A.Array a -> (A.Array a, A.Array a)
+msortInplace_parpseq !src !tmp =
+  let !(len, src') = A.size2 src in
+  if len <= goto_isort
+  then (isort2 src', tmp)
+  else
+    let (src1, src2) = A.splitMid src'
+        (tmp1, tmp2) = A.splitMid tmp
+
+        (!(src1', tmp1'), !(src2', tmp2')) =
+          msortSwap src1 tmp1 .||.
+          msortSwap src2 tmp2
+
+        !src3' = A.append src1' src2'
+        -- !(tmp'', src4') = merge tmp1' tmp2' src3'
+        !(tmp'', src4') = merge_parpseq tmp1' tmp2' src3'
+    in (src4', tmp'')
+
+msort'_parpseq :: (Show a, Ord a) => A.Array a -> a -> A.Array a
+msort'_parpseq src anyVal =
+  let (len, src') = A.size2 src
+      tmp = A.make len anyVal
+      (src'', tmp') = msortInplace_parpseq src' tmp
+  in (tmp' `seq` src'')
+
+-- finally, the top-level merge sort function
+{-# SPECIALISE msort_parpseq :: A.Array Float -> A.Array Float #-}
+{-# SPECIALISE msort_parpseq :: A.Array Int -> A.Array Int #-}
+msort_parpseq :: (Show a, Ord a) => A.Array a -> A.Array a
+msort_parpseq src =
+  let (len, src') = A.size2 src in
+      if len == 0 then src'
+      else let (x0, src'') = A.get2 src' 0
+           in msort'_parpseq src'' x0
+
+msort_parpseq1 :: (Show a, Ord a) => A.Array a -> A.Array a
+{-# INLINE msort_parpseq1 #-}
+msort_parpseq1 = msort_parpseq
+
+merge_parpseq :: (HasCallStack, Show a, Ord a) => A.Array a -> A.Array a -> A.Array a -> (A.Array a, A.Array a)
+merge_parpseq !src1 !src2 !dst =
+    if A.size dst < goto_seqmerge
+    then merge src1 src2 dst
+    else let !(n1, src1') = A.size2 src1
+             !(n2, src2') = A.size2 src2
+             dst' = dst
+             in if n1 == 0
+                then let !(src2'1, dst'') = A.copy2 src2' 0 dst' 0 n2
+                     in (A.append src1' src2'1, dst'')
+                else if n2 == 0
+                     then let !(src1'1, dst'') = A.copy2 src1' 0 dst' 0 n1
+                          in (A.append src1'1 src2', dst'')
+                     else let mid1 = n1 `div` 2
+                              pivot = A.get src1' mid1
+                              (mid2, src2'') = binarySearch src2' pivot
+
+                              -- split src1
+                              !(src1_l, src1_r) = A.splitAt mid1 src1'
+                              !(src1_r1, src1_r2) = A.splitAt 1 src1_r
+
+                              -- split src2
+                              !(src2_l, src2_r) = A.splitAt mid2 src2''
+
+                              -- set the pivot
+                              !dst1 = A.set dst' (mid1+mid2) pivot
+
+                              -- split dst
+                              !(dst_l, dst_r) = A.splitAt (mid1+mid2) dst1
+                              !(dst_r1, dst_r2) = A.splitAt 1 dst_r
+
+                              -- sort the sub arrays
+                              (!(src_l, dst2), !(src_r, dst3)) =
+                                merge_parpseq src1_l src2_l dst_l .||.
+                                merge_parpseq src1_r2 src2_r dst_r2
+
+                              -- append srcs and dsts
+                              src''' = A.append src_l (A.append src1_r1 src_r)
+                              dst''' = A.append dst2 (A.append dst_r1 dst3)
+
+                          in (src''', dst''')
 
 
 (.||.) :: a -> b -> (a,b)
 a .||. b = a `par` b `pseq` (a,b)
-  -- (a,b)
+
+--------------------------------------------------------------------------------
 
 binarySearch :: Ord a => A.Array a -> a -> (Int, A.Array a)
 binarySearch ls query = (go 0 (A.size ls), ls)
@@ -243,6 +342,12 @@ binarySearch ls query = (go 0 (A.size ls), ls)
         mid = lo + n `div` 2
         pivot = A.get ls mid
 
+
+goto_isort :: Int
+goto_isort = 8192
+
+goto_seqmerge :: Int
+goto_seqmerge = 4196
 
 --------------------------------------------------------------------------------
 
