@@ -195,39 +195,6 @@ merge' !src1 !src2 !dst i1 i2 j = traceShow ("merge", A.toList src1, A.toList sr
 merge :: (HasCallStack, Ord a, Show a) => A.Array a -> A.Array a -> A.Array a -> (A.Array a, A.Array a)
 merge src1 src2 dst = merge' src1 src2 dst 0 0 0
 
-{-
-
-merge' :: Ord a =>
-  A.Array a -> A.Array a -> A.Array a ->
-  GHC.Int# -> GHC.Int# -> GHC.Int# ->
-  (A.Array a, A.Array a)
-merge' src1 src2 dst i1 i2 j =
-  let (len1, src1') = A.size2 src1
-      (len2, src2') = A.size2 src2 in
-  if (GHC.I# i1) >= len1
-  then
-    -- let (src2'1, dst') = copy src2' dst i2 j in (A.append src1' src2'1, dst')
-    let (src2'1, dst') = A.copy2 src2' (GHC.I# i2) dst (GHC.I# j) (len2-(GHC.I# i2)+1) in (A.append src1' src2'1, dst')
-  else if (GHC.I# i2) >= len2
-  then
-    -- let (src1'1, dst') = copy src1' dst i1 j in (A.append src1'1 src2', dst')
-    let (src1'1, dst') = A.copy2 src1' (GHC.I# i1) dst (GHC.I# j) (len1-(GHC.I# i1)+1) in (A.append src1'1 src2', dst')
-  else
-    let (v1, src1'1) = A.get2 src1' (GHC.I# i1)
-        (v2, src2'1) = A.get2 src2' (GHC.I# i2) in
-    if v1 < v2
-    then let dst' = A.set dst (GHC.I# j) v1
-             (src'', dst'') =  merge' src1'1 src2'1 dst' (i1 GHC.+# 1#) i2 (j GHC.+# 1#) in
-         (src'', dst'')
-    else let dst' = A.set dst (GHC.I# j) v2
-             (src'', dst'') =  merge' src1'1 src2'1 dst' i1 (i2 GHC.+# 1#) (j GHC.+# 1#) in
-         (src'', dst'')
-
-merge :: Ord a => A.Array a -> A.Array a -> A.Array a -> (A.Array a, A.Array a)
-merge src1 src2 dst = merge' src1 src2 dst 0# 0# 0#
-
--}
-
 goto_seqmerge :: Int
 goto_seqmerge = 4
 
