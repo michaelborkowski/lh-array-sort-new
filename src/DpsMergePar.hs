@@ -150,24 +150,25 @@ merge_par !src1 !src2 !dst =
                          (pivot, src1'1) = A.get2 src1' mid1
                          (mid2,  src2'1) = binarySearch src2' pivot
 
-                         (src1_l, src1'2) = slice2 src1'1 0 mid1 
-                         (src1_r, src1'3) = slice2 src1'2   (mid1+1) n1 
-                         (src2_l, src2'2) = slice2 src2'1 0 mid2 
-                         (src2_r, src2'3) = slice2 src2'2   mid2 n2 
+                         (src1_l, src1_cr) = A.splitAt mid1 src1'1
+                         (src1_c, src1_r)  = A.splitAt 1    src1_cr
+                         (src2_l, src2_r)  = A.splitAt mid2 src2'1
 
-                         (dst_l, dst'1)  = slice2 dst'  0 (mid1+mid2) 
-                         (dst_c, dst'2)  = slice2 dst'1   (mid1+mid2) (mid1+mid2+1)
-                         (dst_r, dst'3)  = slice2 dst'2   (mid1+mid2+1) n3 
+                         (dst_l, dst_cr)   = A.splitAt (mid1+mid2) dst'
+                         (dst_c, dst_r)    = A.splitAt 1           dst_cr
 
-                         !(_, dst_l') = merge_par (src1_l ? lem_isSortedBtw_slice src1'1 0  mid1)
-                                                  (src2_l ? lem_isSortedBtw_slice src2'1 0  mid2)
-                                                  dst_l
-                         !dst_c'      = A.set dst_c 0 pivot                                                  
-                         !(_, dst_r') = merge_par (src1_r ? lem_isSortedBtw_slice src1'1 (mid1+1) n1)
-                                                  (src2_r ? lem_isSortedBtw_slice src2'1 mid2 n2)
-                                                  dst_r
-                                                  
-                         --src'''          = A.append src_l  src_r
+                         !((src1_l',src1_r'), dst_l') 
+                                           = merge_par (src1_l ? lem_isSortedBtw_slice src1'1 0  mid1)
+                                                       (src2_l ? lem_isSortedBtw_slice src2'1 0  mid2)
+                                                        dst_l
+                         !dst_c'           = A.set dst_c 0 pivot                                                  
+                         !((src1_r',src2_r'), dst_r') 
+                                           = merge_par (src1_r ? lem_isSortedBtw_slice src1'1 (mid1+1) n1)
+                                                       (src2_r ? lem_isSortedBtw_slice src2'1 mid2 n2)
+                                                       dst_r
+
+                         src1'3       = A.append src1_l' src1_r'
+                         src2'3       = A.append src2_l' src2_r'
                          dst''        = A.append dst_l' dst_c'  
                          dst'''       = A.append dst''  dst_r'  
                       in ((src1'3, src2'3), dst''') 

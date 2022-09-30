@@ -170,16 +170,6 @@ splitMid xs = (slice xs 0 m, slice xs m n)
     n = size xs
     m = n `div` 2
 
-{-# INLINE splitAt #-}
-splitAt :: Ord a => Int -> Array a -> (Array a, Array a)
-splitAt m xs = (slice xs 0 m, slice xs m n)
-  where
-    n = size xs
-
-{-# INLINE slice2 #-}
-slice2 :: Array a -> Int -> Int -> (Array a, Array a)
-slice2 !ar l' r' = (slice ar l' r', ar)
-
 --------------------------------------------------------------------------------
 -- | Proofs
 --------------------------------------------------------------------------------
