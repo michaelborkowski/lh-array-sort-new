@@ -11,6 +11,7 @@ import           Data.Int           ( Int64 )
 import           Data.List.Split    ( splitOn )
 import           System.Random      ( Random, newStdGen, randoms )
 import           System.Environment ( getArgs, withArgs )
+import qualified Data.Set as S
 
 import qualified Measure as M
 
@@ -45,6 +46,14 @@ isSorted []       = True
 isSorted [_]      = True
 isSorted (x:y:xs) = x <= y && isSorted (y:xs)
 
+isPermutation :: Ord a => A.Array a -> A.Array a -> Either (S.Set a) ()
+isPermutation source sorted =
+  let diff = (toSet source) `S.difference` (toSet sorted) in
+    if null (diff)
+    then Right ()
+    else Left diff
+  where
+    toSet = S.fromList . A.toList
 
 bench_fill_array :: Int -> IO Benchmark
 bench_fill_array input_size = do
@@ -118,6 +127,10 @@ main = do
   putStrLn "msort:\n--------------------"
   (res0, t0, t_all) <- M.bench msort input iters
   unless (isSorted (A.toList res0)) (error $ "msort: result not sorted.")
+  let diff = isPermutation input res0
+  _ <- case diff of
+         Left diff -> error $ "msort: sorted array is not a permutation of the input, missing: " ++ show diff
+         Right _   -> pure ()
   print (t0, t_all)
 
   -- msort_par

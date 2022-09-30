@@ -13,6 +13,7 @@ executable prof
                        , vector
                        , monad-par
                        , time
+                       , containers
     main-is:             Main.hs
     other-modules:       Array
                          Sort
