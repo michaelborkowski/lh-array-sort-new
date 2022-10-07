@@ -216,10 +216,6 @@ merge_par !src1 !src2 !dst = traceShow ("merge_par", A.toList src1, A.toList src
                                      ++ ", arrays=" ++ show (map A.toList [src1_l, src1_r, src2_l, src2_r]) ) $
                                 (src''', dst''')
 
-
--}
-
-
 binarySearch :: Ord a => A.Array a -> a -> (Int, A.Array a)
 binarySearch ls query = (go 0 (A.size ls), ls)
   where
@@ -232,3 +228,5 @@ binarySearch ls query = (go 0 (A.size ls), ls)
         n = hi - lo
         mid = lo + n `div` 2
         pivot = A.get ls mid
+        
+-}
