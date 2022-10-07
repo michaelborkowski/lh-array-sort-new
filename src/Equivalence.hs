@@ -128,6 +128,13 @@ lem_toBag_splitMid xs = () ? lem_toBag_slice       xs 0 m
     n = A.size xs
     m = n `div` 2
 
+{-@ lem_toBag_splitAt :: i:Nat -> { xs:_ | i <= A.size xs }
+      -> { pf:_ | toBag xs == B.union (toBag (fst (A.splitAt i xs))) (toBag (snd (A.splitAt i xs))) } @-}
+lem_toBag_splitAt :: Ord a => Int -> Array a -> Proof
+lem_toBag_splitAt i xs = () ? lem_toBag_slice       xs 0 i
+                            ? lem_toBag_slice       xs   i (A.size xs)
+                            ? lem_toBagBtw_compose' xs 0 i (A.size xs)
+
 {-@ lem_toBag_append :: xs:_ -> { ys:_ | token xs == token ys && right xs == left ys }
                              -> { pf:_ | toBag (A.append xs ys) == B.union (toBag xs) (toBag ys) } @-}
 lem_toBag_append :: Ord a => Array a -> Array a -> Proof
