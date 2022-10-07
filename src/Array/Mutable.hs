@@ -89,6 +89,14 @@ set (Array (GHC.I# lo) hi !arr) (GHC.I# i) !a =
 #endif
   Array (GHC.I# lo) hi (set# arr (lo GHC.+# i) a)
 
+{-# INLINE copy #-}
+copy :: Array a -> Int -> Array a -> Int -> Int -> Array a
+copy s@(Array (GHC.I# lo1) _hi1 src) (GHC.I# src_offset)
+      d@(Array (GHC.I# lo2) _hi2 dst) (GHC.I# dst_offset)
+      (GHC.I# n)
+  = case copy# src (lo1 GHC.+# src_offset) dst (lo2 GHC.+# dst_offset) n of
+      dst_arr' -> d { array = dst_arr' }
+
 {-# INLINE copy2 #-}
 copy2 :: Array a -> Int -> Array a -> Int -> Int -> (Array a, Array a)
 copy2 s@(Array (GHC.I# lo1) _hi1 src) (GHC.I# src_offset)

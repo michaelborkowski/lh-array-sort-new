@@ -11,13 +11,13 @@ import           System.Random      ( Random, newStdGen, randoms )
 import           System.Environment ( getArgs, withArgs )
 
 import qualified Insertion as I
-import qualified QuickSort as Q
+-- import qualified QuickSort as Q
 -- import qualified Merge as M
 import qualified DpsMergeSort as DMS
 import qualified DpsMergeSort4 as DMS4
 import qualified DpsMergeSortPar as DMSP
 import qualified DpsMergeSort4Par as DMS4P
-import qualified CilkSort as C
+-- import qualified CilkSort as C
 import qualified Array as A
 
 --------------------------------------------------------------------------------
@@ -90,6 +90,7 @@ main = do
                 , ("LH/dps_mergesort_4way_parallel", DMS4P.msort)
                 ]
                 -- [ ("LH/dps_merge", DM.msort) ]
+{-
       Quicksort ->
         benchSorts
                 (Proxy :: Proxy Float)
@@ -100,4 +101,5 @@ main = do
                 (Proxy :: Proxy Float)
                 size
                 [ ("LH/cilkSort", C.cilkSort) ]
+-}
   withArgs rst $ defaultMain [ runbench ]
