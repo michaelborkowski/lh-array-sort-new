@@ -31,11 +31,11 @@ import           Array.List as A
                          ( j == 0 || i2 == size xs2 || A.get xs2 i2 >= A.get zs (j-1) ) }
            -> { t:_    | B.union (toBag xs1) (toBag xs2) == toBag (snd t)  &&
                          toSlice zs 0 j == toSlice (snd t) 0 j &&
-                         isSorted' (snd t) && 
+                         isSorted' (snd t) &&
                          fst t == A.append xs1 xs2 &&
                          token xs1 == token (fst t) &&
                          size (snd t) == size zs && token (snd t) == token zs &&
-                         left (snd t) == left zs && right (snd t) == right zs  } / [size zs - j] @-} 
+                         left (snd t) == left zs && right (snd t) == right zs  } / [size zs - j] @-}
 merge' :: Ord a =>
   A.Array a -> A.Array a -> A.Array a ->
   Int -> Int -> Int ->
@@ -61,7 +61,7 @@ merge' !src1 !src2 !dst i1 i2 j =
                                   ? lem_toBagBtw_compose' dst' 0 j  (A.size dst')
                                   ? lem_equal_slice_bag   dst   dst' 0 (j
                                       ? lem_copy_equal_slice  src1' i1 dst j (len1-i1) )
-                                  ? lem_equal_slice_bag'  src1' dst'  i1 len1 j (A.size dst') 
+                                  ? lem_equal_slice_bag'  src1' dst'  i1 len1 j (A.size dst')
             {- sortedness -}      ? lem_isSorted_copy src1' i1 dst j (len1-i1)
   else
     let !(v1, src1'1) = A.get2 src1' i1
@@ -228,5 +228,5 @@ binarySearch ls query = (go 0 (A.size ls), ls)
         n = hi - lo
         mid = lo + n `div` 2
         pivot = A.get ls mid
-        
+
 -}
