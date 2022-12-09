@@ -1,6 +1,6 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 
-module Main where
+module Main (main) where
 
 import           Criterion          ( Benchmark, bench, bgroup, whnf, nf )
 import           Criterion.Main     ( defaultMain )
@@ -21,6 +21,7 @@ import qualified Measure as M
 -- import qualified DpsMergeSort as DM
 import qualified Array as A
 import Sort
+import Copy
 
 --------------------------------------------------------------------------------
 
@@ -80,7 +81,7 @@ main = do
                             then error usage
                             else (read bnch :: Benchmarks, read sz :: Int, rst')
           _ -> error usage
-
+{-
   runbench <-
     case benchmark of
       FillArray -> bench_fill_array size
@@ -104,7 +105,7 @@ main = do
                 [ ("LH/quicksort", quickSort) ]
 
   -- withArgs rst $ defaultMain [ runbench ]
-
+-}
 
 
   let input_size = size
@@ -127,6 +128,40 @@ main = do
 -}
 
 
+  let !dst = force (A.make input_size (head ls))
+
+  -- sequential copy
+  putStrLn "copy:\n--------------------"
+  (res0, t0, t_all) <- M.bench (\src -> snd $ A.copy2 src 0 dst 0 input_size) input iters
+  let is_equal = ls == (A.toList res0)
+  _ <- case is_equal of
+         False -> error $ "copy: copied array is not equal to the input: "
+         True   -> pure ()
+  print (t0, t_all)
+
+-- copy_parpseq
+  putStrLn "copy_parpseq:\n--------------------"
+  -- let !dst = force (A.make input_size (head ls))
+  (res0, t0, t_all) <- M.bench (\src -> snd $ copy2_parpseq src 0 dst 0 input_size) input iters
+  -- let is_equal = ls == (A.toList res0)
+  -- _ <- case is_equal of
+  --        False -> error $ "copy: copied array is not equal to the input: "
+  --        True   -> pure ()
+  print (t0, t_all)
+
+
+-- copy_parmon
+  putStrLn "copy_parmon:\n--------------------"
+  -- let !dst = force (A.make input_size (head ls))
+  (res0, t0, t_all) <- M.benchPar (\src -> snd <$> copy2_parmon src 0 dst 0 input_size) input iters 0
+  -- let is_equal = ls == (A.toList res0)
+  -- _ <- case is_equal of
+  --        False -> error $ "copy: copied array is not equal to the input: "
+  --        True   -> pure ()
+  print (t0, t_all)
+
+
+{-
   -- msort
   putStrLn "msort:\n--------------------"
   (res0, t0, t_all) <- M.bench msort input iters
@@ -134,16 +169,6 @@ main = do
   let is_permut = isPermutation (A.fromList ls) res0
   _ <- case is_permut of
          Left diff -> error $ "msort: sorted array is not a permutation of the input, missing: " ++ show diff
-         Right _   -> pure ()
-  print (t0, t_all)
-
-  -- msort_parmon
-  putStrLn "msort_parmon:\n--------------------"
-  (res0, t0, t_all) <- M.benchPar msort_parmon input iters cutoff
-  unless (isSorted (A.toList res0)) (error $ "msort_parmon: result not sorted." ++ show res0)
-  let is_permut = isPermutation (A.fromList ls) res0
-  _ <- case is_permut of
-         Left diff -> error $ "msort_parmon: sorted array is not a permutation of the input, missing: " ++ show diff
          Right _   -> pure ()
   print (t0, t_all)
 
@@ -156,3 +181,19 @@ main = do
          Left diff -> error $ "msort_parpseq: sorted array is not a permutation of the input, missing: " ++ show diff
          Right _   -> pure ()
   print (t0, t_all)
+-}
+
+{-
+
+  -- msort_parmon
+  putStrLn "msort_parmon:\n--------------------"
+  (res0, t0, t_all) <- M.benchPar msort_parmon input iters cutoff
+  unless (isSorted (A.toList res0)) (error $ "msort_parmon: result not sorted." ++ show res0)
+  let is_permut = isPermutation (A.fromList ls) res0
+  _ <- case is_permut of
+         Left diff -> error $ "msort_parmon: sorted array is not a permutation of the input, missing: " ++ show diff
+         Right _   -> pure ()
+  print (t0, t_all)
+
+
+-}

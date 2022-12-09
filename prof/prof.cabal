@@ -14,10 +14,12 @@ executable prof
                        , monad-par
                        , time
                        , containers
+                       , primitive
     main-is:             Main.hs
     other-modules:       Array
                          Sort
                          Measure
+                         Copy
     default-language:    Haskell2010
     default-extensions:  TupleSections
                          BangPatterns

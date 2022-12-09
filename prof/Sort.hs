@@ -1,10 +1,11 @@
 {-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE MagicHash    #-}
-{-# LANGUAGE Strict       #-}
+-- {-# LANGUAGE Strict       #-}
 
 module Sort where
 
 import qualified Array as A
+import qualified Copy as C
 
 import           Prelude
 import           GHC.Conc
@@ -113,23 +114,6 @@ merge src1 src2 dst = merge' src1 src2 dst 0 0 0
 
 --------------------------------------------------------------------------------
 
-copy2_parmon :: A.Array a -> Int -> A.Array a -> Int -> Int -> P.Par (A.Array a, A.Array a)
-copy2_parmon = go
- where
-  go :: A.Array a -> Int -> A.Array a -> Int -> Int -> P.Par (A.Array a, A.Array a)
-  go src src_i dst dst_j n =
-    if n <= 4096
-    then pure (A.copy2 src src_i dst dst_j n)
-    else do
-      let mid = n `div` 2
-      let (src1, src2) = A.splitAt mid src
-          (dst1, dst2) = A.splitAt mid dst
-      f1             <- P.spawn_ (go src1 0 dst1 0 mid)
-      (src2', dst2') <- go src2 0 dst2 0 (n - mid)
-      (src1', dst1') <- P.get f1
-      pure (A.append src1' src2', A.append dst1' dst2')
-
-
 -- DPS mergesort
 msortSwap_parmon :: (Show a, Ord a) => A.Array a -> A.Array a -> P.Par (A.Array a, A.Array a)
 msortSwap_parmon !src !tmp =
@@ -192,10 +176,10 @@ msort_parmon src =
   let (len, src') = A.size2 src in
       if len == 0 then pure src'
       else do let (x0, src'') = A.get2 src' 0
-                  src''' = A.make len x0
-                  -- (_,src'''') = A.copy2 src'' 0 src''' 0 len
-              (_,src'''') <- copy2_parmon src'' 0 src''' 0 len
-              msort'_parmon src'''' x0
+              --     src''' = A.make len x0
+              --     -- (_,src'''') = A.copy2 src'' 0 src''' 0 len
+              -- (_,src'''') <- copy2_parmon src'' 0 src''' 0 len
+              msort'_parmon src'' x0
 
 
 msort_parmon1 :: (Show a, Ord a) => A.Array a -> A.Array a
@@ -209,10 +193,10 @@ merge_parmon !src1 !src2 !dst =
              !(n2, src2') = A.size2 src2
              dst' = dst
              in if n1 == 0
-                then do !(src2'1, dst'') <- copy2_parmon src2' 0 dst' 0 n2
+                then do !(src2'1, dst'') <- C.copy2_parmon src2' 0 dst' 0 n2
                         pure (A.append src1' src2'1, dst'')
                 else if n2 == 0
-                     then do !(src1'1, dst'') <- copy2_parmon src1' 0 dst' 0 n1
+                     then do !(src1'1, dst'') <- C.copy2_parmon src1' 0 dst' 0 n1
                              pure (A.append src1'1 src2', dst'')
                      else
                        do let mid1 = n1 `div` 2
@@ -246,34 +230,18 @@ merge_parmon !src1 !src2 !dst =
 
 --------------------------------------------------------------------------------
 
-copy2_parpseq :: A.Array a -> Int -> A.Array a -> Int -> Int -> (A.Array a, A.Array a)
-copy2_parpseq = go
- where
-  go :: A.Array a -> Int -> A.Array a -> Int -> Int -> (A.Array a, A.Array a)
-  go src src_i dst dst_j n =
-    if n <= 4096
-    then (A.copy2 src src_i dst dst_j n)
-    else
-      let mid = n `div` 2
-          (src1, src2) = A.splitAt mid src
-          (dst1, dst2) = A.splitAt mid dst
-          ((src1', dst1'), (src2', dst2')) =
-            (go src1 0 dst1 0 mid) .||. (go src2 0 dst2 0 (n - mid))
-      in (A.append src1' src2', A.append dst1' dst2')
-
-
 msortSwap_parpseq :: (Show a, Ord a) => A.Array a -> A.Array a -> (A.Array a, A.Array a)
 msortSwap_parpseq !src !tmp =
   let !(len, src') = A.size2 src in
   if len == 1
   -- then let (src'', tmp'') = copy src' tmp 0 0 in
-  then let !(src'', tmp'') = A.copy2 src' 0 tmp 0 1
+  then let (!src'', !tmp'') = A.copy2 src' 0 tmp 0 1
        in (src'', tmp'')
   else
     let (src1, src2) = A.splitMid src'
         (tmp1, tmp2) = A.splitMid tmp
 
-        (!(src1', tmp1'), !(src2', tmp2')) =
+        ((!src1', !tmp1'), (!src2', !tmp2')) =
           msortInplace src1 tmp1 .||.
           msortInplace src2 tmp2
 
@@ -290,7 +258,7 @@ msortInplace_parpseq !src !tmp =
     let (src1, src2) = A.splitMid src'
         (tmp1, tmp2) = A.splitMid tmp
 
-        (!(src1', tmp1'), !(src2', tmp2')) =
+        ((!src1', !tmp1'), (!src2', !tmp2')) =
           msortSwap src1 tmp1 .||.
           msortSwap src2 tmp2
 
@@ -315,7 +283,7 @@ msort_parpseq src =
       if len == 0 then src'
       else let (x0, src'') = A.get2 src' 0
                src''' = A.make len x0
-               (_,src'''') = copy2_parpseq src'' 0 src''' 0 len
+               (_,src'''') = C.copy2_parpseq src'' 0 src''' 0 len
            in msort'_parpseq src'''' x0
 
 msort_parpseq1 :: (Show a, Ord a) => A.Array a -> A.Array a
@@ -330,10 +298,10 @@ merge_parpseq !src1 !src2 !dst =
              !(n2, src2') = A.size2 src2
              dst' = dst
              in if n1 == 0
-                then let !(src2'1, dst'') = copy2_parpseq src2' 0 dst' 0 n2
+                then let !(src2'1, dst'') = C.copy2_parpseq src2' 0 dst' 0 n2
                      in (A.append src1' src2'1, dst'')
                 else if n2 == 0
-                     then let !(src1'1, dst'') = copy2_parpseq src1' 0 dst' 0 n1
+                     then let !(src1'1, dst'') = C.copy2_parpseq src1' 0 dst' 0 n1
                           in (A.append src1'1 src2', dst'')
                      else let mid1 = n1 `div` 2
                               pivot = A.get src1' mid1
@@ -365,6 +333,7 @@ merge_parpseq !src1 !src2 !dst =
                           in (src''', dst''')
 
 
+{-# INLINE (.||.) #-}
 (.||.) :: a -> b -> (a,b)
 a .||. b = a `par` b `pseq` (a,b)
 
