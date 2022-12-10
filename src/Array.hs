@@ -1,5 +1,6 @@
-{-# LANGUAGE CPP          #-}
-{-# LANGUAGE BangPatterns #-}
+{-# LANGUAGE CPP           #-}
+{-# LANGUAGE BangPatterns  #-}
+{-# LANGUAGE DeriveFunctor #-}
 
 {-@ LIQUID "--reflection"  @-}
 -- {-@ LIQUID "--diff"        @-}
@@ -12,16 +13,13 @@ module Array
     Array
 
     -- * Construction and querying
-  , make, size, get, set, slice, append,    copy2
+  , alloc, make, size, get, set, slice, append, splitMid, swap
 
     -- * Linear versions
-  ,      size2, get2,     slice2
+  , size2, get2, slice2, copy2
 
     -- * Convert to/from lists
   , fromList, toList
-
-    -- * Advanced operations
-  , splitMid, swap
 
     -- * Parallel tuple operator
   , (.||.), tuple2, tuple4
@@ -140,6 +138,17 @@ a .||. b = (a,b)
 #endif
 
 --------------------------------------------------------------------------------
+
+-- | Unrestricted values of type @a@ in a linear context.
+newtype Ur a = Ur a
+  deriving (Show, Read, Eq, Ord, Functor)
+
+instance NFData a => NFData (Ur a) where
+  rnf (Ur x) = rnf x `seq` ()
+
+{-# INLINE alloc #-}
+alloc :: Int -> a -> (Array a -> b) -> b
+alloc i a f = f (make i a)
 
 -- advanced operations
 
