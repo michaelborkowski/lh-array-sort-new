@@ -18,6 +18,7 @@ int bench_gibbon_fillarray(int argc, char** argv);
 // Canonical, hand-written or glibc or some such code.
 int bench_canonical_sorting(int argc, char** argv);
 int bench_canonical_fillarray(int argc, char** argv);
+int bench_canonical_sumarray(int argc, char** argv);
 
 int main(int argc, char** argv)
 {
@@ -37,6 +38,9 @@ int main(int argc, char** argv)
     else if (strcmp(argv[1], "fillarray") == 0) {
         printf("benchmarking canonical fill array.\n");
         bench_canonical_fillarray(argc,argv);
+    } else if (strcmp(argv[1], "sumarray") == 0) {
+        printf("benchmarking canonical sum array.\n");
+        bench_canonical_sumarray(argc,argv);
     } else {
         printf("benchmarking canonical sorting algorithms.\n");
         bench_canonical_sorting(argc,argv);
@@ -158,6 +162,17 @@ int __attribute__ ((noinline)) fill_array2(uint32_t N, int64_t x)
     free(array);
 }
 
+int64_t __attribute__ ((noinline)) sum_array2(uint32_t N, int64_t *array)
+{
+    int64_t sum = 0;
+    int64_t *elt = array;
+    for (uint32_t i = 0; i <= N-1; i++) {
+        elt = (int64_t*) (array + i);
+        sum += *elt;
+    }
+    return sum;
+}
+
 int bench_canonical_fillarray(int argc, char** argv)
 {
     char *algo = argv[1];
@@ -205,6 +220,82 @@ int bench_canonical_fillarray(int argc, char** argv)
         read = getline(&criterion_cmd, &len, stdin);
     }
 
+    free(criterion_cmd);
+
+    return 0;
+}
+
+int bench_canonical_sumarray(int argc, char** argv)
+{
+    char *algo = argv[1];
+    char *elt_type = argv[2];
+    uint32_t N = atoi(argv[3]);
+
+    void *array;
+    size_t elt_size;
+    int64_t sum;
+
+    if (strcmp(elt_type,"int64") == 0) {
+        // Set params.
+        array = (int64_t*) malloc(N * sizeof(int64_t));
+        if (array == NULL) {
+            fprintf(stderr, "Couldn't allocate memory for input array.\n");
+        }
+        elt_size = sizeof(int64_t);
+        // Initialize input.
+        srand(time(NULL));
+        int64_t *elt = array;
+        for (uint32_t i = 0; i <= N-1; i++) {
+            elt = (int64_t*) array + i;
+            *elt = rand();
+        }
+    } else {
+        fprintf(stderr, "Unknown type: %s\n", elt_type);
+        exit(1);
+    }
+
+    // Start protocol for criterion-interactive.
+    printf("READY\n");
+    fflush(stdout);
+
+    char *criterion_cmd = (char*) malloc(100);
+    ssize_t read;
+    size_t len;
+    uint32_t rounds;
+    uint32_t i;
+
+    // Wait for criterion-interactive to send a command.
+    read = getline(&criterion_cmd, &len, stdin);
+    while (strcmp(criterion_cmd,"EXIT") != 0) {
+        if (read == -1) {
+            printf("Couldn't read from stdin, error=%d\n", errno);
+            exit(1);
+        }
+
+        // One round of benchmarking.
+        if (strncmp(criterion_cmd,"START_BENCH", 11) == 0) {
+            rounds = atol(criterion_cmd+12);
+
+#ifdef CBENCH_DEBUG
+            puts(criterion_cmd);
+            printf("rounds=%" PRIu32 "\n", rounds);
+#endif
+
+            // The main event.
+            for (i = 0; i <= rounds; i++) {
+                sum = sum_array2(N, array);
+            }
+
+            printf("END_BENCH\n");
+            fflush(stdout);
+        }
+
+        // Prepare for next round.
+        rounds=0;
+        read = getline(&criterion_cmd, &len, stdin);
+    }
+
+    printf("sum = %lld\n", sum);
     free(criterion_cmd);
 
     return 0;

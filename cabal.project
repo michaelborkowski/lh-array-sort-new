@@ -7,6 +7,10 @@ package lh-array-sort
     ghc-options: -O2
     -- ghc-options: -ddump-simpl -ddump-to-file -dsuppress-all
 
+package benchrunner
+    ghc-options: -O2
+    ghc-options: -ddump-simpl -ddump-to-file -dsuppress-all
+
 package prof
     ghc-options: -O2
     ghc-options: -ddump-simpl -ddump-to-file -dsuppress-all

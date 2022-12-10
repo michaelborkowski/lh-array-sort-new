@@ -53,7 +53,23 @@ bench_fill_array input_size = do
   where
     fill (s,x) = A.make s x
 
-data Benchmarks = FillArray | Insertionsort | Mergesort | Quicksort | Cilksort
+bench_sum_array :: forall a. (Random a, NFData a, Num a) =>
+                   Proxy a -> Int -> IO Benchmark
+bench_sum_array _input_ty input_size = do
+  rng <- newStdGen
+  let ls :: [a]
+      ls = take input_size $ randoms rng
+      !input = force (A.fromList ls)
+  pure $ bgroup "" [ bench "sum_array" (nf sum_array input) ]
+  where
+    sum_array arr = go 0 0 (A.size arr)
+      where
+        go !acc !idx !n =
+          if idx == n
+          then acc
+          else go (acc + A.get arr idx) (idx+1) n
+
+data Benchmarks = FillArray | SumArray | Insertionsort | Mergesort | Quicksort | Cilksort
   deriving (Eq, Show, Read)
 
 main :: IO ()
@@ -74,6 +90,7 @@ main = do
   runbench <-
     case benchmark of
       FillArray -> bench_fill_array size
+      SumArray  -> bench_sum_array (Proxy :: Proxy Int64) size
       Insertionsort ->
               benchSorts
                 (Proxy :: Proxy Int64)
