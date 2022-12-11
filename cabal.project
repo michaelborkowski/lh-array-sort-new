@@ -3,6 +3,8 @@ packages: .
           ./benchmarks/haskell
           ./prof
 
+with-compiler: ghc-9.0.1
+
 package lh-array-sort
     ghc-options: -O2
     -- ghc-options: -ddump-simpl -ddump-to-file -dsuppress-all
@@ -25,27 +27,25 @@ source-repository-package
 source-repository-package
     type: git
     location: https://github.com/ucsd-progsys/liquidhaskell
-    tag: 8b5e3640fe06964b27af9f6e44f563d8e6abbfe0
+    tag: ec95f39dd90857cc97cba00f68c95d39ecd5f5aa
 
 source-repository-package
     type: git
     location: https://github.com/ucsd-progsys/liquidhaskell
-    tag: 8b5e3640fe06964b27af9f6e44f563d8e6abbfe0
-    subdir: liquid-base liquid-ghc-prim liquid-containers liquid-prelude
+    tag: ec95f39dd90857cc97cba00f68c95d39ecd5f5aa
+    subdir: liquid-containers liquid-prelude
 
 source-repository-package
     type: git
     location: https://github.com/ucsd-progsys/liquid-fixpoint
-    tag: 08fa6b6e0001c2da6b96a135523ca56107a3c0d6
-
-source-repository-package
-    type:git
-    location: https://github.com/facundominguez/rest
-    tag: 31e974979c90e910efe5199ee0d3721b791667f6
-
+    tag: 7e18f70ede589c5f7f2e0b5a3bf38250938aee28
 
 source-repository-package
     type: git
-    location: https://github.com/well-typed/optics.git
-    tag: 0a4940cc927df3f50151692282f8b148bf326886
-    subdir: optics-core optics-th
+    location: https://github.com/liquidhaskell/liquid-ghc-prim.git
+    tag: v0.7.0
+
+source-repository-package
+    type: git
+    location: https://github.com/facundominguez/liquid-base.git
+    tag: 8ad2378cee5ccf7937d9e08aacd5c5b7128318e8

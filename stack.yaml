@@ -1,5 +1,8 @@
-resolver: lts-18.27
-compiler: ghc-8.10.7
+# resolver: lts-18.27
+# compiler: ghc-8.10.7
+
+resolver: nightly-2022-01-06
+compiler: ghc-9.0.1
 
 packages:
 - .
@@ -19,18 +22,25 @@ extra-deps:
   commit: 201083a35e82343ae638d62711fe83185b8101d4
 
 - git: https://github.com/ucsd-progsys/liquidhaskell
-  commit: 8b5e3640fe06964b27af9f6e44f563d8e6abbfe0
- 
+  commit: ec95f39dd90857cc97cba00f68c95d39ecd5f5aa
+
 - git: https://github.com/ucsd-progsys/liquidhaskell
-  commit: 8b5e3640fe06964b27af9f6e44f563d8e6abbfe0
+  commit: ec95f39dd90857cc97cba00f68c95d39ecd5f5aa
   subdirs:
-      - liquid-base
-      - liquid-ghc-prim
+      # - liquid-base
+      # - liquid-ghc-prim
       - liquid-containers
       - liquid-prelude
 
 - git: https://github.com/ucsd-progsys/liquid-fixpoint
-  commit: 08fa6b6e0001c2da6b96a135523ca56107a3c0d6
+  commit: 7e18f70ede589c5f7f2e0b5a3bf38250938aee28
+
+- git: https://github.com/ucsd-progsys/liquid-ghc-prim
+  # tag: v0.7.0
+  commit: 30a33b2d544e802d3a1f84b199d105b1488e3591
+
+- git: https://github.com/facundominguez/liquid-base
+  commit: 8ad2378cee5ccf7937d9e08aacd5c5b7128318e8
 
 - git: https://github.com/facundominguez/rest
   commit: 31e974979c90e910efe5199ee0d3721b791667f6

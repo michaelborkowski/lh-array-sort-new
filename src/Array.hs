@@ -24,6 +24,8 @@ module Array
     -- * Parallel tuple operator
   , (.||.), tuple2, tuple4
 
+  , Ur(..)
+
     -- * LiqidHaskell lemmas
   , lma_gs, lma_gns, lma_swap, lma_swap_eql, lem_slice_append, lem_get_slice
   ) where
@@ -37,13 +39,13 @@ import           Array.List ( lma_gs_list, lma_gns_list
 
 #ifdef MUTABLE_ARRAYS
 import           Array.Mutable
-import           Control.DeepSeq ( NFData(..) )
 import           Control.Parallel.Strategies (runEval, rpar, rseq)
 import qualified Control.Monad.Par as P (runPar, spawnP, spawn_, get, fork, put, new)
 #else
 import           Array.List
 #endif
 
+import           Control.DeepSeq ( NFData(..) )
 import           Language.Haskell.Liquid.ProofCombinators hiding ((?))
 import           ProofCombinators
 
@@ -147,7 +149,8 @@ instance NFData a => NFData (Ur a) where
   rnf (Ur x) = rnf x `seq` ()
 
 {-# INLINE alloc #-}
-alloc :: Int -> a -> (Array a -> b) -> b
+{-@ alloc :: i:Nat -> x:_ -> f:_ -> ret:_ @-}
+alloc :: Int -> a -> (Array a -> Ur b) -> Ur b
 alloc i a f = f (make i a)
 
 -- advanced operations

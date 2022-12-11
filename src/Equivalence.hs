@@ -256,6 +256,7 @@ appendList (x:xs) ys = x : (appendList xs ys)
 lem_appendList_injective :: Eq a => [a] -> a -> [a] -> a -> Proof
 lem_appendList_injective []     y []       y' = ()
 lem_appendList_injective (x:xs) y (x':xs') y' = () ? lem_appendList_injective xs y xs' y'
+lem_appendList_injective _      _ _        _  = undefined
 
 {-@ lem_toSlice_right :: xs:(Array a) -> { i:Int | 0 <= i } -> { j:Int | i < j && j <= A.size xs }
                       -> { pf:_ | toSlice xs i j == appendList (toSlice xs i (j-1)) [A.get xs (j-1)] } / [j - i] @-}
