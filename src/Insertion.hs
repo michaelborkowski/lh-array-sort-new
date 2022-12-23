@@ -220,11 +220,11 @@ lma_isort xs n
     = let
         s = A.size xs
         x  = (A.get xs (s-1))
-        -- zs = (insert xs x (s-1))
+        zs = (insert xs x (s-1))
       in True
         -- === isSortedFstN xs (s-1)
           ? (lma_insert xs x (s-1))
-        -- === isSortedFstN zs s
+        === isSortedFstN zs s
         -- === isSortedFstN (isort zs 0) s
         === isSortedFstN (isort xs 1) s
         *** QED

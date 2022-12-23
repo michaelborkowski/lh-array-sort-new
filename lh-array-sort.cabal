@@ -58,3 +58,4 @@ library
                -fdefer-typed-holes
   if !flag(mutable-arrays)
     ghc-options: -fplugin=LiquidHaskell
+                 -fplugin-opt=LiquidHaskell:--ple-with-undecided-guards

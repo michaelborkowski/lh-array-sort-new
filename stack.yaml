@@ -22,22 +22,24 @@ extra-deps:
   commit: 201083a35e82343ae638d62711fe83185b8101d4
 
 - git: https://github.com/ucsd-progsys/liquidhaskell
-  commit: ec95f39dd90857cc97cba00f68c95d39ecd5f5aa
+  commit: f917323a1f9db1677e592d6ffc81467d53588d70
+          # ec95f39dd90857cc97cba00f68c95d39ecd5f5aa
 
 - git: https://github.com/ucsd-progsys/liquidhaskell
-  commit: ec95f39dd90857cc97cba00f68c95d39ecd5f5aa
+  commit: f917323a1f9db1677e592d6ffc81467d53588d70
+          # ec95f39dd90857cc97cba00f68c95d39ecd5f5aa
   subdirs:
-      # - liquid-base
-      # - liquid-ghc-prim
+      - liquid-base
+      - liquid-ghc-prim
       - liquid-containers
       - liquid-prelude
 
 - git: https://github.com/ucsd-progsys/liquid-fixpoint
   commit: 7e18f70ede589c5f7f2e0b5a3bf38250938aee28
 
-- git: https://github.com/ucsd-progsys/liquid-ghc-prim
-  # tag: v0.7.0
-  commit: 30a33b2d544e802d3a1f84b199d105b1488e3591
+#- git: https://github.com/ucsd-progsys/liquid-ghc-prim
+#  # tag: v0.7.0
+#  commit: 30a33b2d544e802d3a1f84b199d105b1488e3591
 
 - git: https://github.com/facundominguez/liquid-base
   commit: 8ad2378cee5ccf7937d9e08aacd5c5b7128318e8
