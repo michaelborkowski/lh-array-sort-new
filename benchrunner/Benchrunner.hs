@@ -9,6 +9,7 @@ import           Data.Int           ( Int64 )
 import           Data.List.Split    ( splitOn )
 import           System.Random      ( Random, newStdGen, randoms )
 import           System.Environment ( getArgs, withArgs )
+import qualified Measure as M
 
 import qualified Insertion as I
 -- import qualified QuickSort as Q
@@ -44,12 +45,51 @@ benchSorts _input_ty input_size fns = do
     isSorted [_]      = True
     isSorted (x:y:xs) = x <= y && isSorted (y:xs)
 
+benchSorts_nocriterion ::
+  forall a. (Show a, Random a, NFData a, Ord a) =>
+  Proxy a -> Int -> [(String, A.Array a -> A.Array a)] -> IO ()
+benchSorts_nocriterion _input_ty input_size fns = do
+    rng <- newStdGen
+    let ls :: [a]
+        ls = take input_size $ randoms rng
+        !input = force (A.fromList ls)
+
+    forM_ fns $ \(name,fn) -> do
+      unless (isSorted (A.toList $ fn input)) (error $ name ++ ": result not sorted.")
+      putStrLn $ "BENCHMARK: " ++ name
+      (res0, t0, t_all) <- M.bench fn input 9
+      putStrLn $ "SIZE: " ++ show input_size
+      putStrLn $ "ITERS: " ++ show 9
+      putStrLn $ "BATCHTIME: " ++ show t_all
+      putStrLn $ "SELFTIMED: " ++ show t0
+      putStrLn ""
+  where
+    go input str (name,fn) = bench (name ++ "/" ++ str) (nf fn input)
+    isSorted :: Ord a => [a] -> Bool
+    isSorted []       = True
+    isSorted [_]      = True
+    isSorted (x:y:xs) = x <= y && isSorted (y:xs)
+
 
 bench_fill_array :: Int -> IO Benchmark
 bench_fill_array input_size = do
   let input :: (Int, Int)
       !input = force (input_size, 1000)
   pure $ bgroup "" [ bench "fill_array" (nf fill input) ]
+  where
+    fill (s,x) = A.make s x
+
+bench_fill_array_nocriterion :: Int -> IO ()
+bench_fill_array_nocriterion input_size = do
+  let input :: (Int, Int)
+      !input = force (input_size, 1000)
+  putStrLn $ "BENCHMARK: " ++ "fill array"
+  (res0, t0, t_all) <- M.bench fill input 9
+  putStrLn $ "SIZE: " ++ show input_size
+  putStrLn $ "ITERS: " ++ show 9
+  putStrLn $ "BATCHTIME: " ++ show t_all
+  putStrLn $ "SELFTIMED: " ++ show t0
+  putStrLn ""
   where
     fill (s,x) = A.make s x
 
@@ -61,13 +101,28 @@ bench_sum_array _input_ty input_size = do
       ls = take input_size $ randoms rng
       !input = force (A.fromList ls)
   pure $ bgroup "" [ bench "sum_array" (nf sum_array input) ]
+
+bench_sum_array_nocriterion ::
+  forall a. (Show a, Random a, NFData a, Num a) =>
+  Proxy a -> Int -> IO ()
+bench_sum_array_nocriterion _input_ty input_size = do
+  rng <- newStdGen
+  let ls :: [a]
+      ls = take input_size $ randoms rng
+      !input = force (A.fromList ls)
+  putStrLn $ "BENCHMARK: " ++ "sum array"
+  (res0, t0, t_all) <- M.bench sum_array input 9
+  putStrLn $ "SIZE: " ++ show input_size
+  putStrLn $ "ITERS: " ++ show 9
+  putStrLn $ "BATCHTIME: " ++ show t_all
+  putStrLn $ "SELFTIMED: " ++ show t0
+  putStrLn ""
+sum_array arr = go 0 0 (A.size arr)
   where
-    sum_array arr = go 0 0 (A.size arr)
-      where
-        go !acc !idx !n =
-          if idx == n
-          then acc
-          else go (acc + A.get arr idx) (idx+1) n
+    go !acc !idx !n =
+      if idx == n
+      then acc
+      else go (acc + A.get arr idx) (idx+1) n
 
 data Benchmarks = FillArray | SumArray | Insertionsort | Mergesort | Quicksort | Cilksort
   deriving (Eq, Show, Read)
@@ -89,14 +144,33 @@ main = do
 
   runbench <-
     case benchmark of
-      FillArray -> bench_fill_array size
-      SumArray  -> bench_sum_array (Proxy :: Proxy Int64) size
-      Insertionsort ->
-              benchSorts
-                (Proxy :: Proxy Int64)
+      FillArray -> do
+        bench_fill_array_nocriterion size
+        bench_fill_array size
+      SumArray  -> do
+        bench_sum_array_nocriterion (Proxy :: Proxy Int64) size
+        bench_sum_array (Proxy :: Proxy Int64) size
+      Insertionsort -> do
+        benchSorts_nocriterion
+          (Proxy :: Proxy Int64)
+          size
+          [ ("LH/insertion", I.isort_top) ]
+
+        benchSorts
+          (Proxy :: Proxy Int64)
+          size
+          [ ("LH/insertion", I.isort_top) ]
+      Mergesort -> do
+        benchSorts_nocriterion
+                (Proxy :: Proxy Float)
                 size
-                [ ("LH/insertion", I.isort_top) ]
-      Mergesort ->
+                [
+                  ("LH/dps_mergesort", DMS.msort)
+                , ("LH/dps_mergesort_4way", DMS4.msort)
+                , ("LH/dps_mergesort_parallel", DMSP.msort)
+                , ("LH/dps_mergesort_4way_parallel", DMS4P.msort)
+                ]
+
         benchSorts
                 (Proxy :: Proxy Float)
                 size

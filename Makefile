@@ -28,7 +28,7 @@ all: checkdeps build bench
 bench: bench_verified bench_canonical_c bench_gibbon_c
 
 bench_verified:
-	$(HCTOOL) $(HCTOOLEXEC)  benchrunner $(RTFLAGS) -- FillArray 1000000
+	$(HCTOOL) $(HCTOOLEXEC)  benchrunner $(RTFLAGS) -- FillArray 10000000
 	$(HCTOOL) $(HCTOOLEXEC)  benchrunner $(RTFLAGS) -- Insertionsort 10
 	$(HCTOOL) $(HCTOOLEXEC)  benchrunner $(RTFLAGS) -- Insertionsort 100
 	$(HCTOOL) $(HCTOOLEXEC)  benchrunner $(RTFLAGS) -- Insertionsort 1000
@@ -46,13 +46,14 @@ bench_verified:
 	$(HCTOOL) $(HCTOOLEXEC)  benchrunner $(RTFLAGS) -- Cilksort 100000
 
 bench_gibbon_c:
-	$(HCTOOL) $(HCTOOLEXEC) criterion-interactive ./benchmarks/c/cbench.exe gib_fillarray int64 1000000
+	$(HCTOOL) $(HCTOOLEXEC) criterion-interactive ./benchmarks/c/cbench.exe gib_fillarray int64 10000000
 	$(HCTOOL) $(HCTOOLEXEC) criterion-interactive ./benchmarks/c/cbench.exe gib_insertionsort2 int64 10
 	$(HCTOOL) $(HCTOOLEXEC) criterion-interactive ./benchmarks/c/cbench.exe gib_insertionsort2 int64 100
 	$(HCTOOL) $(HCTOOLEXEC) criterion-interactive ./benchmarks/c/cbench.exe gib_insertionsort2 int64 1000
 
 bench_canonical_c:
-	$(HCTOOL) $(HCTOOLEXEC) criterion-interactive ./benchmarks/c/cbench.exe fillarray int64 1000000
+	$(HCTOOL) $(HCTOOLEXEC) criterion-interactive ./benchmarks/c/cbench.exe fillarray int64 10000000
+	$(HCTOOL) $(HCTOOLEXEC) criterion-interactive ./benchmarks/c/cbench.exe sumarray int64 10000000
 	$(HCTOOL) $(HCTOOLEXEC) criterion-interactive ./benchmarks/c/cbench.exe insertionsort int64 10
 	$(HCTOOL) $(HCTOOLEXEC) criterion-interactive ./benchmarks/c/cbench.exe insertionsort int64 100
 	$(HCTOOL) $(HCTOOLEXEC) criterion-interactive ./benchmarks/c/cbench.exe insertionsort int64 1000
@@ -72,6 +73,7 @@ endif
 
 build_c:
 	@cd benchmarks/c && make
+	cabal v2-build criterion-interactive
 
 checkdeps:
 	@echo -e "Using" $(HCTOOL) "to build Haskell stuff.\n"

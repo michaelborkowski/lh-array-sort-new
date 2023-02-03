@@ -7,7 +7,7 @@ synopsis:           Benchmark harness.
 
 executable benchrunner
     main-is:          Benchrunner.hs
-    -- other-modules:
+    other-modules:    Measure
     -- other-extensions:
     build-depends:      base >= 4.14 && <4.17
                       , lh-array-sort
@@ -15,6 +15,8 @@ executable benchrunner
                       , random
                       , deepseq
                       , split
+                      , monad-par
+                      , time
     default-language:   Haskell2010
     default-extensions: TupleSections
                         BangPatterns
@@ -22,6 +24,6 @@ executable benchrunner
                         RecordWildCards
                         ScopedTypeVariables
                         DeriveGeneric
-    ghc-options:        -Wall -Wcompat 
-                        -threaded -rtsopts 
+    ghc-options:        -Wall -Wcompat
+                        -threaded -rtsopts
                         -fdefer-typed-holes
