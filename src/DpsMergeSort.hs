@@ -3,9 +3,11 @@
 
 {-# LANGUAGE CPP #-}
 {-# LANGUAGE BangPatterns #-}
+{-# LANGUAGE LinearTypes  #-}
 
 module DpsMergeSort where
 
+import qualified Unsafe.Linear as Unsafe
 import qualified Language.Haskell.Liquid.Bag as B
 import           Language.Haskell.Liquid.ProofCombinators hiding ((?))
 import           ProofCombinators
@@ -78,9 +80,9 @@ msortInplace !src !tmp =
                                A.size xs == A.size zs && token xs == token zs } @-}
 msort' :: (Show a, Ord a) => A.Array a -> a -> A.Array a
 msort' src anyVal =
-  let (len, src') = A.size2 src
-      Ur (src'', _tmp) = A.alloc len anyVal (Ur . msortInplace src') in
-  _tmp `seq` src''
+  let (len, src1) = A.size2 src
+      Ur (src2, _tmp) = A.alloc len anyVal (Unsafe.toLinear (Ur . msortInplace src1)) in
+  _tmp `seq` src2
 
 -- finally, the top-level merge sort function
 {-@ msort :: { xs:(A.Array a) | left xs == 0 && right xs == size xs }

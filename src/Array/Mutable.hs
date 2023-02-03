@@ -3,6 +3,7 @@
 {-# LANGUAGE UnboxedTuples    #-}
 {-# LANGUAGE MagicHash        #-}
 {-# LANGUAGE BangPatterns     #-}
+{-# LANGUAGE LinearTypes      #-}
 
 -- The Strict pragma is not just for performance, it's necessary for correctness.
 -- Without it, this implementation contains a bug related to some thunk/effect
@@ -33,6 +34,7 @@ module Array.Mutable {-
 
   ) -} where
 
+import qualified Unsafe.Linear as Unsafe
 import           Control.DeepSeq ( NFData(..) )
 import qualified GHC.Exts as GHC
 
@@ -127,8 +129,10 @@ append (Array l1 _r1 !a1) (Array _l2 r2 _a2) = Array l1 r2 a1
 -- lem_slice_append :: Array a -> Array a -> ()
 -- lem_slice_append xs ys  = ()
 
-size2 :: Array a -> (Int, Array a)
-size2 !ar = (size ar, ar)
+size2 :: Array a %1-> (Int, Array a)
+size2 = Unsafe.toLinear go
+  where
+    go !ar = (size ar, ar)
 
 get2 :: Array a -> Int -> (a, Array a)
 get2 !ar i = (get ar i, ar)

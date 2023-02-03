@@ -25,25 +25,28 @@ module Array
 
 --------------------------------------------------------------------------------
 
-newtype Ur a = Ur a
-
 data Array a
 
-alloc :: Int -> a -> (Array a -> b) -> b
+alloc :: Int -> a -> (Array a %1-> Ur b) -> Ur b
 make :: Int -> a -> Array a
 size :: Array a -> Int
 get :: Array a -> Int -> a
 set :: Array a -> Int -> a -> Array a
 slice :: Array a -> Int -> Int -> Array a
 append :: Array a -> Array a -> Array a
-splitMid :: Array a -> (Array a, Array a)
-swap :: Array a -> Int -> Int -> Array a
-size2 :: Array a -> (Int, Array a)
+splitMid :: Array a %1-> (Array a, Array a)
+swap :: Array a %1-> Int -> Int -> Array a
+size2 :: Array a %1-> (Int, Array a)
 get2 :: Array a -> Int -> (a, Array a)
 slice2 :: Array a -> Int -> Int -> (Array a, Array a)
 copy2 :: Array a -> Int -> Array a -> Int -> Int -> (Array a, Array a)
 fromList :: [a] -> Array a
 toList :: Array a -> [a]
+
+-- TODO:
+size2 :: Array a %1-> (Ur Int, Array a)
+get2 :: Array a %1-> Int -> (Ur a, Array a)
+
 
 -- This doesn't belong here, but it's here for convenience.
 -- Parallel tuple combinator.

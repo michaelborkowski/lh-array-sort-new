@@ -11,6 +11,7 @@
 {-# LANGUAGE CPP           #-}
 {-# LANGUAGE GADTs         #-}
 {-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE LinearTypes   #-}
 
 module Array.List {-
   (
@@ -35,6 +36,7 @@ import           Prelude hiding (take, drop)
 import           Control.DeepSeq ( NFData(..) )
 import           System.IO.Unsafe
 import           System.Random
+import qualified Unsafe.Linear as Unsafe
 
 import           Language.Haskell.Liquid.ProofCombinators hiding ((?))
 import           ProofCombinators
@@ -95,8 +97,10 @@ size (Arr _ l r _) = r-l
 {-@ size2 :: xs:(Array a)
                -> (Int, Array a)<{
                       \n zs -> n == size xs && xs == zs }> @-}
-size2 :: Array a -> (Int, Array a)
-size2 xs = (size xs, xs)                           -- (Ur (size xs), xs)
+size2 :: Array a %1-> (Int, Array a)
+size2 = Unsafe.toLinear go
+  where
+    go xs = (size xs, xs)
 
 {-@ reflect listSize @-}
 {-@ listSize :: xs:_ -> Nat @-}

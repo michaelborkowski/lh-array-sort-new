@@ -1,6 +1,7 @@
 {-# LANGUAGE CPP           #-}
 {-# LANGUAGE BangPatterns  #-}
 {-# LANGUAGE DeriveFunctor #-}
+{-# LANGUAGE LinearTypes   #-}
 
 {-@ LIQUID "--reflection"  @-}
 -- {-@ LIQUID "--diff"        @-}
@@ -30,6 +31,8 @@ module Array
   , lma_gs, lma_gns, lma_swap, lma_swap_eql, lem_slice_append, lem_get_slice
   ) where
 
+import qualified Unsafe.Linear as Unsafe
+import           Data.Unrestricted.Linear (Ur(..))
 import           Prelude hiding (take, drop)
 import           Array.List ( lma_gs_list, lma_gns_list
                             , lem_take_conc, lem_drop_conc, lem_take_all
@@ -141,16 +144,9 @@ a .||. b = (a,b)
 
 --------------------------------------------------------------------------------
 
--- | Unrestricted values of type @a@ in a linear context.
-newtype Ur a = Ur a
-  deriving (Show, Read, Eq, Ord, Functor)
-
-instance NFData a => NFData (Ur a) where
-  rnf (Ur x) = rnf x `seq` ()
-
 {-# INLINE alloc #-}
 {-@ alloc :: i:Nat -> x:_ -> f:_ -> ret:_ @-}
-alloc :: Int -> a -> (Array a -> Ur b) -> Ur b
+alloc :: Int -> a -> (Array a %1-> Ur b) -> Ur b
 alloc i a f = f (make i a)
 
 -- advanced operations
@@ -160,11 +156,15 @@ alloc i a f = f (make i a)
                          -> { j:Int | 0 <= j && j < size xs }
                          -> { ys:(Array a) | size xs == size ys && token xs == token ys &&
                                              left xs == left ys && right xs == right ys } @-}
-swap :: Array a -> Int -> Int -> Array a
-swap xs i j = let xi   = get xs i
-                  xs'  = set xs i (get xs j)
-                  xs'' = set xs' j xi
-               in xs''
+swap :: Array a %1-> Int -> Int -> Array a
+swap = Unsafe.toLinear3 go
+  where
+    go xs i j =
+      let (xi, xs1) = get2 xs i
+          (xj, xs2) = get2 xs1 j
+          xs3 = set xs2 i xj
+          xs4 = set xs3 j xi
+      in xs4
 
 
 {-@ reflect splitMid @-}
@@ -176,11 +176,13 @@ swap xs i j = let xi   = get xs i
                 size (fst t) == div (size xs) 2 &&
                 size (snd t) == size xs - div (size xs) 2 &&
                 size xs = (size (fst t)) + (size (snd t)) } @-}
-splitMid :: Ord a => Array a -> (Array a, Array a)
-splitMid xs = (slice xs 0 m, slice xs m n)
+splitMid :: Ord a => Array a %1-> (Array a, Array a)
+splitMid = Unsafe.toLinear go
   where
-    n = size xs
-    m = n `div` 2
+    go xs = (slice xs 0 m, slice xs m n)
+      where
+        n = size xs
+        m = n `div` 2
 
 --------------------------------------------------------------------------------
 -- | Proofs

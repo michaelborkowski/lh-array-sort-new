@@ -52,7 +52,8 @@ library
       liquid-prelude,
       liquidhaskell,
       parallel,
-      monad-par
+      monad-par,
+      linear-base
   default-language: Haskell2010
   ghc-options: -Wall -Wcompat    -threaded 
                -fdefer-typed-holes
