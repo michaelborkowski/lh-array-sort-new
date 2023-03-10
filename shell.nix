@@ -9,7 +9,8 @@ let
                  }) {};
   ghc = pkgs.haskell.compiler.ghc8107;
   ghc901 = pkgs.haskell.compiler.ghc901;
-  stdenv = pkgs.overrideCC pkgs.stdenv pkgs.gcc11;
+  stdenv = pkgs.overrideCC pkgs.stdenv pkgs.gcc7;
+  gcc = pkgs.gcc7;
 in
   with pkgs;
   stdenv.mkDerivation {
