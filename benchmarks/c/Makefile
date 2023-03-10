@@ -2,23 +2,32 @@ CFILES   = $(wildcard *.c)
 OBJFILES = $(CFILES:.c=.o)
 OUT      = cbench.exe
 
-CC = gcc
-CFLAGS = -std=gnu11 -Wall -Wextra -Wpedantic -O3 -flto -fwhole-program -lm
-CDEBUG = -DCBENCH_DEBUG -O0 -g
+CLANG       := ~/chai/opencilk/bin/clang
+CLANG_FLAGS := -std=c11 -fuse-ld=lld -fopencilk
+GCC         := gcc
+GCC_FLAGS   := -std=gnu11 -lm -fcilkplus
+
+CC     := $(GCC)
+CFLAGS := $(GCC_FLAGS)
+CFLAGS += -Wall -Wextra -Wpedantic -O3 -flto -fwhole-program
+CDEBUG := -DCBENCH_DEBUG -O0 -g
+
 
 $(OUT): $(OBJFILES)
-ifdef DEBUG
+ifeq ($(DEBUG), 1)
 	$(CC) $(CFLAGS) $(CDEBUG) -o $@ $^
 else
 	$(CC) $(CFLAGS) -o $@ $^
 endif
 
+
 %.o: %.c
-ifdef DEBUG
+ifeq ($(DEBUG), 1)
 	$(CC) $(CFLAGS) $(CDEBUG) -c -o $@ $^
 else
 	$(CC) $(CFLAGS) -c -o $@ $^
 endif
+
 
 clean:
 	rm -f $(OBJFILES) $(OUT)

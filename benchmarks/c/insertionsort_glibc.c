@@ -16,33 +16,32 @@
    <https://www.gnu.org/licenses/>.  */
 
 
-#include "cbench.h"
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
 
-void *insertionsort_glibc (void *const pbase, size_t total_elems, size_t size,
-                    __compar_fn_t cmp)
-{
-    char *base_ptr = (char *) pbase;
-    char *const end_ptr1 = &base_ptr[size * (total_elems - 1)];
-    char *run_ptr;
+// -----------------------------------------------------------------------------
 
-    // copy into a fresh array.
-    run_ptr = base_ptr;
-    char *alloc_ptr = malloc(total_elems * size);
-    if (alloc_ptr == NULL) {
+void *insertionsort_glibc (void *const pbase, size_t total_elems, size_t size, __compar_fn_t cmp)
+{
+    // Copy into a fresh array.
+    char *cpy_ptr = malloc(total_elems * size);
+    if (cpy_ptr == NULL) {
         fprintf(stderr, "insertionsort: couldn't allocate");
         exit(1);
     }
-    memcpy(alloc_ptr, run_ptr, (size * total_elems));
+    memcpy(cpy_ptr, (char *) pbase, (size * total_elems));
 
-    // sort.
-    base_ptr = alloc_ptr;
-    char *const end_ptr = &base_ptr[size * (total_elems - 1)];
-    char *tmp_ptr = base_ptr;
+    // Main mutable state of the algorithm.
+    char *base_ptr = cpy_ptr;
+    char *run_ptr;
+    // [2023.03.10]: The glibc version sets this to base+size, why did we change it?
     // run_ptr = base_ptr + size;
     run_ptr = base_ptr;
+    char *const end_ptr = &base_ptr[size * (total_elems - 1)];
+    char *tmp_ptr = base_ptr;
+
+    // Sort.
     while ((run_ptr += size) <= end_ptr) {
         tmp_ptr = run_ptr - size;
         while ((*cmp) ((void *) run_ptr, (void *) tmp_ptr) < 0)
@@ -63,5 +62,5 @@ void *insertionsort_glibc (void *const pbase, size_t total_elems, size_t size,
             }
         }
     }
-    return (void *) alloc_ptr;
+    return (void *) cpy_ptr;
 }
