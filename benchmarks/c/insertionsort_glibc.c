@@ -20,20 +20,30 @@
 #include <string.h>
 #include <stdio.h>
 
+#include "helpers.h"
+
 // -----------------------------------------------------------------------------
+
+void insertionsort_glibc_inplace(void *const pbase, size_t total_elems, size_t size, __compar_fn_t cmp);
 
 void *insertionsort_glibc (void *const pbase, size_t total_elems, size_t size, __compar_fn_t cmp)
 {
     // Copy into a fresh array.
-    char *cpy_ptr = malloc(total_elems * size);
-    if (cpy_ptr == NULL) {
+    char *cpy = malloc(total_elems * size);
+    if (cpy == NULL) {
         fprintf(stderr, "insertionsort: couldn't allocate");
         exit(1);
     }
-    memcpy(cpy_ptr, (char *) pbase, (size * total_elems));
+    our_memcpy(cpy, (char *) pbase, (size * total_elems));
 
-    // Main mutable state of the algorithm.
-    char *base_ptr = cpy_ptr;
+    // Sort "cpy" in place.
+    insertionsort_glibc_inplace(cpy, total_elems, size, cmp);
+    return cpy;
+}
+
+void insertionsort_glibc_inplace(void *const pbase, size_t total_elems, size_t size, __compar_fn_t cmp)
+{
+    char *base_ptr = pbase;
     char *run_ptr;
     // [2023.03.10]: The glibc version sets this to base+size, why did we change it?
     // run_ptr = base_ptr + size;
@@ -62,5 +72,5 @@ void *insertionsort_glibc (void *const pbase, size_t total_elems, size_t size, _
             }
         }
     }
-    return (void *) cpy_ptr;
+    return;
 }

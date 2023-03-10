@@ -8,6 +8,7 @@
 #include <errno.h>
 
 #include "benchmarks.h"
+#include "helpers.h"
 #include "cbench.h"
 
 // -----------------------------------------------------------------------------
@@ -15,9 +16,42 @@
 // Number of benchmark iterations.
 const size_t NUM_ITERS = 10;
 
-void simple_bench(const struct benchmark_t *b);
+void simple_bench(const benchmark_t *b);
+int test_main(int argc, char** argv);
+int bench_main(int argc, char** argv);
 
 int main(int argc, char** argv)
+{
+    if (strcmp(argv[1], "test") == 0) {
+        return test_main(argc-1, &argv[1]);
+    } else {
+        return bench_main(argc-1, &argv[1]);
+    }
+}
+
+int test_main(int argc, char** argv)
+{
+    (void) argc;
+    (void) argv;
+
+    // Test slice functions.
+    void *nums = (void*) fill_array_rand_seq(16);
+    slice_t s0 = (slice_t) { nums, 16, sizeof(int64_t) };
+    slice_print(&s0);
+
+    // size_t len = slice_length(&s0);
+    // slice_prod_t halves = slice_split_at(&s0, len / 2);
+    // slice_print(&(halves.left));
+    // slice_print(&(halves.right));
+
+    void *sorted = mergesort(s0.base, s0.total_elems, s0.elt_size, compare_int64s);
+    slice_t sorted_sl = (slice_t) {sorted, 16, sizeof(int64_t)};
+    slice_print(&sorted_sl);
+
+    return 0;
+}
+
+int bench_main(int argc, char** argv)
 {
     if (argc < 2) {
         fprintf(stderr, "USAGE: ./cbench.exe BENCHMARK_NAME\n");
@@ -29,7 +63,7 @@ int main(int argc, char** argv)
         total_elems = atoll(argv[2]);
     }
 
-    struct benchmark_t *b = malloc(sizeof(struct benchmark_t));
+    benchmark_t *b = malloc(sizeof(benchmark_t));
 
     if (prefix("fillarray", argv[1])) {
         printf("benchmarking C fill array.\n");
@@ -74,7 +108,7 @@ int main(int argc, char** argv)
 }
 
 // Run a function N times and report mean/median.
-void simple_bench(const struct benchmark_t *b)
+void simple_bench(const benchmark_t *b)
 {
     double batchtime = 0.0, itertime = 0.0;
     struct timespec begin_timed, end_timed;

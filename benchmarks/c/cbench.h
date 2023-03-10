@@ -47,7 +47,7 @@ static inline char *benchmark_tag_str(enum benchmark_tag tag)
     }
 }
 
-struct benchmark_t {
+typedef struct benchmark_t_ {
     enum benchmark_tag tag;
 
     union {
@@ -89,29 +89,7 @@ struct benchmark_t {
         };
 
     };
-};
+} benchmark_t;
 
-// Helpers.
-
-static inline double difftimespecs(struct timespec* t0, struct timespec* t1)
-{
-    return (double)(t1->tv_sec - t0->tv_sec)
-            + ((double)(t1->tv_nsec - t0->tv_nsec) / 1000000000.0);
-}
-
-static inline int compare_int64s(const void* a, const void* b)
-{
-    int64_t arg1 = *(const int64_t*)a;
-    int64_t arg2 = *(const int64_t*)b;
-
-    if (arg1 < arg2) return -1;
-    if (arg1 > arg2) return 1;
-    return 0;
-}
-
-static inline bool prefix(const char *pre, const char *str)
-{
-    return strncmp(pre, str, strlen(pre)) == 0;
-}
 
 #endif

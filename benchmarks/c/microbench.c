@@ -50,7 +50,7 @@ int64_t* __attribute__ ((noinline)) fill_array_rand_seq(size_t total_elems)
     int64_t *elt = nums;
     for (uint64_t i = 0; i <= total_elems-1; i++) {
         elt = (int64_t*) nums + i;
-        *elt = 1;
+        *elt = (rand() % 1024);
     }
     return nums;
 }
