@@ -4,9 +4,10 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <stdbool.h>
-#include <uthash.h>
+// #include <uthash.h>
 #include <assert.h>
 #include <limits.h>
+#include <time.h>
 
 /* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
  * Translating Gibbon's types to C
@@ -138,100 +139,6 @@ static const uintptr_t GIB_POINTER_MASK = (UINTPTR_MAX >> GIB_TAG_BITS);
 void *gib_alloc(size_t size);
 void *gib_counted_alloc(size_t size);
 void *gib_scoped_alloc(size_t size);
-
-
-/* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
- * Arenas
- * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
- */
-
-typedef struct gib_arena {
-  int ind;
-  char *mem; // TODO(vollmerm): make this a list of chunks?
-  void *reflist;
-} GibArena;
-
-GibArena *gib_alloc_arena(void);
-void gib_free_arena(GibArena *ar);
-GibCursor gib_extend_arena(GibArena *ar, int size);
-
-
-/* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
- * Arena-based dictionaries
- * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
- */
-
-typedef struct gib_symdict {
-  struct gib_symdict *next;
-  GibSym key;
-  void *ptrval;
-} GibSymDict;
-
-
-GibSymDict *gib_dict_alloc(GibArena *ar);
-GibSymDict *gib_dict_insert_ptr(GibArena *ar, GibSymDict *ptr, GibSym key, GibPtr val);
-GibPtr gib_dict_lookup_ptr(GibSymDict *ptr, GibSym key);
-
-
-/* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
- * Sets
- * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
- */
-
-typedef struct gib_symset {
-  int val;
-  UT_hash_handle hh;
-} GibSymSet;
-
-
-GibSymSet *gib_empty_set(void);
-GibSymSet *gib_insert_set(GibSymSet *set, int sym);
-GibBool gib_contains_set(GibSymSet *set, int sym);
-
-
-/* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
- * Sym Hash
- * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
- */
-
-// TODO(): val needs to be GibInt.
-struct gib_sym_hash {
-  int key;
-  int val;
-  UT_hash_handle hh;
-};
-
-typedef struct gib_sym_hash GibSymHash;
-typedef struct gib_sym_hash GibIntHash;
-
-GibSymHash *gib_empty_hash(void);
-GibSymHash *gib_insert_hash(GibSymHash *hash, int k, int v);
-GibSym gib_lookup_hash(GibSymHash *hash, int k);
-GibBool gib_contains_hash(GibSymHash *hash, int sym);
-
-
-/* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
- * Symbol table
- * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
- */
-
-#define MAX_SYMBOL_LEN 256
-
-typedef struct gib_symtable {
-    GibSym idx;                 /* key */
-    char value[MAX_SYMBOL_LEN];
-    UT_hash_handle hh;         /* makes this structure hashable */
-} GibSymtable;
-
-void gib_add_symbol(GibSym idx, char *value);
-void gib_set_newline(GibSym idx);
-void gib_set_space(GibSym idx);
-void gib_set_comma(GibSym idx);
-void gib_set_leftparen(GibSym idx);
-void gib_set_rightparen(GibSym idx);
-int gib_print_symbol(GibSym idx);
-GibSym gib_gensym(void);
-void gib_free_symtable(void);
 
 
 /* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
+#include <stdbool.h>
 #include <inttypes.h>
 #include <string.h>
 #include <time.h>
@@ -17,7 +18,7 @@ int bench_gibbon_fillarray(int argc, char** argv);
 
 // Canonical, hand-written or glibc or some such code.
 int bench_canonical_sorting(int argc, char** argv);
-int bench_canonical_fillarray(int argc, char** argv);
+int bench_canonical_fillarray(int argc, char** argv, bool seq);
 int bench_canonical_sumarray(int argc, char** argv);
 
 int main(int argc, char** argv)
@@ -37,8 +38,13 @@ int main(int argc, char** argv)
     }
     else if (strcmp(argv[1], "fillarray") == 0) {
         printf("benchmarking canonical fill array.\n");
-        bench_canonical_fillarray(argc,argv);
-    } else if (strcmp(argv[1], "sumarray") == 0) {
+        bench_canonical_fillarray(argc,argv,true);
+    }
+    else if (strcmp(argv[1], "fillarray_par") == 0) {
+        printf("benchmarking canonical fill array (parallel).\n");
+        bench_canonical_fillarray(argc,argv,false);
+    }
+    else if (strcmp(argv[1], "sumarray") == 0) {
         printf("benchmarking canonical sum array.\n");
         bench_canonical_sumarray(argc,argv);
     } else {
@@ -53,8 +59,7 @@ int main(int argc, char** argv)
 int compare_int64s(const void* a, const void* b);
 int compare_ints(const void* a, const void* b);
 int compare_doubles(const void* a, const void* b);
-static void check_glibc_sortedness(void *const pbase, size_t total_elems, size_t size,
-                    __compar_fn_t cmp);
+static void check_glibc_sortedness(void *const pbase, size_t total_elems, size_t size, __compar_fn_t cmp);
 
 int bench_canonical_sorting(int argc, char** argv)
 {
@@ -146,34 +151,7 @@ int bench_canonical_sorting(int argc, char** argv)
     return 0;
 }
 
-// cilksort.c contains a function called fill_sort...
-int __attribute__ ((noinline)) fill_array2(uint32_t N, int64_t x)
-{
-    void *array;
-    array = (int64_t*) malloc(N * sizeof(int64_t));
-    if (array == NULL) {
-        fprintf(stderr, "Couldn't allocate memory for input array.\n");
-    }
-    int64_t *elt = array;
-    for (uint32_t i = 0; i <= N-1; i++) {
-        elt = (int64_t*) array + i;
-        *elt = x;
-    }
-    free(array);
-}
-
-int64_t __attribute__ ((noinline)) sum_array2(uint32_t N, int64_t *array)
-{
-    int64_t sum = 0;
-    int64_t *elt = array;
-    for (uint32_t i = 0; i <= N-1; i++) {
-        elt = (int64_t*) (array + i);
-        sum += *elt;
-    }
-    return sum;
-}
-
-int bench_canonical_fillarray(int argc, char** argv)
+int bench_canonical_fillarray(int argc, char** argv, const bool seq)
 {
     char *algo = argv[1];
     char *elt_type = argv[2];
@@ -208,7 +186,11 @@ int bench_canonical_fillarray(int argc, char** argv)
 
             // The main event.
             for (i = 0; i <= rounds; i++) {
-                fill_array2(N, 1000);
+                if (seq) {
+                    fill_array_seq(N, 1000);
+                } else {
+                    fill_array_par(N, 1000);
+                }
             }
 
             printf("END_BENCH\n");
@@ -283,7 +265,7 @@ int bench_canonical_sumarray(int argc, char** argv)
 
             // The main event.
             for (i = 0; i <= rounds; i++) {
-                sum = sum_array2(N, array);
+                sum = sum_array_seq(N, array);
             }
 
             printf("END_BENCH\n");
@@ -344,7 +326,7 @@ int compare_doubles(const void* a, const void* b)
 }
 
 static void check_glibc_sortedness(void *const pbase, size_t total_elems, size_t size,
-                    __compar_fn_t cmp)
+                                   __compar_fn_t cmp)
 {
     char *base_ptr = (char *) pbase;
     char *const end_ptr1 = &base_ptr[size * (total_elems - 1)];

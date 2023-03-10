@@ -24,8 +24,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "cbench.h"
-
 typedef int (*__compar_d_fn_t) (const void *, const void *, void *);
 
 
