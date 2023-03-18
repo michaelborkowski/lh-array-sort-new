@@ -8,16 +8,19 @@
 
 // -----------------------------------------------------------------------------
 
+// Global.
+__compar_fn_t CMP = NULL;
+
 // Sequential.
-void writesort1(__compar_fn_t cmp, slice_t src, slice_t tmp);
-void writesort2(__compar_fn_t cmp, slice_t src, slice_t tmp);
-void merge(__compar_fn_t cmp, slice_t left, slice_t right, slice_t dst);
+void writesort1(slice_t src, slice_t tmp);
+void writesort2(slice_t src, slice_t tmp);
+void merge(slice_t left, slice_t right, slice_t dst);
 
 // Parallel.
-void writesort1_par(__compar_fn_t cmp, slice_t src, slice_t tmp);
-void writesort2_par(__compar_fn_t cmp, slice_t src, slice_t tmp);
-void merge_par(__compar_fn_t cmp, slice_t left, slice_t right, slice_t dst);
-size_t binary_search(__compar_fn_t cmp, slice_t *sl, void *query);
+void writesort1_par(slice_t src, slice_t tmp);
+void writesort2_par(slice_t src, slice_t tmp);
+void merge_par(slice_t left, slice_t right, slice_t dst);
+size_t binary_search(slice_t *sl, void *query);
 
 #define SEQCUTOFF 4096
 
@@ -41,7 +44,9 @@ void *mergesort(void *const pbase, size_t total_elems, size_t size, __compar_fn_
 
     slice_t cpy_sl = (slice_t) {cpy, total_elems, size};
     slice_t tmp_sl = (slice_t) {tmp, total_elems, size};
-    writesort1(cmp, cpy_sl, tmp_sl);
+    CMP = cmp;
+    writesort1(cpy_sl, tmp_sl);
+    CMP = NULL;
 
     return cpy;
 }
@@ -66,7 +71,9 @@ void *mergesort_par(void *const pbase, size_t total_elems, size_t size, __compar
 
     slice_t cpy_sl = (slice_t) {cpy, total_elems, size};
     slice_t tmp_sl = (slice_t) {tmp, total_elems, size};
-    writesort1_par(cmp, cpy_sl, tmp_sl);
+    CMP = cmp;
+    writesort1_par(cpy_sl, tmp_sl);
+    CMP = NULL;
 
     return cpy;
 }
@@ -74,7 +81,7 @@ void *mergesort_par(void *const pbase, size_t total_elems, size_t size, __compar
 // -----------------------------------------------------------------------------
 
 // Uses "tmp" to sort "src" in place.
-void writesort1(__compar_fn_t cmp, slice_t src, slice_t tmp)
+void writesort1(slice_t src, slice_t tmp)
 {
     size_t len = slice_length(&src);
     if (len == 1) {
@@ -83,35 +90,35 @@ void writesort1(__compar_fn_t cmp, slice_t src, slice_t tmp)
     size_t half = len / 2;
     slice_prod_t splitsrc = slice_split_at(&src, half);
     slice_prod_t splittmp = slice_split_at(&tmp, half);
-    writesort2(cmp, splitsrc.left, splittmp.left);
-    writesort2(cmp, splitsrc.right, splittmp.right);
-    merge(cmp, splittmp.left, splittmp.right, src);
+    writesort2(splitsrc.left, splittmp.left);
+    writesort2(splitsrc.right, splittmp.right);
+    merge(splittmp.left, splittmp.right, src);
     return;
 }
 
 // Uses "tmp" to sort "src" in place.
-void writesort1_par(__compar_fn_t cmp, slice_t src, slice_t tmp)
+void writesort1_par(slice_t src, slice_t tmp)
 {
     size_t len = slice_length(&src);
     if (len == 1) {
         return;
     }
     if (len < SEQCUTOFF) {
-        writesort1(cmp, src, tmp);
+        writesort1(src, tmp);
         return;
     }
     size_t half = len / 2;
     slice_prod_t splitsrc = slice_split_at(&src, half);
     slice_prod_t splittmp = slice_split_at(&tmp, half);
-    cilk_spawn writesort2_par(cmp, splitsrc.left, splittmp.left);
-    writesort2_par(cmp, splitsrc.right, splittmp.right);
+    cilk_spawn writesort2_par(splitsrc.left, splittmp.left);
+    writesort2_par(splitsrc.right, splittmp.right);
     cilk_sync;
-    merge_par(cmp, splittmp.left, splittmp.right, src);
+    merge_par(splittmp.left, splittmp.right, src);
     return;
 }
 
 // Uses "src" to sort "tmp" in place.
-void writesort2(__compar_fn_t cmp, slice_t src, slice_t tmp)
+void writesort2(slice_t src, slice_t tmp)
 {
     size_t len = slice_length(&src);
     if (len == 1) {
@@ -121,14 +128,14 @@ void writesort2(__compar_fn_t cmp, slice_t src, slice_t tmp)
     size_t half = len / 2;
     slice_prod_t splitsrc = slice_split_at(&src, half);
     slice_prod_t splittmp = slice_split_at(&tmp, half);
-    writesort1(cmp, splitsrc.left, splittmp.left);
-    writesort1(cmp, splitsrc.right, splittmp.right);
-    merge(cmp, splitsrc.left, splitsrc.right, tmp);
+    writesort1(splitsrc.left, splittmp.left);
+    writesort1(splitsrc.right, splittmp.right);
+    merge(splitsrc.left, splitsrc.right, tmp);
     return;
 }
 
 // Uses "src" to sort "tmp" in place.
-void writesort2_par(__compar_fn_t cmp, slice_t src, slice_t tmp)
+void writesort2_par(slice_t src, slice_t tmp)
 {
     size_t len = slice_length(&src);
     if (len == 1) {
@@ -136,26 +143,26 @@ void writesort2_par(__compar_fn_t cmp, slice_t src, slice_t tmp)
         return;
     }
     if (len < SEQCUTOFF) {
-        writesort2(cmp, src, tmp);
+        writesort2(src, tmp);
         return;
     }
     size_t half = len / 2;
     slice_prod_t splitsrc = slice_split_at(&src, half);
     slice_prod_t splittmp = slice_split_at(&tmp, half);
-    cilk_spawn writesort1_par(cmp, splitsrc.left, splittmp.left);
-    writesort1_par(cmp, splitsrc.right, splittmp.right);
+    cilk_spawn writesort1_par(splitsrc.left, splittmp.left);
+    writesort1_par(splitsrc.right, splittmp.right);
     cilk_sync;
-    merge_par(cmp, splitsrc.left, splitsrc.right, tmp);
+    merge_par(splitsrc.left, splitsrc.right, tmp);
     return;
 }
 
 // -----------------------------------------------------------------------------
 
-void merge_par(__compar_fn_t cmp, slice_t left, slice_t right, slice_t dst)
+void merge_par(slice_t left, slice_t right, slice_t dst)
 {
     size_t len = slice_length(&dst);
     if (len < SEQCUTOFF) {
-        merge(cmp, left, right, dst);
+        merge(left, right, dst);
         return;
     }
     size_t n1 = slice_length(&left);
@@ -166,7 +173,7 @@ void merge_par(__compar_fn_t cmp, slice_t left, slice_t right, slice_t dst)
     }
     size_t mid1 = n1 / 2;
     void *pivot = slice_nth(&left, mid1);
-    size_t mid2 = binary_search(cmp, &right, pivot);
+    size_t mid2 = binary_search(&right, pivot);
     slice_t left_l = slice_narrow(&left, 0, mid1);
     slice_t left_r = slice_narrow(&left, mid1+1, (n1-(mid1+1)));
     slice_t right_l = slice_narrow(&right, 0, mid2);
@@ -174,13 +181,13 @@ void merge_par(__compar_fn_t cmp, slice_t left, slice_t right, slice_t dst)
     slice_inplace_update(&dst, mid1+mid2, pivot);
     slice_t dst_l = slice_narrow(&dst, 0, mid1+mid2);
     slice_t dst_r = slice_narrow(&dst, mid1+mid2+1, len-(mid1+mid2+1));
-    cilk_spawn merge_par(cmp, left_l, right_l, dst_l);
-    merge_par(cmp, left_r, right_r, dst_r);
+    cilk_spawn merge_par(left_l, right_l, dst_l);
+    merge_par(left_r, right_r, dst_r);
     cilk_sync;
     return;
 }
 
-size_t binary_search(__compar_fn_t cmp, slice_t *sl, void *query)
+size_t binary_search(slice_t *sl, void *query)
 {
     size_t lo = 0;
     size_t hi = slice_length(sl);
@@ -193,7 +200,7 @@ size_t binary_search(__compar_fn_t cmp, slice_t *sl, void *query)
         n = hi - lo;
         mid = lo + (n/2);
         pivot = slice_nth(sl, mid);
-        tst = cmp(query, pivot);
+        tst = (*CMP)(query, pivot);
         if (tst == 0) {
             return mid;
         }
@@ -207,7 +214,7 @@ size_t binary_search(__compar_fn_t cmp, slice_t *sl, void *query)
     return lo;
 }
 
-void merge(__compar_fn_t cmp, slice_t left, slice_t right, slice_t dst)
+void merge(slice_t left, slice_t right, slice_t dst)
 {
     size_t i=0, j=0, k=0;
     size_t n1 = slice_length(&left);
@@ -218,7 +225,7 @@ void merge(__compar_fn_t cmp, slice_t left, slice_t right, slice_t dst)
     while (i < n1 && j < n2) {
         elt_l = slice_nth(&left, i);
         elt_r = slice_nth(&right, j);
-        if ((*cmp)(elt_l, elt_r) <= 0) {
+        if ((*CMP)(elt_l, elt_r) <= 0) {
             slice_inplace_update(&dst, k, elt_l);
             i++;
         } else {
