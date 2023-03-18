@@ -23,7 +23,7 @@ typedef int (*__compar_fn_t) (const void *, const void *);
 
 // Sort function types.
 typedef void* (*sort_setup_fn_t) (size_t total_elems);
-typedef void* (*sort_run_fn_t) (void *const pbase, size_t total_elems, size_t size, __compar_fn_t cmp);
+typedef void* (*sort_run_fn_t) (void *const pbase, size_t total_elems, size_t elt_size, __compar_fn_t cmp);
 typedef void  (*sort_teardown_fn_t) (void *array);
 
 // A tagged union that helps abstract over running different types of benchmarks.
@@ -84,7 +84,7 @@ typedef struct benchmark_t_ {
             // Arguments to fn.
             // void *const sort_pbase;
             size_t sort_total_elems;
-            size_t sort_size;
+            size_t sort_elt_size;
             __compar_fn_t sort_cmp;
         };
 

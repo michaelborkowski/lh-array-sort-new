@@ -11,6 +11,7 @@ typedef int (*__compar_fn_t) (const void *, const void *);
 void *insertionsort_glibc (void *const pbase, size_t total_elems, size_t size, __compar_fn_t cmp);
 void *insertionsort_glibc_inplace(void *const pbase, size_t total_elems, size_t size, __compar_fn_t cmp);
 void *mergesort (void *const pbase, size_t total_elems, size_t size, __compar_fn_t cmp);
+void *mergesort_par(void *const pbase, size_t total_elems, size_t size, __compar_fn_t cmp);
 
 // Microbenchmarks.
 int64_t* __attribute__ ((noinline)) fill_array_seq(size_t total_elems, int64_t val);

@@ -1,19 +1,28 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
+#include <cilk/cilk.h>
 
 #include "helpers.h"
 #include "benchmarks.h"
 
 // -----------------------------------------------------------------------------
 
-#define GOTO_INSERTION 10
-
+// Sequential.
 void writesort1(__compar_fn_t cmp, slice_t src, slice_t tmp);
 void writesort2(__compar_fn_t cmp, slice_t src, slice_t tmp);
 void merge(__compar_fn_t cmp, slice_t left, slice_t right, slice_t dst);
 
-void *mergesort (void *const pbase, size_t total_elems, size_t size, __compar_fn_t cmp)
+// Parallel.
+void writesort1_par(__compar_fn_t cmp, slice_t src, slice_t tmp);
+void writesort2_par(__compar_fn_t cmp, slice_t src, slice_t tmp);
+void merge_par(__compar_fn_t cmp, slice_t left, slice_t right, slice_t dst);
+size_t binary_search(__compar_fn_t cmp, slice_t *sl, void *query);
+
+#define SEQCUTOFF 4096
+
+// Sequential mergesort.
+void *mergesort(void *const pbase, size_t total_elems, size_t size, __compar_fn_t cmp)
 {
     // Copy into a fresh array.
     char *cpy = malloc(total_elems * size);
@@ -37,6 +46,33 @@ void *mergesort (void *const pbase, size_t total_elems, size_t size, __compar_fn
     return cpy;
 }
 
+// Parallel mergesort.
+void *mergesort_par(void *const pbase, size_t total_elems, size_t size, __compar_fn_t cmp)
+{
+    // Copy into a fresh array.
+    char *cpy = malloc(total_elems * size);
+    if (cpy == NULL) {
+        fprintf(stderr, "mergesort: couldn't allocate");
+        exit(1);
+    }
+    our_memcpy(cpy, (char *) pbase, (size * total_elems));
+
+    // Temporary buffer.
+    char *tmp = malloc(total_elems * size);
+    if (tmp == NULL) {
+        fprintf(stderr, "mergesort: couldn't allocate");
+        exit(1);
+    }
+
+    slice_t cpy_sl = (slice_t) {cpy, total_elems, size};
+    slice_t tmp_sl = (slice_t) {tmp, total_elems, size};
+    writesort1_par(cmp, cpy_sl, tmp_sl);
+
+    return cpy;
+}
+
+// -----------------------------------------------------------------------------
+
 // Uses "tmp" to sort "src" in place.
 void writesort1(__compar_fn_t cmp, slice_t src, slice_t tmp)
 {
@@ -44,15 +80,33 @@ void writesort1(__compar_fn_t cmp, slice_t src, slice_t tmp)
     if (len == 1) {
         return;
     }
-    // if (len < GOTO_INSERTION) {
-    //     insertionsort_glibc_inplace(src.base, src.total_elems, src.elt_size, cmp);
-    // }
     size_t half = len / 2;
     slice_prod_t splitsrc = slice_split_at(&src, half);
     slice_prod_t splittmp = slice_split_at(&tmp, half);
     writesort2(cmp, splitsrc.left, splittmp.left);
     writesort2(cmp, splitsrc.right, splittmp.right);
     merge(cmp, splittmp.left, splittmp.right, src);
+    return;
+}
+
+// Uses "tmp" to sort "src" in place.
+void writesort1_par(__compar_fn_t cmp, slice_t src, slice_t tmp)
+{
+    size_t len = slice_length(&src);
+    if (len == 1) {
+        return;
+    }
+    if (len < SEQCUTOFF) {
+        writesort1(cmp, src, tmp);
+        return;
+    }
+    size_t half = len / 2;
+    slice_prod_t splitsrc = slice_split_at(&src, half);
+    slice_prod_t splittmp = slice_split_at(&tmp, half);
+    cilk_spawn writesort2_par(cmp, splitsrc.left, splittmp.left);
+    writesort2_par(cmp, splitsrc.right, splittmp.right);
+    cilk_sync;
+    merge_par(cmp, splittmp.left, splittmp.right, src);
     return;
 }
 
@@ -64,10 +118,6 @@ void writesort2(__compar_fn_t cmp, slice_t src, slice_t tmp)
         slice_copy(&src, &tmp);
         return;
     }
-    // if (len < GOTO_INSERTION) {
-    //     slice_copy(&src, &tmp);
-    //     insertionsort_glibc_inplace(tmp.base, tmp.total_elems, tmp.elt_size, cmp);
-    // }
     size_t half = len / 2;
     slice_prod_t splitsrc = slice_split_at(&src, half);
     slice_prod_t splittmp = slice_split_at(&tmp, half);
@@ -75,6 +125,86 @@ void writesort2(__compar_fn_t cmp, slice_t src, slice_t tmp)
     writesort1(cmp, splitsrc.right, splittmp.right);
     merge(cmp, splitsrc.left, splitsrc.right, tmp);
     return;
+}
+
+// Uses "src" to sort "tmp" in place.
+void writesort2_par(__compar_fn_t cmp, slice_t src, slice_t tmp)
+{
+    size_t len = slice_length(&src);
+    if (len == 1) {
+        slice_copy(&src, &tmp);
+        return;
+    }
+    if (len < SEQCUTOFF) {
+        writesort2(cmp, src, tmp);
+        return;
+    }
+    size_t half = len / 2;
+    slice_prod_t splitsrc = slice_split_at(&src, half);
+    slice_prod_t splittmp = slice_split_at(&tmp, half);
+    cilk_spawn writesort1_par(cmp, splitsrc.left, splittmp.left);
+    writesort1_par(cmp, splitsrc.right, splittmp.right);
+    cilk_sync;
+    merge_par(cmp, splitsrc.left, splitsrc.right, tmp);
+    return;
+}
+
+// -----------------------------------------------------------------------------
+
+void merge_par(__compar_fn_t cmp, slice_t left, slice_t right, slice_t dst)
+{
+    size_t len = slice_length(&dst);
+    if (len < SEQCUTOFF) {
+        merge(cmp, left, right, dst);
+        return;
+    }
+    size_t n1 = slice_length(&left);
+    size_t n2 = slice_length(&right);
+    if (n1 == 0) {
+        slice_copy_par(&right, &dst);
+        return;
+    }
+    size_t mid1 = n1 / 2;
+    void *pivot = slice_nth(&left, mid1);
+    size_t mid2 = binary_search(cmp, &right, pivot);
+    slice_t left_l = slice_narrow(&left, 0, mid1);
+    slice_t left_r = slice_narrow(&left, mid1+1, (n1-(mid1+1)));
+    slice_t right_l = slice_narrow(&right, 0, mid2);
+    slice_t right_r = slice_narrow(&right, mid2, n2-mid2);
+    slice_inplace_update(&dst, mid1+mid2, pivot);
+    slice_t dst_l = slice_narrow(&dst, 0, mid1+mid2);
+    slice_t dst_r = slice_narrow(&dst, mid1+mid2+1, len-(mid1+mid2+1));
+    cilk_spawn merge_par(cmp, left_l, right_l, dst_l);
+    merge_par(cmp, left_r, right_r, dst_r);
+    cilk_sync;
+    return;
+}
+
+size_t binary_search(__compar_fn_t cmp, slice_t *sl, void *query)
+{
+    size_t lo = 0;
+    size_t hi = slice_length(sl);
+
+    size_t n, mid;
+    void *pivot;
+    int tst;
+
+    while (hi > lo) {
+        n = hi - lo;
+        mid = lo + (n/2);
+        pivot = slice_nth(sl, mid);
+        tst = cmp(query, pivot);
+        if (tst == 0) {
+            return mid;
+        }
+        if (tst < 0) {
+            hi = mid;
+        } else {
+            lo = mid+1;
+        }
+    }
+
+    return lo;
 }
 
 void merge(__compar_fn_t cmp, slice_t left, slice_t right, slice_t dst)
@@ -98,6 +228,7 @@ void merge(__compar_fn_t cmp, slice_t left, slice_t right, slice_t dst)
         k++;
     }
 
+    // Use slice_copy.
     while (i < n1) {
         elt_l = slice_nth(&left, i);
         slice_inplace_update(&dst, k, elt_l);
@@ -105,6 +236,7 @@ void merge(__compar_fn_t cmp, slice_t left, slice_t right, slice_t dst)
         k++;
     }
 
+    // Use slice_copy.
     while (j < n2) {
         elt_r = slice_nth(&right, j);
         slice_inplace_update(&dst, k, elt_r);

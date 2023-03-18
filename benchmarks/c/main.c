@@ -23,9 +23,9 @@ int bench_main(int argc, char** argv);
 int main(int argc, char** argv)
 {
     if (strcmp(argv[1], "test") == 0) {
-        return test_main(argc-1, &argv[1]);
+        return test_main(argc, argv);
     } else {
-        return bench_main(argc-1, &argv[1]);
+        return bench_main(argc, argv);
     }
 }
 
@@ -35,18 +35,23 @@ int test_main(int argc, char** argv)
     (void) argv;
 
     // Test slice functions.
-    void *nums = (void*) fill_array_rand_seq(16);
-    slice_t s0 = (slice_t) { nums, 16, sizeof(int64_t) };
-    slice_print(&s0);
+    size_t n = 10;
+    void *nums = (void*) fill_array_rand_seq(n);
+    slice_t s0 = (slice_t) { nums, n, sizeof(int64_t) };
+    size_t len = slice_length(&s0);
+    slice_prod_t halves = slice_split_at(&s0, len / 2);
+    assert(slice_length(&(halves.left)) == 5);
+    assert(slice_length(&(halves.right)) == 5);
+    assert(compare_int64s(slice_nth(&(halves.left), 4), slice_nth(&s0, 4)) == 0);
+    assert(compare_int64s(slice_nth(&(halves.right), 0), slice_nth(&s0, 5)) == 0);
 
-    // size_t len = slice_length(&s0);
-    // slice_prod_t halves = slice_split_at(&s0, len / 2);
-    // slice_print(&(halves.left));
-    // slice_print(&(halves.right));
-
-    void *sorted = mergesort(s0.base, s0.total_elems, s0.elt_size, compare_int64s);
-    slice_t sorted_sl = (slice_t) {sorted, 16, sizeof(int64_t)};
-    slice_print(&sorted_sl);
+    // Test sorting.
+    size_t len2 = 8000000;
+    void *nums2 = (void*) fill_array_rand_seq(len2);
+    slice_t s2 = (slice_t) { nums2, len2, sizeof(int64_t) };
+    void *sorted = mergesort_par(s2.base, s2.total_elems, s2.elt_size, compare_int64s);
+    slice_t sorted_sl = (slice_t) {sorted, len2, sizeof(int64_t)};
+    slice_assert_sorted(compare_int64s, &sorted_sl);
 
     return 0;
 }
@@ -91,10 +96,17 @@ int bench_main(int argc, char** argv)
         b->sort_teardown = free;
         b->sort_run = insertionsort_glibc;
         b->sort_total_elems = total_elems;
-        b->sort_size = sizeof(int64_t);
+        b->sort_elt_size = sizeof(int64_t);
         b->sort_cmp = compare_int64s;
         if (strcmp(argv[1], "sort_insertion_glibc") == 0) {
             b->sort_run = insertionsort_glibc;
+        } else if (strcmp(argv[1], "sort_mergesort_seq") == 0) {
+            b->sort_run = mergesort;
+        } else if (strcmp(argv[1], "sort_mergesort_par") == 0) {
+            b->sort_run = mergesort_par;
+        } else {
+            fprintf(stderr, "Unknown benchmark: %s", argv[1]);
+            exit(1);
         }
     } else {
         fprintf(stderr, "Unknown benchmark: %s", argv[1]);
@@ -169,12 +181,16 @@ void simple_bench(const benchmark_t *b)
             // Run the benchmark.
             for (size_t i = 0; i < NUM_ITERS; i++) {
                 clock_gettime(CLOCK_MONOTONIC_RAW, &begin_timed);
-                sorted = (*(b->sort_run))(nums, b->sort_total_elems, b->sort_size, b->sort_cmp);
+                sorted = (*(b->sort_run))(nums, b->sort_total_elems, b->sort_elt_size, b->sort_cmp);
                 clock_gettime(CLOCK_MONOTONIC_RAW, &end_timed);
                 itertime = difftimespecs(&begin_timed, &end_timed);
                 printf("itertime: %lf\n", itertime);
                 batchtime += itertime;
             }
+
+            // Check if its sorted.
+            slice_t sl = (slice_t) { sorted, b->sort_total_elems, b->sort_elt_size } ;
+            slice_assert_sorted(b->sort_cmp, &sl);
 
             // Teardown.
             (*(b->sort_teardown))(nums);
