@@ -44,6 +44,21 @@ static inline void our_memcpy_par(void *dst, void *src, size_t nbytes)
     memcpy(dst, src, nbytes);
 }
 
+// Taken from glibc.
+static inline void SWAP(void *a, void *b, size_t elt_size)
+{
+    size_t __size = elt_size;
+    char *__a = a;
+    char *__b = b;
+    do {
+        char __tmp = *__a;
+        *__a++ = *__b;
+        *__b++ = __tmp;
+    } while (--__size > 0);
+}
+
+// -----------------------------------------------------------------------------
+
 typedef struct slice_t_ {
     void *base;
     size_t total_elems;

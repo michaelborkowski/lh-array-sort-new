@@ -116,6 +116,7 @@ void writesort1(slice_t src, slice_t tmp)
     if (CILKSORT && (len < INSERTIONSIZE)) {
         // insertionsort_inplace(src.base, src.total_elems, src.elt_size, CMP);
         qsort(src.base, src.total_elems, src.elt_size, CMP);
+        // quicksort_inplace(src.base, src.total_elems, src.elt_size, CMP);
         return;
     }
     if (len == 1) {
@@ -137,6 +138,7 @@ void writesort1_par(slice_t src, slice_t tmp)
     if (CILKSORT && (len < INSERTIONSIZE)) {
         // insertionsort_inplace(src.base, src.total_elems, src.elt_size, CMP);
         qsort(src.base, src.total_elems, src.elt_size, CMP);
+        // quicksort_inplace(src.base, src.total_elems, src.elt_size, CMP);
         return;
     }
     if (len < SEQCUTOFF) {
@@ -164,6 +166,7 @@ void writesort2(slice_t src, slice_t tmp)
         slice_copy(&src, &tmp);
         // insertionsort_inplace(tmp.base, tmp.total_elems, tmp.elt_size, CMP);
         qsort(tmp.base, tmp.total_elems, tmp.elt_size, CMP);
+        // quicksort_inplace(tmp.base, tmp.total_elems, tmp.elt_size, CMP);
         return;
     }
     if (len == 1) {
@@ -187,6 +190,7 @@ void writesort2_par(slice_t src, slice_t tmp)
         slice_copy(&src, &tmp);
         // insertionsort_inplace(tmp.base, tmp.total_elems, tmp.elt_size, CMP);
         qsort(tmp.base, tmp.total_elems, tmp.elt_size, CMP);
+        // quicksort_inplace(src.base, src.total_elems, src.elt_size, CMP);
         return;
     }
     if (len < SEQCUTOFF) {
