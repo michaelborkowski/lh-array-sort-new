@@ -26,7 +26,7 @@
 
 void insertionsort_glibc_inplace(void *const pbase, size_t total_elems, size_t size, __compar_fn_t cmp);
 
-void *insertionsort_glibc (void *const pbase, size_t total_elems, size_t size, __compar_fn_t cmp)
+void *insertionsort_glibc(void *const pbase, size_t total_elems, size_t size, __compar_fn_t cmp)
 {
     // Copy into a fresh array.
     char *cpy = malloc(total_elems * size);
@@ -41,36 +41,68 @@ void *insertionsort_glibc (void *const pbase, size_t total_elems, size_t size, _
     return cpy;
 }
 
+/* Byte-wise swap two items of size SIZE. */
+#define SWAP(a, b, size)						      \
+  do									      \
+    {									      \
+      size_t __size = (size);						      \
+      char *__a = (a), *__b = (b);					      \
+      do								      \
+        {								      \
+          char __tmp = *__a;						      \
+          *__a++ = *__b;						      \
+          *__b++ = __tmp;						      \
+        } while (--__size > 0);						      \
+    } while (0)
+
+#define MAX_THRESH 4
+
+#define min(x, y) ((x) < (y) ? (x) : (y))
+
 void insertionsort_glibc_inplace(void *const pbase, size_t total_elems, size_t size, __compar_fn_t cmp)
 {
+    const size_t max_thresh = MAX_THRESH * size;
     char *base_ptr = pbase;
-    char *run_ptr;
-    // [2023.03.10]: The glibc version sets this to base+size, why did we change it?
-    // run_ptr = base_ptr + size;
-    run_ptr = base_ptr;
     char *const end_ptr = &base_ptr[size * (total_elems - 1)];
     char *tmp_ptr = base_ptr;
+    char *thresh = min(end_ptr, base_ptr + max_thresh);
+    char *run_ptr;
+
+    /* Find smallest element in first threshold and place it at the
+       array's beginning.  This is the smallest array element,
+       and the operation speeds up insertion sort's inner loop. */
+
+    for (run_ptr = tmp_ptr + size; run_ptr <= thresh; run_ptr += size) {
+        if ((*cmp) ((void *) run_ptr, (void *) tmp_ptr) < 0) {
+            tmp_ptr = run_ptr;
+        }
+    }
+
+    if (tmp_ptr != base_ptr) {
+        SWAP (tmp_ptr, base_ptr, size);
+    }
+
+    /* Insertion sort, running from left-hand-side up to right-hand-side.  */
+    run_ptr = base_ptr + size;
 
     // Sort.
     while ((run_ptr += size) <= end_ptr) {
         tmp_ptr = run_ptr - size;
         while ((*cmp) ((void *) run_ptr, (void *) tmp_ptr) < 0)
             tmp_ptr -= size;
-
         tmp_ptr += size;
         if (tmp_ptr != run_ptr) {
             char *trav;
-
             trav = run_ptr + size;
             while (--trav >= run_ptr) {
                 char c = *trav;
                 char *hi, *lo;
-
                 for (hi = lo = trav; (lo -= size) >= tmp_ptr; hi = lo)
                     *hi = *lo;
                 *hi = c;
             }
         }
     }
+
     return;
 }

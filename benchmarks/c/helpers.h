@@ -124,7 +124,10 @@ static inline void slice_assert_sorted(__compar_fn_t cmp, const slice_t *sl)
     for (size_t i = 0; i < len-1; i++) {
         a = slice_nth(sl, i);
         b = slice_nth(sl, i+1);
-        assert((*cmp)(a,b) <= 0);
+        if ((*cmp)(a,b) > 0) {
+            fprintf(stderr, "Elements at %zu and %zu are not sorted.", i, i+1);
+            exit(1);
+        }
     }
     printf("Sorted: OK\n");
 }

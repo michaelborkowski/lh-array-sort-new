@@ -100,10 +100,16 @@ int bench_main(int argc, char** argv)
         b->sort_cmp = compare_int64s;
         if (strcmp(argv[1], "sort_insertion_glibc") == 0) {
             b->sort_run = insertionsort_glibc;
-        } else if (strcmp(argv[1], "sort_mergesort_seq") == 0) {
+        } else if (strcmp(argv[1], "sort_insertion") == 0) {
+            b->sort_run = insertionsort;
+        } else if (strcmp(argv[1], "sort_merge_seq") == 0) {
             b->sort_run = mergesort;
-        } else if (strcmp(argv[1], "sort_mergesort_par") == 0) {
+        } else if (strcmp(argv[1], "sort_merge_par") == 0) {
             b->sort_run = mergesort_par;
+        } else if (strcmp(argv[1], "sort_cilk_seq") == 0) {
+            b->sort_run = cilksort;
+        } else if (strcmp(argv[1], "sort_cilk_par") == 0) {
+            b->sort_run = cilksort_par;
         } else {
             fprintf(stderr, "Unknown benchmark: %s", argv[1]);
             exit(1);
@@ -128,6 +134,7 @@ void simple_bench(const benchmark_t *b)
 
     switch (b->tag) {
         case FILLARRAY: {
+            total_elems = b->fa_total_elems;
             // No setup required.
             int64_t *ret;
 
@@ -143,12 +150,12 @@ void simple_bench(const benchmark_t *b)
 
             // Teardown.
             (*(b->fa_teardown))(ret);
-            total_elems = b->fa_total_elems;
 
             break;
         }
 
         case SUMARRAY: {
+            total_elems = b->sa_total_elems;
             // No setup required.
             int64_t *nums = (*(b->sa_setup))(b->sa_total_elems);
             int64_t *ret_values = malloc(NUM_ITERS * sizeof(int64_t));
@@ -168,12 +175,12 @@ void simple_bench(const benchmark_t *b)
 
             // Teardown.
             (*(b->sa_teardown))(nums);
-            total_elems = b->sa_total_elems;
 
             break;
         }
 
         case SORT: {
+            total_elems = b->sort_total_elems;
             // No setup required.
             int64_t *nums = (*(b->sort_setup))(b->sort_total_elems);
             int64_t *sorted;
@@ -195,7 +202,6 @@ void simple_bench(const benchmark_t *b)
             // Teardown.
             (*(b->sort_teardown))(nums);
             (*(b->sort_teardown))(sorted);
-            total_elems = b->sort_total_elems;
 
             break;
         }
