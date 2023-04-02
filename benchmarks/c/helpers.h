@@ -9,6 +9,7 @@
 #include <errno.h>
 #include <time.h>
 #include <assert.h>
+#include <cilk/cilk.h>
 
 // -----------------------------------------------------------------------------
 
@@ -33,15 +34,26 @@ static inline bool prefix(const char *pre, const char *str)
     return strncmp(pre, str, strlen(pre)) == 0;
 }
 
+// TODO: AUDIT.
 static inline void our_memcpy(void *dst, void *src, size_t nbytes)
 {
-    memcpy(dst, src, nbytes);
+    char *d = dst;
+      const char *s = src;
+      for (size_t i = 0; i <= nbytes; i++) {
+          *d++ = *s++;
+      }
+      return;
 }
 
-// Sequential for now.
+// TODO: AUDIT.
 static inline void our_memcpy_par(void *dst, void *src, size_t nbytes)
 {
-    memcpy(dst, src, nbytes);
+      char *d = dst;
+      const char *s = src;
+      cilk_for (size_t i = 0; i <= nbytes; i++) {
+          *d++ = *s++;
+      }
+      return;
 }
 
 // Taken from glibc.

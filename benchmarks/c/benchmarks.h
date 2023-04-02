@@ -25,5 +25,7 @@ int64_t* __attribute__ ((noinline)) fill_array_rand_seq(size_t total_elems);
 int64_t* __attribute__ ((noinline)) fill_array_ones_seq(size_t total_elems);
 int64_t __attribute__ ((noinline)) sum_array_seq(size_t total_elems, int64_t *nums);
 int64_t __attribute__ ((noinline)) sum_array_par(size_t total_elems, int64_t *nums);
+void __attribute__ ((noinline)) copy_seq(void *dst, void *src, size_t nbytes);
+void __attribute__ ((noinline)) copy_par(void *dst, void *src, size_t nbytes);
 
 #endif

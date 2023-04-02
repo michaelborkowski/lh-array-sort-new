@@ -18,6 +18,11 @@ typedef int64_t* (*sumarray_setup_fn_t) (size_t total_elems);
 typedef int64_t (*sumarray_run_fn_t) (size_t total_elems, int64_t *nums);
 typedef void (*sumarray_teardown_fn_t) (void *array);
 
+// Copy array function types.
+typedef int64_t* (*copyarray_setup_fn_t) (size_t total_elems);
+typedef void (*copyarray_run_fn_t) (void *dst, void *src, size_t nbytes);
+typedef void (*copyarray_teardown_fn_t) (void *array);
+
 // Copied from stdlib.h for reference.
 typedef int (*__compar_fn_t) (const void *, const void *);
 
@@ -31,6 +36,7 @@ enum benchmark_tag {
     SORT,
     FILLARRAY,
     SUMARRAY,
+    COPYARRAY,
 };
 
 static inline char *benchmark_tag_str(enum benchmark_tag tag)
@@ -42,6 +48,8 @@ static inline char *benchmark_tag_str(enum benchmark_tag tag)
             return "FILLARRAY";
         case SUMARRAY:
             return "SUMARRAY";
+        case COPYARRAY:
+            return "COPYARRAY";
         default:
             return "UNKNOWN";
     }
@@ -72,6 +80,19 @@ typedef struct benchmark_t_ {
             // Arguments to fn.
             size_t sa_total_elems;
             // int64_t *sa_array;
+        };
+
+        // Copy array.
+        struct {
+            // Setup and teardown.
+            copyarray_setup_fn_t cp_setup;
+            copyarray_teardown_fn_t cp_teardown;
+            // Function to benchmark.
+            copyarray_run_fn_t cp_run;
+            // Arguments to fn.
+            void *cp_dst;
+            size_t cp_nbytes;
+            size_t cp_total_elems;
         };
 
         // Sort function.

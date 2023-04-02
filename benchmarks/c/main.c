@@ -90,6 +90,20 @@ int bench_main(int argc, char** argv)
         if (strcmp(argv[1], "sumarray_par") == 0) {
             b->sa_run = sum_array_par;
         }
+    } else if (prefix("copyarray", argv[1])) {
+        printf("benchmarking C copy array.\n");
+        size_t nbytes = total_elems * sizeof(int64_t);
+        void *dst = malloc(nbytes);
+        b->tag = COPYARRAY;
+        b->cp_setup = fill_array_rand_seq;
+        b->cp_teardown = free;
+        b->cp_run = copy_seq;
+        b->cp_dst = dst;
+        b->cp_nbytes = nbytes;
+        b->cp_total_elems = total_elems;
+        if (strcmp(argv[1], "copyarray_par") == 0) {
+            b->cp_run = copy_par;
+        }
     } else if (prefix("sort", argv[1])) {
         b->tag = SORT;
         b->sort_setup = fill_array_rand_seq;
@@ -156,7 +170,6 @@ void simple_bench(const benchmark_t *b)
 
         case SUMARRAY: {
             total_elems = b->sa_total_elems;
-            // No setup required.
             int64_t *nums = (*(b->sa_setup))(b->sa_total_elems);
             int64_t *ret_values = malloc(NUM_ITERS * sizeof(int64_t));
             int64_t ret;
@@ -179,9 +192,28 @@ void simple_bench(const benchmark_t *b)
             break;
         }
 
+        case COPYARRAY: {
+            total_elems = b->cp_total_elems;
+            int64_t *nums = (*(b->cp_setup))(b->cp_total_elems);
+
+            // Run the benchmark.
+            for (size_t i = 0; i < NUM_ITERS; i++) {
+                clock_gettime(CLOCK_MONOTONIC_RAW, &begin_timed);
+                (*(b->cp_run))(b->cp_dst, nums, b->cp_nbytes);
+                clock_gettime(CLOCK_MONOTONIC_RAW, &end_timed);
+                itertime = difftimespecs(&begin_timed, &end_timed);
+                printf("itertime: %lf\n", itertime);
+                batchtime += itertime;
+            }
+
+            // Teardown.
+            (*(b->sa_teardown))(nums);
+
+            break;
+        }
+
         case SORT: {
             total_elems = b->sort_total_elems;
-            // No setup required.
             int64_t *nums = (*(b->sort_setup))(b->sort_total_elems);
             int64_t *sorted;
 

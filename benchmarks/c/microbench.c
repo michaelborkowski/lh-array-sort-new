@@ -2,8 +2,9 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <errno.h>
-
 #include <cilk/cilk.h>
+
+#include "helpers.h"
 
 // -----------------------------------------------------------------------------
 
@@ -80,4 +81,15 @@ int64_t __attribute__ ((noinline)) sum_array_par(size_t total_elems, int64_t *nu
         sum += *elt;
     }
     return sum;
+}
+
+
+void __attribute__ ((noinline)) copy_seq(void *dst, void *src, size_t nbytes)
+{
+    our_memcpy(dst, src, nbytes);
+}
+
+void __attribute__ ((noinline)) copy_par(void *dst, void *src, size_t nbytes)
+{
+    our_memcpy_par(dst, src, nbytes);
 }
