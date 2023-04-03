@@ -22,6 +22,7 @@ library
     cpp-options: -DMUTABLE_ARRAYS
 
   exposed-modules:
+      Par
       Array
       Properties
       Order

@@ -22,9 +22,6 @@ module Array
     -- * Convert to/from lists
   , fromList, toList
 
-    -- * Parallel tuple operator
-  , (.||.), tuple2, tuple4
-
   , Ur(..)
 
     -- * LiqidHaskell lemmas
@@ -51,96 +48,6 @@ import           Array.List
 import           Control.DeepSeq ( NFData(..) )
 import           Language.Haskell.Liquid.ProofCombinators hiding ((?))
 import           ProofCombinators
-
---------------------------------------------------------------------------------
-
-{-
-
-[2022.06.23] CSK:
---------------------
-
-Previously lem_slice_append and lem_get_slice were defined in this module and
-they operated on the abstract Array type. All they did was call the corresponding
-lemmas that work on lists, which are defined in Array.List. We were using toList
-to convert the abstract array type to a list. But this was causing some problems
-with LH (I think?). So their definitons were moved into Array.List. However, we
-need these lemmas to be defined even when compiling with -fmutable-arrays since
-some proofs in the the Equivalence module use them. I'm including the following
-placeholder definitions to get the project to compile with -fmutable-arrays.
-These won't pass the Liquid checker of course, so I'm disabling it for now.
-
-Relevant commit:
-https://github.com/ucsd-progsys/lh-array-sort/commit/6bd6b8936e3367a9365fc1f5cdf666f65b0575c7
-
--}
-
-#ifdef MUTABLE_ARRAYS
-lem_slice_append :: Array a -> Array a -> Proof
-lem_slice_append = _todo
-
-lem_get_slice :: Array a -> Int -> Int -> Int -> Proof
-lem_get_slice = _todo
-#endif
-
---------------------------------------------------------------------------------
--- tuple2 :: NFData a => (Array a -> (Array a, Array a)) -> Array a -> Array a
---               -> ( (Array a, Array a), (Array a, Array a))
--- tuple4 :: NFData a => (Array a -> (Array a, Array a))
---               -> Array a -> Array a -> Array a -> Array a
---               -> ( (Array a, Array a), (Array a, Array a), (Array a, Array a), (Array a, Array a))
-
--- This doesn't belong here, but it's here for convenience.
-
--- | Parallel tuple combinators.
---   The top level one should be .|*|. which rseqs before return
---   but .||. can be used to get more than 2 way parallelism
-infixr 1 .||.
-#ifdef MUTABLE_ARRAYS
-tuple2 :: (NFData a, NFData b) => (a -> b) -> a -> (a -> b) -> a -> (b, b)
-tuple2 f x g y = P.runPar $ do
-                     fx  <- P.spawn_ $ return (f x)
-                     gy  <- P.spawn_ $ return (g y)
-                     fx' <- P.get fx
-                     gy' <- P.get gy
-                     return (fx', gy')
-
-tuple4 :: (NFData a, NFData b) => (a -> b) -> a -> (a -> b) -> a
-                               -> (a -> b) -> a -> (a -> b) -> a -> ((b, b), (b, b))
-tuple4 f x g y h z j w = P.runPar $ do
-                             fx  <- P.spawn_ $ return (f x)
-                             gy  <- P.spawn_ $ return (g y)
-                             hz  <- P.spawn_ $ return (h z)
-                             jw  <- P.spawn_ $ return (j w)
-                             fx' <- P.get fx
-                             gy' <- P.get gy
-                             hz' <- P.get hz
-                             jw' <- P.get jw
-                             return ((fx', gy'), (hz', jw'))
-
-(.||.) :: (NFData a, NFData b) => a -> b -> (a,b)
-{-  this is what we want to use, but doesn't run quite yet -}
-a .||. b = P.runPar $ do          -- or P.spawn_ ?
-               a'  <- P.spawnP a
-               b'  <- P.spawnP b
-               a'' <- P.get a'
-               b'' <- P.get b'
-               return (a'', b'') 
-#else
-{-@ tuple2 :: f:_ -> x:a -> g:_ -> y:a -> { tup:_ | fst tup == f x && snd tup == g y } @-} 
-tuple2 :: (a -> b) -> a -> (a -> b) -> a -> (b, b)
-tuple2 f x g y = (f x, g y)
-
-{-@ tuple4 :: f:_ -> x:a -> g:_ -> y:a -> h:_ -> z:a -> j:_ -> w:a 
-                  -> { tup:_ | fst (fst tup) == f x && snd (fst tup) == g y &&
-                               fst (snd tup) == h z && snd (snd tup) == j w } @-}
-tuple4 :: (a -> b) -> a -> (a -> b) -> a 
-       -> (a -> b) -> a -> (a -> b) -> a -> ((b, b), (b, b))
-tuple4 f x g y h z j w = ((f x, g y), (h z, j w))
-
-{-@ (.||.) :: x:a -> y:b -> { tup:_ | x == fst tup && y = snd tup } @-}
-(.||.) :: a -> b -> (a,b)
-a .||. b = (a,b)
-#endif
 
 --------------------------------------------------------------------------------
 
@@ -183,6 +90,47 @@ splitMid = Unsafe.toLinear go
       where
         n = size xs
         m = n `div` 2
+
+copy_par :: Array a -> Int -> Array a -> Int -> Int -> Array a
+copy_par = _todo
+
+foldl1_par :: Int -> (a -> a -> a) -> a -> Array a -> a
+foldl1_par = _todo
+
+-- (?) how do we do parallel fill array?
+make_par :: Int -> a -> Array a
+make_par = _todo
+
+--------------------------------------------------------------------------------
+
+{-
+
+[2022.06.23] CSK:
+--------------------
+
+Previously lem_slice_append and lem_get_slice were defined in this module and
+they operated on the abstract Array type. All they did was call the corresponding
+lemmas that work on lists, which are defined in Array.List. We were using toList
+to convert the abstract array type to a list. But this was causing some problems
+with LH (I think?). So their definitons were moved into Array.List. However, we
+need these lemmas to be defined even when compiling with -fmutable-arrays since
+some proofs in the the Equivalence module use them. I'm including the following
+placeholder definitions to get the project to compile with -fmutable-arrays.
+These won't pass the Liquid checker of course, so I'm disabling it for now.
+
+Relevant commit:
+https://github.com/ucsd-progsys/lh-array-sort/commit/6bd6b8936e3367a9365fc1f5cdf666f65b0575c7
+
+-}
+
+#ifdef MUTABLE_ARRAYS
+lem_slice_append :: Array a -> Array a -> Proof
+lem_slice_append = _todo
+
+lem_get_slice :: Array a -> Int -> Int -> Int -> Proof
+lem_get_slice = _todo
+#endif
+
 
 --------------------------------------------------------------------------------
 -- | Proofs

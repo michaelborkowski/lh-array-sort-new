@@ -13,6 +13,7 @@ import           DpsMergePar
 import qualified DpsMergeSort4 as Seq
 import           Equivalence
 import           Order
+import           Par
 
 #ifdef MUTABLE_ARRAYS
 import           Array.Mutable as A
@@ -23,6 +24,8 @@ import           Array.List as A
 
 #define KILO     1024
 #define SEQSIZE  4096
+
+--------------------------------------------------------------------------------
 
 -- DPS mergesort -- unfold twice, merge twice 
 {-@ msortInplace :: xs:Array a 
