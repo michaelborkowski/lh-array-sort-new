@@ -34,27 +34,13 @@ static inline bool prefix(const char *pre, const char *str)
     return strncmp(pre, str, strlen(pre)) == 0;
 }
 
-// TODO: AUDIT.
 static inline void our_memcpy(void *dst, void *src, size_t nbytes)
 {
-    char *d = dst;
-      const char *s = src;
-      for (size_t i = 0; i <= nbytes; i++) {
-          *d++ = *s++;
-      }
-      return;
+    memcpy(dst, src, nbytes);
 }
 
-// TODO: AUDIT.
-static inline void our_memcpy_par(void *dst, void *src, size_t nbytes)
-{
-      char *d = dst;
-      const char *s = src;
-      cilk_for (size_t i = 0; i <= nbytes; i++) {
-          *d++ = *s++;
-      }
-      return;
-}
+void our_memcpy_par(void *dst, void *src, size_t nbytes);
+
 
 // Taken from glibc.
 static inline void SWAP(void *a, void *b, size_t elt_size)
@@ -138,7 +124,7 @@ static inline void slice_print(const slice_t *sl)
         if (sl->elt_size == sizeof(int64_t)) {
             printf("%ld, ", *(int64_t*) elt);
         } else {
-            printf("%p, ", elt);
+            printf("%p, ", (void*) elt);
         }
     }
     printf("]\n");
