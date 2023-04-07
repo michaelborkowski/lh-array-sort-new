@@ -15,6 +15,6 @@ in
   with pkgs;
   stdenv.mkDerivation {
     name = "lh-array-sort";
-    buildInputs = [ ghc ghc901 cabal-install stack ghcid z3
+    buildInputs = [ ghc ghc901 cabal-install stack ghcid z3 numactl
                     stdenv gcc gdb uthash ];
   }

@@ -53,7 +53,7 @@ import           ProofCombinators
 
 {-# INLINE alloc #-}
 {-@ alloc :: i:Nat -> x:_ -> f:_ -> ret:_ @-}
-alloc :: Int -> a -> (Array a %1-> Ur b) -> Ur b
+alloc :: Int -> a -> (Array a %1-> Ur b) %1-> Ur b
 alloc i a f = f (make i a)
 
 -- advanced operations

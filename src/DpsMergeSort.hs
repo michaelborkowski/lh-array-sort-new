@@ -93,6 +93,8 @@ msort' src anyVal =
 {-# SPECIALISE msort :: A.Array Int -> A.Array Int #-}
 msort :: (Show a, Ord a) => A.Array a -> A.Array a
 msort src =
-  let (len, src') = A.size2 src in
-      if len == 0 then src'
-      else let (x0, src'') = A.get2 src' 0 in msort' src'' x0
+  let (len, src1) = A.size2 src in
+      if len == 0 then src1
+      else let (x0, src2) = A.get2 src1 0
+               Ur cpy2 = A.alloc len x0 (Unsafe.toLinear (\tmp -> Ur (A.copy src2 0 tmp 0 len)))
+           in msort' cpy2 x0

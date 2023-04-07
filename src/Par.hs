@@ -3,6 +3,7 @@
 module Par where
 
 import           Control.DeepSeq ( NFData(..) )
+import           GHC.Conc ( par, pseq )
 
 --------------------------------------------------------------------------------
 
@@ -14,15 +15,27 @@ infixr 1 .||.
 
 #ifdef MUTABLE_ARRAYS
 
-tuple2 :: (NFData a, NFData b) => (a -> b) -> a -> (a -> b) -> a -> (b, b)
-tuple2 = _todo
+{-# INLINE tuple2 #-}
+tuple2 :: (a -> b) -> a -> (c -> d) -> c -> (b, d)
+tuple2 f1 x f2 y = p `par` q `pseq` (p,q)
+  where
+    p = f1 x
+    q = f2 y
 
-tuple4 :: (NFData a, NFData b) => (a -> b) -> a -> (a -> b) -> a
-                               -> (a -> b) -> a -> (a -> b) -> a -> ((b, b), (b, b))
-tuple4 = _todo
+{-# INLINE tuple4 #-}
+tuple4 :: (NFData a, NFData b) => (a -> b) -> a -> (c -> d) -> c
+                               -> (e -> f) -> e -> (g -> h) -> g
+                               -> ((b, d), (f, h))
+tuple4 f1 x f2 y f3 z f4 a  = p `par` q `par` r `par` s `pseq` ((p,q), (r,s))
+  where
+    p = f1 x
+    q = f2 y
+    r = f3 z
+    s = f4 a
 
+{-# INLINE (.||.) #-}
 (.||.) :: (NFData a, NFData b) => a -> b -> (a,b)
-a .||. b = _todo
+a .||. b = a `par` b `pseq` (a,b)
 
 {-
 tuple2 :: (NFData a, NFData b) => (a -> b) -> a -> (a -> b) -> a -> (b, b)
