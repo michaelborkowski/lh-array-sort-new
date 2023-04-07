@@ -23,6 +23,7 @@ import qualified Array as A
 data Benchmark
   = FillArray
   | SumArray
+  | Seqfib
   | Parfib
   | Insertionsort
   | Mergesort
@@ -43,6 +44,7 @@ getInput :: Benchmark -> Maybe Int -> IO (Input Int64)
 getInput bench mb_size = case bench of
   FillArray     -> pure $ EltsIn (mb 10000000) 1024
   SumArray      -> pure $ ArrayIn (A.make (mb 10000000) 1)
+  Seqfib        -> pure $ IntIn 45
   Parfib        -> pure $ IntIn 45
   Insertionsort -> ArrayIn <$> randArray (Proxy :: Proxy Int64) (mb 100)
   Quicksort     -> ArrayIn <$> randArray (Proxy :: Proxy Int64) (mb 1000000)
@@ -82,6 +84,9 @@ dobench bench mb_size = do
   putStrLn $ "Running " ++ show bench ++ "\n========================================"
   (size, res, tmed, tall) <-
     case bench of
+      Seqfib    -> do (IntIn i) <- getInput bench mb_size
+                      (res0, tmed0, tall0) <- M.bench MB.seqfib0 i iters
+                      pure (i, res0, tmed0, tall0)
       Parfib    -> do (IntIn i) <- getInput bench mb_size
                       (res0, tmed0, tall0) <- M.bench MB.parfib0 i iters
                       pure (i, res0, tmed0, tall0)
