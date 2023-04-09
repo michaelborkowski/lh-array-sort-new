@@ -9,6 +9,9 @@ GCC_FLAGS   := -std=gnu11 -lm -fcilkplus
 
 CC     := $(GCC)
 CFLAGS := $(GCC_FLAGS)
+CDEBUG := -DCBENCH_DEBUG -O0 -g
+
+CFLAGS += -Wall -Wextra -Wpedantic -flto
 
 ifeq ($(USECLANG), 1)
 	CC     = $(CLANG)
@@ -16,11 +19,10 @@ ifeq ($(USECLANG), 1)
 	LFLAGS := -fuse-ld=lld
 endif
 
-CFLAGS += -Wall -Wextra -Wpedantic -O3 -flto
-CDEBUG := -DCBENCH_DEBUG -O0 -g
-
 ifeq ($(DEBUG), 1)
 	CFLAGS += $(CDEBUG)
+else
+	CFLAGS += -O3
 endif
 
 $(OUT): $(OBJFILES)
