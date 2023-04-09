@@ -2,6 +2,8 @@
 
 module Microbench where
 
+import           GHC.Conc ( par, pseq )
+import           Data.Int ( Int64 )
 import qualified Array as A
 import           Par
 
@@ -18,14 +20,15 @@ sumArray arr = go 0 0 (A.size arr)
 fillArray :: (Int, a) -> A.Array a
 fillArray (sz, val) = A.make sz val
 
-seqfib0 :: Int -> Int
-seqfib0 n | n < 2 = 1
-seqfib0 n =
-  let (x,y) = (seqfib0 (n-1), seqfib0 (n-2))
-  in (x+y)
+{-# NOINLINE seqfib #-}
+seqfib :: Int64 -> Int64
+seqfib !n | n < 2 = 1
+seqfib !n = seqfib (n-1) + seqfib (n-2)
 
-parfib0 :: Int -> Int
-parfib0 n | n < 10 = seqfib0 n
-parfib0 n =
-  let (x,y) = tuple2 parfib0 (n-1) parfib0 (n-2)
-  in (x+y)
+parfib :: Int64 -> Int64
+parfib !n | n < 33 = seqfib n
+parfib !n =
+  x `par` y `pseq` (x+y)
+  where
+    x = parfib (n-1)
+    y = parfib (n-2)

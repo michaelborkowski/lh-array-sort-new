@@ -80,16 +80,16 @@ isSorted (x:y:xs) = x <= y && isSorted (y:xs)
 
 dobench :: Benchmark -> Maybe Int -> IO ()
 dobench bench mb_size = do
-  let iters = 3 :: Int
+  let iters = 9 :: Int
   putStrLn $ "Running " ++ show bench ++ "\n========================================"
   (size, res, tmed, tall) <-
     case bench of
       Seqfib    -> do (IntIn i) <- getInput bench mb_size
-                      (res0, tmed0, tall0) <- M.bench MB.seqfib0 i iters
-                      pure (i, res0, tmed0, tall0)
+                      (res0, tmed0, tall0) <- M.bench MB.seqfib (fromIntegral i) iters
+                      pure (i, fromIntegral res0, tmed0, tall0)
       Parfib    -> do (IntIn i) <- getInput bench mb_size
-                      (res0, tmed0, tall0) <- M.bench MB.parfib0 i iters
-                      pure (i, res0, tmed0, tall0)
+                      (res0, tmed0, tall0) <- M.bench MB.parfib (fromIntegral i) iters
+                      pure (i, fromIntegral res0, tmed0, tall0)
       FillArray -> do (EltsIn total_elems elt) <- getInput bench mb_size
                       (res0, tmed0, tall0) <- M.bench MB.fillArray (total_elems,elt) iters
                       pure (total_elems, A.size res0, tmed0, tall0)
