@@ -28,6 +28,7 @@
 #include <cilk/cilk.h>
 #include <cilk/cilk_api.h>
 
+
 #define KB 1024lu
 #define MB (KB * 1000lu)
 #define GB (MB * 1000lu)
@@ -335,6 +336,114 @@ IntTy expll(IntTy base, IntTy pow) {
     }
  }
 
+// -------------------------------------
+// Symbol table
+// -------------------------------------
+
+#define global_max_symbol_len 256
+
+// Invariant: should always be equal to max(sym_table_keys)
+static SymTy global_gensym_counter = 0;
+
+// Its value is updated by the flags parser.
+static char *global_bench_prog_param;
+
+static SymTy newline_symbol = -1;
+static SymTy space_symbol = -1;
+static SymTy comma_symbol = -1;
+static SymTy leftparen_symbol = -1;
+static SymTy rightparen_symbol = -1;
+
+typedef struct SymTable_elem {
+    SymTy idx;                 /* key */
+    char value[global_max_symbol_len];
+    UT_hash_handle hh;         /* makes this structure hashable */
+} SymTable_elem;
+
+// important! initialize to NULL
+SymTable_elem *global_sym_table = NULL;
+
+void add_symbol(SymTy idx, char *value) {
+    struct SymTable_elem *s;
+    s = ALLOC(sizeof(struct SymTable_elem));
+    s->idx = idx;
+    strcpy(s->value, value);
+    HASH_ADD(hh, global_sym_table, idx, sizeof(IntTy), s);
+    if (idx > global_gensym_counter) {
+        global_gensym_counter = idx;
+    }
+}
+
+void set_newline(SymTy idx) {
+  newline_symbol = idx;
+  add_symbol(idx,"NEWLINE");
+}
+
+void set_space(SymTy idx) {
+  space_symbol = idx;
+  add_symbol(idx,"SPACE");
+}
+
+void set_comma(SymTy idx) {
+  comma_symbol = idx;
+  add_symbol(idx,"COMMA");
+}
+
+void set_leftparen(SymTy idx) {
+  leftparen_symbol = idx;
+  add_symbol(idx,"LEFTPAREN");
+}
+
+void set_rightparen(SymTy idx) {
+  rightparen_symbol = idx;
+  add_symbol(idx,"RIGHTPAREN");
+}
+
+IntTy print_symbol(SymTy idx) {
+  if (idx == comma_symbol) {
+    return printf(",");
+  } else if (idx == newline_symbol) {
+    return printf("\n");
+  } else if (idx == space_symbol) {
+    return printf(" ");
+  } else if (idx == leftparen_symbol) {
+    return printf("(");
+  } else if (idx == rightparen_symbol) {
+    return printf(")");
+  } else {
+    struct SymTable_elem *s;
+    HASH_FIND(hh, global_sym_table, &idx, sizeof(SymTy), s);
+    if (s == NULL) {
+        return printf("%lld", idx);
+    } else {
+        return printf("%s", s->value);
+    }
+
+  }
+}
+
+#ifdef _PARALLEL
+SymTy gensym() {
+    SymTy idx = __atomic_add_fetch(&global_gensym_counter, 1, __ATOMIC_SEQ_CST);
+    return idx;
+}
+#else
+SymTy gensym() {
+    global_gensym_counter += 1;
+    SymTy idx = global_gensym_counter;
+    return idx;
+}
+#endif
+
+void free_symtable() {
+    struct SymTable_elem *elt, *tmp;
+    HASH_ITER(hh, global_sym_table, elt, tmp) {
+        HASH_DEL(global_sym_table,elt);
+    }
+    free(elt);
+    free(tmp);
+}
+
 
 // -------------------------------------
 // Vectors
@@ -495,7 +604,7 @@ static inline VectorTy* vector_merge(VectorTy *vec1, VectorTy *vec2) {
 }
 
 void print_timing_array(VectorTy *times) {
-    printf("ITERTIMES: [");
+    printf("TIMES: [");
     double *d;
     IntTy n = vector_length(times);
     for(int i = 0; i < n; i++) {
@@ -638,9 +747,6 @@ typedef struct Prod_struct { } Prod;
 typedef struct Int64Prod_struct {
             IntTy field0;
         } Int64Prod;
-typedef struct Float32Prod_struct {
-            FloatTy field0;
-        } Float32Prod;
 typedef struct BoolProd_struct {
             BoolTy field0;
         } BoolProd;
@@ -648,118 +754,117 @@ typedef struct VectorProd_struct {
             VectorTy *field0;
         } VectorProd;
 unsigned char bench_main();
-unsigned char print_check(BoolTy b_418_2437_3280);
-IntTy compare_float_original(FloatTy r1_434_2442_3283,
-                             FloatTy r2_435_2443_3284);
-int compare_float(const void *r1_434_2442_3283, const void *r2_435_2443_3284);
-IntTy maxInt(IntTy a_436_2444_3287, IntTy b_437_2445_3288);
-IntTy minInt(IntTy a_444_2452_3290, IntTy b_445_2453_3291);
-IntTy defaultGrainSize(IntTy n_633_2454_3293);
-VectorTy *write_loop_1280(IntTy to_idx_345_2457_3298,
-                          IntTy from_idx_346_2458_3299, IntTy end_347_2459_3300,
-                          VectorTy *from_348_2460_3301,
-                          VectorTy *to_349_2461_3302);
-VectorTy *write_loop_seq_1260(IntTy to_idx_355_2504_3312,
-                              IntTy from_idx_356_2505_3313,
-                              IntTy end_357_2506_3314,
-                              VectorTy *from_358_2507_3315,
-                              VectorTy *to_359_2508_3316);
-VectorTy *generate_par_loop_1253_2160(IntTy cutoff_745_2558_3343,
-                                      VectorTy *vec_746_2559_3344,
-                                      IntTy start_747_2560_3345,
-                                      IntTy end_748_2561_3346,
-                                      VectorTy *vec_412_2562_3347);
-VectorTy *generate_loop_1251_2161(VectorTy *vec_579_2567_3355,
-                                  IntTy idx_580_2568_3356,
-                                  IntTy end_581_2569_3357,
-                                  VectorTy *vec_412_2570_3358);
-VectorTy *generate_loop_1251_2164(VectorTy *vec_579_2590_3365,
-                                  IntTy idx_580_2591_3366,
-                                  IntTy end_581_2592_3367);
-VectorTy *generate_loop_1251_2165(VectorTy *vec_579_2598_3374,
-                                  IntTy idx_580_2599_3375,
-                                  IntTy end_581_2600_3376);
-VectorTy *generate_loop_1251_2166(VectorTy *vec_579_2602_3383,
-                                  IntTy idx_580_2603_3384,
-                                  IntTy end_581_2604_3385,
-                                  VectorTy *vec_415_2605_3386);
-VectorTy *writeSort1_1277_2171(VectorTy *src_285_2634_3398,
-                               VectorTy *tmp_286_2635_3399);
-VectorTy *writeMerge_1279_2174(VectorTy *src_1_301_2648_3433,
-                               VectorTy *src_2_302_2649_3434,
-                               VectorTy *tmp_303_2650_3435);
-IntTy binarySearch__1282_2177(IntTy lo_366_2669_3495, IntTy hi_367_2670_3496,
-                              VectorTy *vec_369_2671_3497,
-                              FloatTy query_370_2672_3498);
-VectorTy *writeSort2_1278_2173(VectorTy *src_253_2677_3514,
-                               VectorTy *tmp_254_2678_3515);
-VectorTy *writeMerge_seq_loop_1261_2178(IntTy i1_329_2699_3550,
-                                        IntTy i2_330_2700_3551,
-                                        IntTy j_331_2701_3552,
-                                        IntTy n1_332_2702_3553,
-                                        IntTy n2_333_2703_3554,
-                                        VectorTy *src_1_335_2704_3555,
-                                        VectorTy *src_2_336_2705_3556,
-                                        VectorTy *tmp_337_2706_3557);
-VectorTy *writeSort1_seq_1255_2189(VectorTy *src_270_2804_3591,
-                                   VectorTy *tmp_271_2805_3592);
-VectorTy *writeSort2_seq_1258_2190(VectorTy *src_237_2817_3631,
-                                   VectorTy *tmp_238_2818_3632);
-unsigned char check_sorted_1227_2143(VectorTy *sorted_207_2839_3672);
-BoolTy ifoldl_loop_1249_2193(IntTy idx_503_2843_3686, IntTy end_504_2844_3687,
-                             BoolTy acc_506_2845_3688,
-                             VectorTy *vec_507_2846_3689,
-                             VectorTy *arr1_210_2847_3690);
+unsigned char print_check(BoolTy b_418_2149_2744);
+IntTy compare_int_original(IntTy r1_426_2152_2747, IntTy r2_427_2153_2748);
+int compare_int(const void *r1_426_2152_2747, const void *r2_427_2153_2748);
+IntTy maxInt(IntTy a_434_2154_2751, IntTy b_435_2155_2752);
+IntTy minInt(IntTy a_444_2164_2754, IntTy b_445_2165_2755);
+IntTy defaultGrainSize(IntTy n_633_2166_2757);
+VectorTy *write_loop_1255(IntTy to_idx_345_2169_2762,
+                          IntTy from_idx_346_2170_2763, IntTy end_347_2171_2764,
+                          VectorTy *from_348_2172_2765,
+                          VectorTy *to_349_2173_2766);
+VectorTy *write_loop_seq_1249(IntTy to_idx_355_2188_2776,
+                              IntTy from_idx_356_2189_2777,
+                              IntTy end_357_2190_2778,
+                              VectorTy *from_358_2191_2779,
+                              VectorTy *to_359_2192_2780);
+VectorTy *generate_par_loop_1242_1962(IntTy cutoff_745_2230_2807,
+                                      VectorTy *vec_746_2231_2808,
+                                      IntTy start_747_2232_2809,
+                                      IntTy end_748_2233_2810,
+                                      VectorTy *vec_412_2234_2811);
+VectorTy *generate_loop_1241_1963(VectorTy *vec_579_2239_2819,
+                                  IntTy idx_580_2240_2820,
+                                  IntTy end_581_2241_2821,
+                                  VectorTy *vec_412_2242_2822);
+VectorTy *generate_loop_1241_1964(VectorTy *vec_579_2248_2829,
+                                  IntTy idx_580_2249_2830,
+                                  IntTy end_581_2250_2831);
+VectorTy *generate_loop_1241_1965(VectorTy *vec_579_2256_2837,
+                                  IntTy idx_580_2257_2838,
+                                  IntTy end_581_2258_2839);
+VectorTy *generate_loop_1241_1967(VectorTy *vec_579_2265_2845,
+                                  IntTy idx_580_2266_2846,
+                                  IntTy end_581_2267_2847,
+                                  VectorTy *vec_415_2268_2848);
+VectorTy *writeSort1_1252_1971(VectorTy *src_285_2292_2860,
+                               VectorTy *tmp_286_2293_2861);
+VectorTy *writeMerge_1254_1974(VectorTy *src_1_301_2306_2895,
+                               VectorTy *src_2_302_2307_2896,
+                               VectorTy *tmp_303_2308_2897);
+IntTy binarySearch__1257_1977(IntTy lo_366_2327_2957, IntTy hi_367_2328_2958,
+                              VectorTy *vec_369_2329_2959,
+                              IntTy query_370_2330_2960);
+VectorTy *writeSort2_1253_1973(VectorTy *src_253_2335_2976,
+                               VectorTy *tmp_254_2336_2977);
+VectorTy *writeMerge_seq_loop_1250_1978(IntTy i1_329_2357_3012,
+                                        IntTy i2_330_2358_3013,
+                                        IntTy j_331_2359_3014,
+                                        IntTy n1_332_2360_3015,
+                                        IntTy n2_333_2361_3016,
+                                        VectorTy *src_1_335_2362_3017,
+                                        VectorTy *src_2_336_2363_3018,
+                                        VectorTy *tmp_337_2364_3019);
+VectorTy *writeSort1_seq_1244_1980(VectorTy *src_270_2377_3053,
+                                   VectorTy *tmp_271_2378_3054);
+VectorTy *writeSort2_seq_1247_1981(VectorTy *src_237_2390_3093,
+                                   VectorTy *tmp_238_2391_3094);
+unsigned char check_sorted_1227_1948(VectorTy *sorted_207_2412_3134);
+BoolTy ifoldl_loop_1240_1984(IntTy idx_503_2416_3148, IntTy end_504_2417_3149,
+                             BoolTy acc_506_2418_3150,
+                             VectorTy *vec_507_2419_3151,
+                             VectorTy *arr1_210_2420_3152);
 unsigned char bench_main()
 {
-    BoolTy fltIf_3166_3259 = strcmp("seqmergesort", global_bench_prog_param) ==
+    BoolTy fltIf_2632_2723 = strcmp("seqmergesort", global_bench_prog_param) ==
            0;
 
-    if (fltIf_3166_3259) {
-        IntTy n_190_2423_3260 = global_size_param;
-        IntTy n__431_2587_2850_3262 =  maxInt(n_190_2423_3260, 0);
-        IntTy tmp_7 = sizeof(FloatTy);
-        VectorTy *vec_432_2588_2851_3263 = vector_alloc(n__431_2587_2850_3262,
+    if (fltIf_2632_2723) {
+        IntTy n_190_2135_2724 = global_size_param;
+        IntTy n__431_2245_2423_2726 =  maxInt(n_190_2135_2724, 0);
+        IntTy tmp_7 = sizeof(IntTy);
+        VectorTy *vec_432_2246_2424_2727 = vector_alloc(n__431_2245_2423_2726,
                                                         tmp_7);
-        VectorTy *vec1_433_2589_2852_3264 =
-                  generate_loop_1251_2164(vec_432_2588_2851_3263, 0, n__431_2587_2850_3262);
-        VectorTy *timed_3785;
+        VectorTy *vec1_433_2247_2425_2728 =
+                  generate_loop_1241_1964(vec_432_2246_2424_2727, 0, n__431_2245_2423_2726);
+        VectorTy *timed_3247;
         VectorTy *times_5 = vector_alloc(global_iters_param, sizeof(double));
-        struct timespec begin_timed_3785;
-        struct timespec end_timed_3785;
+        struct timespec begin_timed_3247;
+        struct timespec end_timed_3247;
 
-        for (long long iters_timed_3785 = 0; iters_timed_3785 <
-             global_iters_param; iters_timed_3785++) {
-            if (iters_timed_3785 != global_iters_param - 1)
+        for (long long iters_timed_3247 = 0; iters_timed_3247 <
+             global_iters_param; iters_timed_3247++) {
+            if (iters_timed_3247 != global_iters_param - 1)
                 save_alloc_state();
-            clock_gettime(CLOCK_MONOTONIC_RAW, &begin_timed_3785);
+            clock_gettime(CLOCK_MONOTONIC_RAW, &begin_timed_3247);
 
-            IntTy n_428_2537_2883_3327_3703 =
-                  vector_length(vec1_433_2589_2852_3264);
-            IntTy n__431_2539_2885_3329_3705 =
-                   maxInt(n_428_2537_2883_3327_3703, 0);
-            IntTy tmp_1 = sizeof(FloatTy);
-            VectorTy *vec_432_2540_2886_3330_3706 =
-                     vector_alloc(n__431_2539_2885_3329_3705, tmp_1);
-            VectorTy *vec1_433_2541_2887_3331_3707 =
-                      generate_loop_1251_2166(vec_432_2540_2886_3330_3706, 0, n__431_2539_2885_3329_3705, vec1_433_2589_2852_3264);
-            IntTy vec_410_2494_3109_3588_3710 =
-                  vector_length(vec1_433_2541_2887_3331_3707);
-            IntTy tmp_0 = sizeof(FloatTy);
-            VectorTy *tmp_229_2802_3589_3711 =
-                     vector_alloc(vec_410_2494_3109_3588_3710, tmp_0);
-            VectorTy *tmp2_230_2803_3590_3712 =
-                      writeSort1_seq_1255_2189(vec1_433_2541_2887_3331_3707, tmp_229_2802_3589_3711);
+            IntTy n_428_2217_2451_2791_3165 =
+                  vector_length(vec1_433_2247_2425_2728);
+            IntTy n__431_2219_2453_2793_3167 =
+                   maxInt(n_428_2217_2451_2791_3165, 0);
+            IntTy tmp_1 = sizeof(IntTy);
+            VectorTy *vec_432_2220_2454_2794_3168 =
+                     vector_alloc(n__431_2219_2453_2793_3167, tmp_1);
+            VectorTy *vec1_433_2221_2455_2795_3169 =
+                      generate_loop_1241_1967(vec_432_2220_2454_2794_3168, 0, n__431_2219_2453_2793_3167, vec1_433_2247_2425_2728);
+            IntTy vec_410_2178_2575_3050_3172 =
+                  vector_length(vec1_433_2221_2455_2795_3169);
+            IntTy tmp_0 = sizeof(IntTy);
+            VectorTy *tmp_229_2375_3051_3173 =
+                     vector_alloc(vec_410_2178_2575_3050_3172, tmp_0);
+            VectorTy *tmp2_230_2376_3052_3174 =
+                      writeSort1_seq_1244_1980(vec1_433_2221_2455_2795_3169, tmp_229_2375_3051_3173);
 
-            timed_3785 = vec1_433_2541_2887_3331_3707;
-            clock_gettime(CLOCK_MONOTONIC_RAW, &end_timed_3785);
-            if (iters_timed_3785 != global_iters_param - 1)
+            timed_3247 = vec1_433_2221_2455_2795_3169;
+            clock_gettime(CLOCK_MONOTONIC_RAW, &end_timed_3247);
+            if (iters_timed_3247 != global_iters_param - 1)
                 restore_alloc_state();
 
-            double itertime_2 = difftimespecs(&begin_timed_3785,
-                                              &end_timed_3785);
-            printf("itertime: %f\n", itertime_2);
-            vector_inplace_update(times_5, iters_timed_3785, &itertime_2);
+            double itertime_2 = difftimespecs(&begin_timed_3247,
+                                              &end_timed_3247);
+
+            vector_inplace_update(times_5, iters_timed_3247, &itertime_2);
         }
         vector_inplace_sort(times_5, compare_doubles);
 
@@ -767,63 +872,62 @@ unsigned char bench_main()
         double selftimed_4 = *tmp_6;
         double batchtime_3 = sum_timing_array(times_5);
 
-        // print_timing_array(times_5);
+        print_timing_array(times_5);
         printf("ITERS: %lld\n", global_iters_param);
         printf("SIZE: %lld\n", global_size_param);
         printf("BATCHTIME: %e\n", batchtime_3);
         printf("SELFTIMED: %e\n", selftimed_4);
 
-        unsigned char tailapp_3757 =  check_sorted_1227_2143(timed_3785);
+        unsigned char tailapp_3219 =  check_sorted_1227_1948(timed_3247);
 
-        return tailapp_3757;
+        return tailapp_3219;
     } else {
-        IntTy n_194_2426_3270 = global_size_param;
-        IntTy n__431_2595_2857_3272 =  maxInt(n_194_2426_3270, 0);
-        IntTy tmp_15 = sizeof(FloatTy);
-        VectorTy *vec_432_2596_2858_3273 = vector_alloc(n__431_2595_2857_3272,
+        IntTy n_194_2138_2734 = global_size_param;
+        IntTy n__431_2253_2430_2736 =  maxInt(n_194_2138_2734, 0);
+        IntTy tmp_15 = sizeof(IntTy);
+        VectorTy *vec_432_2254_2431_2737 = vector_alloc(n__431_2253_2430_2736,
                                                         tmp_15);
-        VectorTy *vec1_433_2597_2859_3274 =
-                  generate_loop_1251_2165(vec_432_2596_2858_3273, 0, n__431_2595_2857_3272);
-        VectorTy *timed_3786;
+        VectorTy *vec1_433_2255_2432_2738 =
+                  generate_loop_1241_1965(vec_432_2254_2431_2737, 0, n__431_2253_2430_2736);
+        VectorTy *timed_3248;
         VectorTy *times_13 = vector_alloc(global_iters_param, sizeof(double));
-        struct timespec begin_timed_3786;
-        struct timespec end_timed_3786;
+        struct timespec begin_timed_3248;
+        struct timespec end_timed_3248;
 
-        for (long long iters_timed_3786 = 0; iters_timed_3786 <
-             global_iters_param; iters_timed_3786++) {
-            if (iters_timed_3786 != global_iters_param - 1)
+        for (long long iters_timed_3248 = 0; iters_timed_3248 <
+             global_iters_param; iters_timed_3248++) {
+            if (iters_timed_3248 != global_iters_param - 1)
                 save_alloc_state();
-            clock_gettime(CLOCK_MONOTONIC_RAW, &begin_timed_3786);
+            clock_gettime(CLOCK_MONOTONIC_RAW, &begin_timed_3248);
 
-            IntTy n_738_2544_2889_3334_3715 =
-                  vector_length(vec1_433_2597_2859_3274);
-            IntTy n__741_2546_2891_3336_3717 =
-                   maxInt(n_738_2544_2889_3334_3715, 0);
-            IntTy tmp_9 = sizeof(FloatTy);
-            VectorTy *vec_742_2547_2892_3337_3718 =
-                     vector_alloc(n__741_2546_2891_3336_3717, tmp_9);
-            IntTy cutoff_743_2548_2893_3338_3719 =
-                   defaultGrainSize(n__741_2546_2891_3336_3717);
-            VectorTy *vec1_744_2549_2894_3339_3720 =
-                      generate_par_loop_1253_2160(cutoff_743_2548_2893_3338_3719, vec_742_2547_2892_3337_3718, 0, n__741_2546_2891_3336_3717, vec1_433_2597_2859_3274);
-            IntTy vec_410_2494_2933_3395_3723 =
-                  vector_length(vec1_744_2549_2894_3339_3720);
-            IntTy tmp_8 = sizeof(FloatTy);
-            VectorTy *tmp_234_2632_3396_3724 =
-                     vector_alloc(vec_410_2494_2933_3395_3723, tmp_8);
-            VectorTy *tmp2_235_2633_3397_3725 =
-                      writeSort1_1277_2171(vec1_744_2549_2894_3339_3720, tmp_234_2632_3396_3724);
+            IntTy n_738_2224_2457_2798_3177 =
+                  vector_length(vec1_433_2255_2432_2738);
+            IntTy n__741_2226_2459_2800_3179 =
+                   maxInt(n_738_2224_2457_2798_3177, 0);
+            IntTy tmp_9 = sizeof(IntTy);
+            VectorTy *vec_742_2227_2460_2801_3180 =
+                     vector_alloc(n__741_2226_2459_2800_3179, tmp_9);
+            IntTy cutoff_743_2228_2461_2802_3181 =
+                   defaultGrainSize(n__741_2226_2459_2800_3179);
+            VectorTy *vec1_744_2229_2462_2803_3182 =
+                      generate_par_loop_1242_1962(cutoff_743_2228_2461_2802_3181, vec_742_2227_2460_2801_3180, 0, n__741_2226_2459_2800_3179, vec1_433_2255_2432_2738);
+            IntTy vec_410_2178_2487_2857_3185 =
+                  vector_length(vec1_744_2229_2462_2803_3182);
+            IntTy tmp_8 = sizeof(IntTy);
+            VectorTy *tmp_234_2290_2858_3186 =
+                     vector_alloc(vec_410_2178_2487_2857_3185, tmp_8);
+            VectorTy *tmp2_235_2291_2859_3187 =
+                      writeSort1_1252_1971(vec1_744_2229_2462_2803_3182, tmp_234_2290_2858_3186);
 
-            timed_3786 = vec1_744_2549_2894_3339_3720;
-            clock_gettime(CLOCK_MONOTONIC_RAW, &end_timed_3786);
-            if (iters_timed_3786 != global_iters_param - 1)
+            timed_3248 = vec1_744_2229_2462_2803_3182;
+            clock_gettime(CLOCK_MONOTONIC_RAW, &end_timed_3248);
+            if (iters_timed_3248 != global_iters_param - 1)
                 restore_alloc_state();
 
-            double itertime_10 = difftimespecs(&begin_timed_3786,
-                                               &end_timed_3786);
-            printf("itertime: %f\n", itertime_10);
+            double itertime_10 = difftimespecs(&begin_timed_3248,
+                                               &end_timed_3248);
 
-            vector_inplace_update(times_13, iters_timed_3786, &itertime_10);
+            vector_inplace_update(times_13, iters_timed_3248, &itertime_10);
         }
         vector_inplace_sort(times_13, compare_doubles);
 
@@ -832,759 +936,757 @@ unsigned char bench_main()
         double selftimed_12 = *tmp_14;
         double batchtime_11 = sum_timing_array(times_13);
 
-        // print_timing_array(times_13);
+        print_timing_array(times_13);
         printf("ITERS: %lld\n", global_iters_param);
         printf("SIZE: %lld\n", global_size_param);
         printf("BATCHTIME: %e\n", batchtime_11);
         printf("SELFTIMED: %e\n", selftimed_12);
 
-        unsigned char tailapp_3758 =  check_sorted_1227_2143(timed_3786);
+        unsigned char tailapp_3220 =  check_sorted_1227_1948(timed_3248);
 
-        return tailapp_3758;
+        return tailapp_3220;
     }
 }
-unsigned char print_check(BoolTy b_418_2437_3280)
+unsigned char print_check(BoolTy b_418_2149_2744)
 {
-    if (b_418_2437_3280) {
-        unsigned char wildcard__14_419_2438_3281 = print_symbol(3787);
+    if (b_418_2149_2744) {
+        unsigned char wildcard__14_419_2150_2745 = print_symbol(3249);
 
         return 0;
     } else {
-        unsigned char wildcard__16_420_2439_3282 = print_symbol(3788);
+        unsigned char wildcard__16_420_2151_2746 = print_symbol(3250);
 
         return 0;
     }
 }
-IntTy compare_float_original(FloatTy r1_434_2442_3283, FloatTy r2_435_2443_3284)
+IntTy compare_int_original(IntTy r1_426_2152_2747, IntTy r2_427_2153_2748)
 {
-    BoolTy fltIf_3167_3285 = r1_434_2442_3283 < r2_435_2443_3284;
+    BoolTy fltIf_2633_2749 = r1_426_2152_2747 < r2_427_2153_2748;
 
-    if (fltIf_3167_3285) {
-        IntTy tailprim_3763 = 0 - 1;
+    if (fltIf_2633_2749) {
+        IntTy tailprim_3225 = 0 - 1;
 
-        return tailprim_3763;
+        return tailprim_3225;
     } else {
-        BoolTy fltIf_3168_3286 = r1_434_2442_3283 > r2_435_2443_3284;
+        BoolTy fltIf_2634_2750 = r1_426_2152_2747 > r2_427_2153_2748;
 
-        if (fltIf_3168_3286) {
+        if (fltIf_2634_2750) {
             return 1;
         } else {
             return 0;
         }
     }
 }
-int compare_float(const void *r1_434_2442_3283, const void *r2_435_2443_3284)
+int compare_int(const void *r1_426_2152_2747, const void *r2_427_2153_2748)
 {
-    FloatTy fst_16 = *(FloatTy *) r1_434_2442_3283;
-    FloatTy snd_17 = *(FloatTy *) r2_435_2443_3284;
+    IntTy fst_16 = *(IntTy *) r1_426_2152_2747;
+    IntTy snd_17 = *(IntTy *) r2_427_2153_2748;
 
-    return compare_float_original(fst_16, snd_17);
+    return compare_int_original(fst_16, snd_17);
 }
-IntTy maxInt(IntTy a_436_2444_3287, IntTy b_437_2445_3288)
+IntTy maxInt(IntTy a_434_2154_2751, IntTy b_435_2155_2752)
 {
-    BoolTy fltIf_3169_3289 = a_436_2444_3287 > b_437_2445_3288;
+    BoolTy fltIf_2635_2753 = a_434_2154_2751 > b_435_2155_2752;
 
-    if (fltIf_3169_3289) {
-        return a_436_2444_3287;
+    if (fltIf_2635_2753) {
+        return a_434_2154_2751;
     } else {
-        return b_437_2445_3288;
+        return b_435_2155_2752;
     }
 }
-IntTy minInt(IntTy a_444_2452_3290, IntTy b_445_2453_3291)
+IntTy minInt(IntTy a_444_2164_2754, IntTy b_445_2165_2755)
 {
-    BoolTy fltIf_3170_3292 = a_444_2452_3290 < b_445_2453_3291;
+    BoolTy fltIf_2636_2756 = a_444_2164_2754 < b_445_2165_2755;
 
-    if (fltIf_3170_3292) {
-        return a_444_2452_3290;
+    if (fltIf_2636_2756) {
+        return a_444_2164_2754;
     } else {
-        return b_445_2453_3291;
+        return b_445_2165_2755;
     }
 }
-IntTy defaultGrainSize(IntTy n_633_2454_3293)
+IntTy defaultGrainSize(IntTy n_633_2166_2757)
 {
-    IntTy p_634_2455_3294 = get_num_processors();
-    IntTy fltPrm_3172_3295 = 8 * p_634_2455_3294;
-    IntTy fltAppE_3171_3296 = n_633_2454_3293 / fltPrm_3172_3295;
-    IntTy grain_635_2456_3297 =  maxInt(1, fltAppE_3171_3296);
-    IntTy tailapp_3764 =  minInt(2048, grain_635_2456_3297);
+    IntTy p_634_2167_2758 = get_num_processors();
+    IntTy fltPrm_2638_2759 = 8 * p_634_2167_2758;
+    IntTy fltAppE_2637_2760 = n_633_2166_2757 / fltPrm_2638_2759;
+    IntTy grain_635_2168_2761 =  maxInt(1, fltAppE_2637_2760);
+    IntTy tailapp_3226 =  minInt(2048, grain_635_2168_2761);
 
-    return tailapp_3764;
+    return tailapp_3226;
 }
-VectorTy *write_loop_1280(IntTy to_idx_345_2457_3298,
-                          IntTy from_idx_346_2458_3299, IntTy end_347_2459_3300,
-                          VectorTy *from_348_2460_3301,
-                          VectorTy *to_349_2461_3302)
+VectorTy *write_loop_1255(IntTy to_idx_345_2169_2762,
+                          IntTy from_idx_346_2170_2763, IntTy end_347_2171_2764,
+                          VectorTy *from_348_2172_2765,
+                          VectorTy *to_349_2173_2766)
 {
-    IntTy fltPrm_3174_3303 = end_347_2459_3300 - from_idx_346_2458_3299;
-    BoolTy fltIf_3173_3304 = fltPrm_3174_3303 < 4096;
+    IntTy fltPrm_2640_2767 = end_347_2171_2764 - from_idx_346_2170_2763;
+    BoolTy fltIf_2639_2768 = fltPrm_2640_2767 < 4096;
 
-    if (fltIf_3173_3304) {
-        VectorTy *tailapp_3765 =
-                  write_loop_seq_1260(to_idx_345_2457_3298, from_idx_346_2458_3299, end_347_2459_3300, from_348_2460_3301, to_349_2461_3302);
+    if (fltIf_2639_2768) {
+        VectorTy *tailapp_3227 =
+                  write_loop_seq_1249(to_idx_345_2169_2762, from_idx_346_2170_2763, end_347_2171_2764, from_348_2172_2765, to_349_2173_2766);
 
-        return tailapp_3765;
+        return tailapp_3227;
     } else {
-        IntTy fltPrm_3175_3305 = from_idx_346_2458_3299 + end_347_2459_3300;
-        IntTy mid_351_2462_3306 = fltPrm_3175_3305 / 2;
-        IntTy parent_id_3752 = __cilkrts_get_worker_number();
-        VectorTy *to1_352_2463_3307 =
-                 cilk_spawn write_loop_1280(to_idx_345_2457_3298, from_idx_346_2458_3299, mid_351_2462_3306, from_348_2460_3301, to_349_2461_3302);
-        IntTy fltPrm_3177_3308 = to_idx_345_2457_3298 + mid_351_2462_3306;
-        IntTy fltAppE_3176_3309 = fltPrm_3177_3308 - from_idx_346_2458_3299;
-        VectorTy *to2_353_2464_3310 =
-                  write_loop_1280(fltAppE_3176_3309, mid_351_2462_3306, end_347_2459_3300, from_348_2460_3301, to_349_2461_3302);
+        IntTy fltPrm_2641_2769 = from_idx_346_2170_2763 + end_347_2171_2764;
+        IntTy mid_351_2174_2770 = fltPrm_2641_2769 / 2;
+        IntTy parent_id_3214 = __cilkrts_get_worker_number();
+        VectorTy *to1_352_2175_2771 =
+                 cilk_spawn write_loop_1255(to_idx_345_2169_2762, from_idx_346_2170_2763, mid_351_2174_2770, from_348_2172_2765, to_349_2173_2766);
+        IntTy fltPrm_2643_2772 = to_idx_345_2169_2762 + mid_351_2174_2770;
+        IntTy fltAppE_2642_2773 = fltPrm_2643_2772 - from_idx_346_2170_2763;
+        VectorTy *to2_353_2176_2774 =
+                  write_loop_1255(fltAppE_2642_2773, mid_351_2174_2770, end_347_2171_2764, from_348_2172_2765, to_349_2173_2766);
 
         cilk_sync;
-        return to2_353_2464_3310;
+        return to2_353_2176_2774;
     }
 }
-VectorTy *write_loop_seq_1260(IntTy to_idx_355_2504_3312,
-                              IntTy from_idx_356_2505_3313,
-                              IntTy end_357_2506_3314,
-                              VectorTy *from_358_2507_3315,
-                              VectorTy *to_359_2508_3316)
+VectorTy *write_loop_seq_1249(IntTy to_idx_355_2188_2776,
+                              IntTy from_idx_356_2189_2777,
+                              IntTy end_357_2190_2778,
+                              VectorTy *from_358_2191_2779,
+                              VectorTy *to_359_2192_2780)
 {
-    BoolTy fltIf_3178_3317 = from_idx_356_2505_3313 == end_357_2506_3314;
+    BoolTy fltIf_2644_2781 = from_idx_356_2189_2777 == end_357_2190_2778;
 
-    if (fltIf_3178_3317) {
-        return to_359_2508_3316;
+    if (fltIf_2644_2781) {
+        return to_359_2192_2780;
     } else {
-        FloatTy *tmp_18;
+        IntTy *tmp_18;
 
-        tmp_18 = (FloatTy *) vector_nth(from_358_2507_3315,
-                                        from_idx_356_2505_3313);
+        tmp_18 = (IntTy *) vector_nth(from_358_2191_2779,
+                                      from_idx_356_2189_2777);
 
-        FloatTy val_393_2502_2881_3321 = *tmp_18;
-        VectorTy *to1_361_2509_3323 = vector_inplace_update(to_359_2508_3316,
-                                                            to_idx_355_2504_3312,
-                                                            &val_393_2502_2881_3321);
-        IntTy fltAppE_3179_3324 = to_idx_355_2504_3312 + 1;
-        IntTy fltAppE_3180_3325 = from_idx_356_2505_3313 + 1;
-        VectorTy *tailapp_3766 =
-                  write_loop_seq_1260(fltAppE_3179_3324, fltAppE_3180_3325, end_357_2506_3314, from_358_2507_3315, to1_361_2509_3323);
+        IntTy val_393_2186_2449_2785 = *tmp_18;
+        VectorTy *to1_361_2193_2787 = vector_inplace_update(to_359_2192_2780,
+                                                            to_idx_355_2188_2776,
+                                                            &val_393_2186_2449_2785);
+        IntTy fltAppE_2645_2788 = to_idx_355_2188_2776 + 1;
+        IntTy fltAppE_2646_2789 = from_idx_356_2189_2777 + 1;
+        VectorTy *tailapp_3228 =
+                  write_loop_seq_1249(fltAppE_2645_2788, fltAppE_2646_2789, end_357_2190_2778, from_358_2191_2779, to1_361_2193_2787);
 
-        return tailapp_3766;
+        return tailapp_3228;
     }
 }
-VectorTy *generate_par_loop_1253_2160(IntTy cutoff_745_2558_3343,
-                                      VectorTy *vec_746_2559_3344,
-                                      IntTy start_747_2560_3345,
-                                      IntTy end_748_2561_3346,
-                                      VectorTy *vec_412_2562_3347)
+VectorTy *generate_par_loop_1242_1962(IntTy cutoff_745_2230_2807,
+                                      VectorTy *vec_746_2231_2808,
+                                      IntTy start_747_2232_2809,
+                                      IntTy end_748_2233_2810,
+                                      VectorTy *vec_412_2234_2811)
 {
-    IntTy fltPrm_3182_3348 = end_748_2561_3346 - start_747_2560_3345;
-    BoolTy fltIf_3181_3349 = fltPrm_3182_3348 <= cutoff_745_2558_3343;
+    IntTy fltPrm_2648_2812 = end_748_2233_2810 - start_747_2232_2809;
+    BoolTy fltIf_2647_2813 = fltPrm_2648_2812 <= cutoff_745_2230_2807;
 
-    if (fltIf_3181_3349) {
-        VectorTy *tailapp_3767 =
-                  generate_loop_1251_2161(vec_746_2559_3344, start_747_2560_3345, end_748_2561_3346, vec_412_2562_3347);
+    if (fltIf_2647_2813) {
+        VectorTy *tailapp_3229 =
+                  generate_loop_1241_1963(vec_746_2231_2808, start_747_2232_2809, end_748_2233_2810, vec_412_2234_2811);
 
-        return tailapp_3767;
+        return tailapp_3229;
     } else {
-        IntTy fltPrm_3183_3350 = start_747_2560_3345 + end_748_2561_3346;
-        IntTy mid_751_2563_3351 = fltPrm_3183_3350 / 2;
-        IntTy parent_id_3753 = __cilkrts_get_worker_number();
-        VectorTy *_vec1_752_2564_3352 =
-                 cilk_spawn generate_par_loop_1253_2160(cutoff_745_2558_3343, vec_746_2559_3344, start_747_2560_3345, mid_751_2563_3351, vec_412_2562_3347);
-        VectorTy *vec2_753_2565_3353 =
-                  generate_par_loop_1253_2160(cutoff_745_2558_3343, vec_746_2559_3344, mid_751_2563_3351, end_748_2561_3346, vec_412_2562_3347);
+        IntTy fltPrm_2649_2814 = start_747_2232_2809 + end_748_2233_2810;
+        IntTy mid_751_2235_2815 = fltPrm_2649_2814 / 2;
+        IntTy parent_id_3215 = __cilkrts_get_worker_number();
+        VectorTy *_vec1_752_2236_2816 =
+                 cilk_spawn generate_par_loop_1242_1962(cutoff_745_2230_2807, vec_746_2231_2808, start_747_2232_2809, mid_751_2235_2815, vec_412_2234_2811);
+        VectorTy *vec2_753_2237_2817 =
+                  generate_par_loop_1242_1962(cutoff_745_2230_2807, vec_746_2231_2808, mid_751_2235_2815, end_748_2233_2810, vec_412_2234_2811);
 
         cilk_sync;
-        return vec2_753_2565_3353;
+        return vec2_753_2237_2817;
     }
 }
-VectorTy *generate_loop_1251_2161(VectorTy *vec_579_2567_3355,
-                                  IntTy idx_580_2568_3356,
-                                  IntTy end_581_2569_3357,
-                                  VectorTy *vec_412_2570_3358)
+VectorTy *generate_loop_1241_1963(VectorTy *vec_579_2239_2819,
+                                  IntTy idx_580_2240_2820,
+                                  IntTy end_581_2241_2821,
+                                  VectorTy *vec_412_2242_2822)
 {
-    BoolTy fltIf_3184_3359 = idx_580_2568_3356 == end_581_2569_3357;
+    BoolTy fltIf_2650_2823 = idx_580_2240_2820 == end_581_2241_2821;
 
-    if (fltIf_3184_3359) {
-        return vec_579_2567_3355;
+    if (fltIf_2650_2823) {
+        return vec_579_2239_2819;
     } else {
-        FloatTy *tmp_19;
+        IntTy *tmp_19;
 
-        tmp_19 = (FloatTy *) vector_nth(vec_412_2570_3358, idx_580_2568_3356);
+        tmp_19 = (IntTy *) vector_nth(vec_412_2242_2822, idx_580_2240_2820);
 
-        FloatTy fltPrm_3185_3362 = *tmp_19;
-        VectorTy *vec1_584_2571_3363 = vector_inplace_update(vec_579_2567_3355,
-                                                             idx_580_2568_3356,
-                                                             &fltPrm_3185_3362);
-        IntTy fltAppE_3186_3364 = idx_580_2568_3356 + 1;
-        VectorTy *tailapp_3768 =
-                  generate_loop_1251_2161(vec1_584_2571_3363, fltAppE_3186_3364, end_581_2569_3357, vec_412_2570_3358);
+        IntTy fltPrm_2651_2826 = *tmp_19;
+        VectorTy *vec1_584_2243_2827 = vector_inplace_update(vec_579_2239_2819,
+                                                             idx_580_2240_2820,
+                                                             &fltPrm_2651_2826);
+        IntTy fltAppE_2652_2828 = idx_580_2240_2820 + 1;
+        VectorTy *tailapp_3230 =
+                  generate_loop_1241_1963(vec1_584_2243_2827, fltAppE_2652_2828, end_581_2241_2821, vec_412_2242_2822);
 
-        return tailapp_3768;
+        return tailapp_3230;
     }
 }
-VectorTy *generate_loop_1251_2164(VectorTy *vec_579_2590_3365,
-                                  IntTy idx_580_2591_3366,
-                                  IntTy end_581_2592_3367)
+VectorTy *generate_loop_1241_1964(VectorTy *vec_579_2248_2829,
+                                  IntTy idx_580_2249_2830,
+                                  IntTy end_581_2250_2831)
 {
-    BoolTy fltIf_3187_3368 = idx_580_2591_3366 == end_581_2592_3367;
+    BoolTy fltIf_2653_2832 = idx_580_2249_2830 == end_581_2250_2831;
 
-    if (fltIf_3187_3368) {
-        return vec_579_2590_3365;
+    if (fltIf_2653_2832) {
+        return vec_579_2248_2829;
     } else {
-        IntTy fltPrm_3189_3370 = rand();
-        FloatTy fltPrm_3188_3371 = (FloatTy) fltPrm_3189_3370;
-        VectorTy *vec1_584_2593_3372 = vector_inplace_update(vec_579_2590_3365,
-                                                             idx_580_2591_3366,
-                                                             &fltPrm_3188_3371);
-        IntTy fltAppE_3190_3373 = idx_580_2591_3366 + 1;
-        VectorTy *tailapp_3769 =
-                  generate_loop_1251_2164(vec1_584_2593_3372, fltAppE_3190_3373, end_581_2592_3367);
+        IntTy fltPrm_2654_2834 = rand();
+        VectorTy *vec1_584_2251_2835 = vector_inplace_update(vec_579_2248_2829,
+                                                             idx_580_2249_2830,
+                                                             &fltPrm_2654_2834);
+        IntTy fltAppE_2655_2836 = idx_580_2249_2830 + 1;
+        VectorTy *tailapp_3231 =
+                  generate_loop_1241_1964(vec1_584_2251_2835, fltAppE_2655_2836, end_581_2250_2831);
 
-        return tailapp_3769;
+        return tailapp_3231;
     }
 }
-VectorTy *generate_loop_1251_2165(VectorTy *vec_579_2598_3374,
-                                  IntTy idx_580_2599_3375,
-                                  IntTy end_581_2600_3376)
+VectorTy *generate_loop_1241_1965(VectorTy *vec_579_2256_2837,
+                                  IntTy idx_580_2257_2838,
+                                  IntTy end_581_2258_2839)
 {
-    BoolTy fltIf_3191_3377 = idx_580_2599_3375 == end_581_2600_3376;
+    BoolTy fltIf_2656_2840 = idx_580_2257_2838 == end_581_2258_2839;
 
-    if (fltIf_3191_3377) {
-        return vec_579_2598_3374;
+    if (fltIf_2656_2840) {
+        return vec_579_2256_2837;
     } else {
-        IntTy fltPrm_3193_3379 = rand();
-        FloatTy fltPrm_3192_3380 = (FloatTy) fltPrm_3193_3379;
-        VectorTy *vec1_584_2601_3381 = vector_inplace_update(vec_579_2598_3374,
-                                                             idx_580_2599_3375,
-                                                             &fltPrm_3192_3380);
-        IntTy fltAppE_3194_3382 = idx_580_2599_3375 + 1;
-        VectorTy *tailapp_3770 =
-                  generate_loop_1251_2165(vec1_584_2601_3381, fltAppE_3194_3382, end_581_2600_3376);
+        IntTy fltPrm_2657_2842 = rand();
+        VectorTy *vec1_584_2259_2843 = vector_inplace_update(vec_579_2256_2837,
+                                                             idx_580_2257_2838,
+                                                             &fltPrm_2657_2842);
+        IntTy fltAppE_2658_2844 = idx_580_2257_2838 + 1;
+        VectorTy *tailapp_3232 =
+                  generate_loop_1241_1965(vec1_584_2259_2843, fltAppE_2658_2844, end_581_2258_2839);
 
-        return tailapp_3770;
+        return tailapp_3232;
     }
 }
-VectorTy *generate_loop_1251_2166(VectorTy *vec_579_2602_3383,
-                                  IntTy idx_580_2603_3384,
-                                  IntTy end_581_2604_3385,
-                                  VectorTy *vec_415_2605_3386)
+VectorTy *generate_loop_1241_1967(VectorTy *vec_579_2265_2845,
+                                  IntTy idx_580_2266_2846,
+                                  IntTy end_581_2267_2847,
+                                  VectorTy *vec_415_2268_2848)
 {
-    BoolTy fltIf_3195_3387 = idx_580_2603_3384 == end_581_2604_3385;
+    BoolTy fltIf_2659_2849 = idx_580_2266_2846 == end_581_2267_2847;
 
-    if (fltIf_3195_3387) {
-        return vec_579_2602_3383;
+    if (fltIf_2659_2849) {
+        return vec_579_2265_2845;
     } else {
-        FloatTy *tmp_20;
+        IntTy *tmp_20;
 
-        tmp_20 = (FloatTy *) vector_nth(vec_415_2605_3386, idx_580_2603_3384);
+        tmp_20 = (IntTy *) vector_nth(vec_415_2268_2848, idx_580_2266_2846);
 
-        FloatTy fltPrm_3196_3390 = *tmp_20;
-        VectorTy *vec1_584_2606_3391 = vector_inplace_update(vec_579_2602_3383,
-                                                             idx_580_2603_3384,
-                                                             &fltPrm_3196_3390);
-        IntTy fltAppE_3197_3392 = idx_580_2603_3384 + 1;
-        VectorTy *tailapp_3771 =
-                  generate_loop_1251_2166(vec1_584_2606_3391, fltAppE_3197_3392, end_581_2604_3385, vec_415_2605_3386);
+        IntTy fltPrm_2660_2852 = *tmp_20;
+        VectorTy *vec1_584_2269_2853 = vector_inplace_update(vec_579_2265_2845,
+                                                             idx_580_2266_2846,
+                                                             &fltPrm_2660_2852);
+        IntTy fltAppE_2661_2854 = idx_580_2266_2846 + 1;
+        VectorTy *tailapp_3233 =
+                  generate_loop_1241_1967(vec1_584_2269_2853, fltAppE_2661_2854, end_581_2267_2847, vec_415_2268_2848);
 
-        return tailapp_3771;
+        return tailapp_3233;
     }
 }
-VectorTy *writeSort1_1277_2171(VectorTy *src_285_2634_3398,
-                               VectorTy *tmp_286_2635_3399)
+VectorTy *writeSort1_1252_1971(VectorTy *src_285_2292_2860,
+                               VectorTy *tmp_286_2293_2861)
 {
-    IntTy len_288_2636_3401 = vector_length(src_285_2634_3398);
-    BoolTy fltIf_3198_3402 = len_288_2636_3401 < 8192;
+    IntTy len_288_2294_2863 = vector_length(src_285_2292_2860);
+    BoolTy fltIf_2662_2864 = len_288_2294_2863 < 8192;
 
-    if (fltIf_3198_3402) {
-        VectorTy *tailprim_3772 = vector_inplace_sort(src_285_2634_3398,
-                                                      compare_float);
+    if (fltIf_2662_2864) {
+        VectorTy *tailprim_3234 = vector_inplace_sort(src_285_2292_2860,
+                                                      compare_int);
 
-        return tailprim_3772;
+        return tailprim_3234;
     } else {
-        IntTy half_289_2637_3404 = len_288_2636_3401 / 2;
-        IntTy len_406_2497_2938_3407 = vector_length(src_285_2634_3398);
-        IntTy n__407_2498_2939_3408 =  maxInt(half_289_2637_3404, 0);
-        IntTy m_408_2499_2940_3409 =
-               minInt(n__407_2498_2939_3408, len_406_2497_2938_3407);
-        IntTy fltAppE_3199_3410 = len_406_2497_2938_3407 -
-              n__407_2498_2939_3408;
-        IntTy m__409_2500_2941_3411 =  maxInt(0, fltAppE_3199_3410);
-        VectorTy *fltPrd_3200_3412 = vector_slice(0, m_408_2499_2940_3409,
-                                                  src_285_2634_3398);
-        VectorTy *fltPrd_3201_3413 = vector_slice(m_408_2499_2940_3409,
-                                                  m__409_2500_2941_3411,
-                                                  src_285_2634_3398);
-        IntTy len_406_2497_2944_3419 = vector_length(tmp_286_2635_3399);
-        IntTy n__407_2498_2945_3420 =  maxInt(half_289_2637_3404, 0);
-        IntTy m_408_2499_2946_3421 =
-               minInt(n__407_2498_2945_3420, len_406_2497_2944_3419);
-        IntTy fltAppE_3202_3422 = len_406_2497_2944_3419 -
-              n__407_2498_2945_3420;
-        IntTy m__409_2500_2947_3423 =  maxInt(0, fltAppE_3202_3422);
-        VectorTy *fltPrd_3203_3424 = vector_slice(0, m_408_2499_2946_3421,
-                                                  tmp_286_2635_3399);
-        VectorTy *fltPrd_3204_3425 = vector_slice(m_408_2499_2946_3421,
-                                                  m__409_2500_2947_3423,
-                                                  tmp_286_2635_3399);
-        IntTy parent_id_3754 = __cilkrts_get_worker_number();
-        VectorTy *tmp_l1_296_2644_3429 =
-                 cilk_spawn writeSort2_1278_2173(fltPrd_3200_3412, fltPrd_3203_3424);
-        VectorTy *tmp_r1_297_2645_3430 =
-                  writeSort2_1278_2173(fltPrd_3201_3413, fltPrd_3204_3425);
+        IntTy half_289_2295_2866 = len_288_2294_2863 / 2;
+        IntTy len_406_2181_2492_2869 = vector_length(src_285_2292_2860);
+        IntTy n__407_2182_2493_2870 =  maxInt(half_289_2295_2866, 0);
+        IntTy m_408_2183_2494_2871 =
+               minInt(n__407_2182_2493_2870, len_406_2181_2492_2869);
+        IntTy fltAppE_2663_2872 = len_406_2181_2492_2869 -
+              n__407_2182_2493_2870;
+        IntTy m__409_2184_2495_2873 =  maxInt(0, fltAppE_2663_2872);
+        VectorTy *fltPrd_2664_2874 = vector_slice(0, m_408_2183_2494_2871,
+                                                  src_285_2292_2860);
+        VectorTy *fltPrd_2665_2875 = vector_slice(m_408_2183_2494_2871,
+                                                  m__409_2184_2495_2873,
+                                                  src_285_2292_2860);
+        IntTy len_406_2181_2498_2881 = vector_length(tmp_286_2293_2861);
+        IntTy n__407_2182_2499_2882 =  maxInt(half_289_2295_2866, 0);
+        IntTy m_408_2183_2500_2883 =
+               minInt(n__407_2182_2499_2882, len_406_2181_2498_2881);
+        IntTy fltAppE_2666_2884 = len_406_2181_2498_2881 -
+              n__407_2182_2499_2882;
+        IntTy m__409_2184_2501_2885 =  maxInt(0, fltAppE_2666_2884);
+        VectorTy *fltPrd_2667_2886 = vector_slice(0, m_408_2183_2500_2883,
+                                                  tmp_286_2293_2861);
+        VectorTy *fltPrd_2668_2887 = vector_slice(m_408_2183_2500_2883,
+                                                  m__409_2184_2501_2885,
+                                                  tmp_286_2293_2861);
+        IntTy parent_id_3216 = __cilkrts_get_worker_number();
+        VectorTy *tmp_l1_296_2302_2891 =
+                 cilk_spawn writeSort2_1253_1973(fltPrd_2664_2874, fltPrd_2667_2886);
+        VectorTy *tmp_r1_297_2303_2892 =
+                  writeSort2_1253_1973(fltPrd_2665_2875, fltPrd_2668_2887);
 
         cilk_sync;
 
-        VectorTy *res_299_2647_3432 =
-                  writeMerge_1279_2174(tmp_l1_296_2644_3429, tmp_r1_297_2645_3430, src_285_2634_3398);
+        VectorTy *res_299_2305_2894 =
+                  writeMerge_1254_1974(tmp_l1_296_2302_2891, tmp_r1_297_2303_2892, src_285_2292_2860);
 
-        return res_299_2647_3432;
+        return res_299_2305_2894;
     }
 }
-VectorTy *writeMerge_1279_2174(VectorTy *src_1_301_2648_3433,
-                               VectorTy *src_2_302_2649_3434,
-                               VectorTy *tmp_303_2650_3435)
+VectorTy *writeMerge_1254_1974(VectorTy *src_1_301_2306_2895,
+                               VectorTy *src_2_302_2307_2896,
+                               VectorTy *tmp_303_2308_2897)
 {
-    IntTy fltPrm_3206_3437 = vector_length(tmp_303_2650_3435);
-    BoolTy fltIf_3205_3438 = fltPrm_3206_3437 < 4096;
+    IntTy fltPrm_2670_2899 = vector_length(tmp_303_2308_2897);
+    BoolTy fltIf_2669_2900 = fltPrm_2670_2899 < 4096;
 
-    if (fltIf_3205_3438) {
-        IntTy n1_326_2696_2952_3442 = vector_length(src_1_301_2648_3433);
-        IntTy n2_327_2697_2953_3443 = vector_length(src_2_302_2649_3434);
-        VectorTy *res_328_2698_2954_3444 =
-                  writeMerge_seq_loop_1261_2178(0, 0, 0, n1_326_2696_2952_3442, n2_327_2697_2953_3443, src_1_301_2648_3433, src_2_302_2649_3434, tmp_303_2650_3435);
+    if (fltIf_2669_2900) {
+        IntTy n1_326_2354_2506_2904 = vector_length(src_1_301_2306_2895);
+        IntTy n2_327_2355_2507_2905 = vector_length(src_2_302_2307_2896);
+        VectorTy *res_328_2356_2508_2906 =
+                  writeMerge_seq_loop_1250_1978(0, 0, 0, n1_326_2354_2506_2904, n2_327_2355_2507_2905, src_1_301_2306_2895, src_2_302_2307_2896, tmp_303_2308_2897);
 
-        return res_328_2698_2954_3444;
+        return res_328_2356_2508_2906;
     } else {
-        IntTy n1_305_2651_3446 = vector_length(src_1_301_2648_3433);
-        IntTy n2_306_2652_3448 = vector_length(src_2_302_2649_3434);
-        BoolTy fltIf_3207_3449 = n1_305_2651_3446 == 0;
+        IntTy n1_305_2309_2908 = vector_length(src_1_301_2306_2895);
+        IntTy n2_306_2310_2910 = vector_length(src_2_302_2307_2896);
+        BoolTy fltIf_2671_2911 = n1_305_2309_2908 == 0;
 
-        if (fltIf_3207_3449) {
-            VectorTy *tailapp_3773 =
-                      write_loop_1280(0, 0, n2_306_2652_3448, src_2_302_2649_3434, tmp_303_2650_3435);
+        if (fltIf_2671_2911) {
+            VectorTy *tailapp_3235 =
+                      write_loop_1255(0, 0, n2_306_2310_2910, src_2_302_2307_2896, tmp_303_2308_2897);
 
-            return tailapp_3773;
+            return tailapp_3235;
         } else {
-            IntTy mid1_307_2653_3450 = n1_305_2651_3446 / 2;
-            FloatTy *tmp_21;
+            IntTy mid1_307_2311_2912 = n1_305_2309_2908 / 2;
+            IntTy *tmp_21;
 
-            tmp_21 = (FloatTy *) vector_nth(src_1_301_2648_3433,
-                                            mid1_307_2653_3450);
+            tmp_21 = (IntTy *) vector_nth(src_1_301_2306_2895,
+                                          mid1_307_2311_2912);
 
-            FloatTy pivot_308_2654_3453 = *tmp_21;
-            IntTy fltAppE_3208_3456 = vector_length(src_2_302_2649_3434);
-            IntTy mid2_309_2655_3457 =
-                   binarySearch__1282_2177(0, fltAppE_3208_3456, src_2_302_2649_3434, pivot_308_2654_3453);
-            VectorTy *src_1_l_310_2656_3461 = vector_slice(0,
-                                                           mid1_307_2653_3450,
-                                                           src_1_301_2648_3433);
-            IntTy i_396_2516_2964_3462 = mid1_307_2653_3450 + 1;
-            IntTy fltPrm_3209_3463 = mid1_307_2653_3450 + 1;
-            IntTy n_397_2517_2965_3464 = n1_305_2651_3446 - fltPrm_3209_3463;
-            VectorTy *src_1_r_311_2657_3466 = vector_slice(i_396_2516_2964_3462,
-                                                           n_397_2517_2965_3464,
-                                                           src_1_301_2648_3433);
-            VectorTy *src_2_l_312_2658_3470 = vector_slice(0,
-                                                           mid2_309_2655_3457,
-                                                           src_2_302_2649_3434);
-            IntTy n_397_2517_2971_3472 = n2_306_2652_3448 - mid2_309_2655_3457;
-            VectorTy *src_2_r_313_2659_3474 = vector_slice(mid2_309_2655_3457,
-                                                           n_397_2517_2971_3472,
-                                                           src_2_302_2649_3434);
-            IntTy i_392_2501_2973_3475 = mid1_307_2653_3450 +
-                  mid2_309_2655_3457;
-            VectorTy *wildcard__67_314_2660_3478 =
-                     vector_inplace_update(tmp_303_2650_3435,
-                                           i_392_2501_2973_3475,
-                                           &pivot_308_2654_3453);
-            IntTy len_t_315_2661_3480 = vector_length(tmp_303_2650_3435);
-            IntTy n_397_2517_2978_3482 = mid1_307_2653_3450 +
-                  mid2_309_2655_3457;
-            VectorTy *tmp_l_316_2662_3484 = vector_slice(0,
-                                                         n_397_2517_2978_3482,
-                                                         tmp_303_2650_3435);
-            IntTy fltPrm_3210_3485 = mid1_307_2653_3450 + mid2_309_2655_3457;
-            IntTy i_396_2516_2980_3486 = fltPrm_3210_3485 + 1;
-            IntTy fltPrm_3212_3487 = mid1_307_2653_3450 + mid2_309_2655_3457;
-            IntTy fltPrm_3211_3488 = fltPrm_3212_3487 + 1;
-            IntTy n_397_2517_2981_3489 = len_t_315_2661_3480 - fltPrm_3211_3488;
-            VectorTy *tmp_r_317_2663_3491 = vector_slice(i_396_2516_2980_3486,
-                                                         n_397_2517_2981_3489,
-                                                         tmp_303_2650_3435);
-            IntTy parent_id_3755 = __cilkrts_get_worker_number();
-            VectorTy *tmp_l1_318_2664_3492 =
-                     cilk_spawn writeMerge_1279_2174(src_1_l_310_2656_3461, src_2_l_312_2658_3470, tmp_l_316_2662_3484);
-            VectorTy *tmp_r1_319_2665_3493 =
-                      writeMerge_1279_2174(src_1_r_311_2657_3466, src_2_r_313_2659_3474, tmp_r_317_2663_3491);
+            IntTy pivot_308_2312_2915 = *tmp_21;
+            IntTy fltAppE_2672_2918 = vector_length(src_2_302_2307_2896);
+            IntTy mid2_309_2313_2919 =
+                   binarySearch__1257_1977(0, fltAppE_2672_2918, src_2_302_2307_2896, pivot_308_2312_2915);
+            VectorTy *src_1_l_310_2314_2923 = vector_slice(0,
+                                                           mid1_307_2311_2912,
+                                                           src_1_301_2306_2895);
+            IntTy i_396_2196_2518_2924 = mid1_307_2311_2912 + 1;
+            IntTy fltPrm_2673_2925 = mid1_307_2311_2912 + 1;
+            IntTy n_397_2197_2519_2926 = n1_305_2309_2908 - fltPrm_2673_2925;
+            VectorTy *src_1_r_311_2315_2928 = vector_slice(i_396_2196_2518_2924,
+                                                           n_397_2197_2519_2926,
+                                                           src_1_301_2306_2895);
+            VectorTy *src_2_l_312_2316_2932 = vector_slice(0,
+                                                           mid2_309_2313_2919,
+                                                           src_2_302_2307_2896);
+            IntTy n_397_2197_2525_2934 = n2_306_2310_2910 - mid2_309_2313_2919;
+            VectorTy *src_2_r_313_2317_2936 = vector_slice(mid2_309_2313_2919,
+                                                           n_397_2197_2525_2934,
+                                                           src_2_302_2307_2896);
+            IntTy i_392_2185_2527_2937 = mid1_307_2311_2912 +
+                  mid2_309_2313_2919;
+            VectorTy *wildcard__67_314_2318_2940 =
+                     vector_inplace_update(tmp_303_2308_2897,
+                                           i_392_2185_2527_2937,
+                                           &pivot_308_2312_2915);
+            IntTy len_t_315_2319_2942 = vector_length(tmp_303_2308_2897);
+            IntTy n_397_2197_2532_2944 = mid1_307_2311_2912 +
+                  mid2_309_2313_2919;
+            VectorTy *tmp_l_316_2320_2946 = vector_slice(0,
+                                                         n_397_2197_2532_2944,
+                                                         tmp_303_2308_2897);
+            IntTy fltPrm_2674_2947 = mid1_307_2311_2912 + mid2_309_2313_2919;
+            IntTy i_396_2196_2534_2948 = fltPrm_2674_2947 + 1;
+            IntTy fltPrm_2676_2949 = mid1_307_2311_2912 + mid2_309_2313_2919;
+            IntTy fltPrm_2675_2950 = fltPrm_2676_2949 + 1;
+            IntTy n_397_2197_2535_2951 = len_t_315_2319_2942 - fltPrm_2675_2950;
+            VectorTy *tmp_r_317_2321_2953 = vector_slice(i_396_2196_2534_2948,
+                                                         n_397_2197_2535_2951,
+                                                         tmp_303_2308_2897);
+            IntTy parent_id_3217 = __cilkrts_get_worker_number();
+            VectorTy *tmp_l1_318_2322_2954 =
+                     cilk_spawn writeMerge_1254_1974(src_1_l_310_2314_2923, src_2_l_312_2316_2932, tmp_l_316_2320_2946);
+            VectorTy *tmp_r1_319_2323_2955 =
+                      writeMerge_1254_1974(src_1_r_311_2315_2928, src_2_r_313_2317_2936, tmp_r_317_2321_2953);
 
             cilk_sync;
-            return tmp_303_2650_3435;
+            return tmp_303_2308_2897;
         }
     }
 }
-IntTy binarySearch__1282_2177(IntTy lo_366_2669_3495, IntTy hi_367_2670_3496,
-                              VectorTy *vec_369_2671_3497,
-                              FloatTy query_370_2672_3498)
+IntTy binarySearch__1257_1977(IntTy lo_366_2327_2957, IntTy hi_367_2328_2958,
+                              VectorTy *vec_369_2329_2959,
+                              IntTy query_370_2330_2960)
 {
-    IntTy n_372_2673_3499 = hi_367_2670_3496 - lo_366_2669_3495;
-    BoolTy fltIf_3213_3500 = n_372_2673_3499 == 0;
+    IntTy n_372_2331_2961 = hi_367_2328_2958 - lo_366_2327_2957;
+    BoolTy fltIf_2677_2962 = n_372_2331_2961 == 0;
 
-    if (fltIf_3213_3500) {
-        return lo_366_2669_3495;
+    if (fltIf_2677_2962) {
+        return lo_366_2327_2957;
     } else {
-        IntTy fltPrm_3214_3501 = n_372_2673_3499 / 2;
-        IntTy mid_373_2674_3502 = lo_366_2669_3495 + fltPrm_3214_3501;
-        FloatTy *tmp_22;
+        IntTy fltPrm_2678_2963 = n_372_2331_2961 / 2;
+        IntTy mid_373_2332_2964 = lo_366_2327_2957 + fltPrm_2678_2963;
+        IntTy *tmp_22;
 
-        tmp_22 = (FloatTy *) vector_nth(vec_369_2671_3497, mid_373_2674_3502);
+        tmp_22 = (IntTy *) vector_nth(vec_369_2329_2959, mid_373_2332_2964);
 
-        FloatTy pivot_374_2675_3505 = *tmp_22;
-        BoolTy fltIf_3215_3508 = query_370_2672_3498 < pivot_374_2675_3505;
-        IntTy tst_375_2676_3510;
+        IntTy pivot_374_2333_2967 = *tmp_22;
+        BoolTy fltIf_2679_2970 = query_370_2330_2960 < pivot_374_2333_2967;
+        IntTy tst_375_2334_2972;
 
-        if (fltIf_3215_3508) {
-            IntTy flt_3793 = 0 - 1;
+        if (fltIf_2679_2970) {
+            IntTy flt_3255 = 0 - 1;
 
-            tst_375_2676_3510 = flt_3793;
+            tst_375_2334_2972 = flt_3255;
         } else {
-            BoolTy fltIf_3216_3509 = query_370_2672_3498 > pivot_374_2675_3505;
+            BoolTy fltIf_2680_2971 = query_370_2330_2960 > pivot_374_2333_2967;
 
-            if (fltIf_3216_3509) {
-                tst_375_2676_3510 = 1;
+            if (fltIf_2680_2971) {
+                tst_375_2334_2972 = 1;
             } else {
-                tst_375_2676_3510 = 0;
+                tst_375_2334_2972 = 0;
             }
         }
 
-        BoolTy fltIf_3217_3511 = tst_375_2676_3510 < 0;
+        BoolTy fltIf_2681_2973 = tst_375_2334_2972 < 0;
 
-        if (fltIf_3217_3511) {
-            IntTy tailapp_3774 =
-                   binarySearch__1282_2177(lo_366_2669_3495, mid_373_2674_3502, vec_369_2671_3497, query_370_2672_3498);
+        if (fltIf_2681_2973) {
+            IntTy tailapp_3236 =
+                   binarySearch__1257_1977(lo_366_2327_2957, mid_373_2332_2964, vec_369_2329_2959, query_370_2330_2960);
 
-            return tailapp_3774;
+            return tailapp_3236;
         } else {
-            BoolTy fltIf_3218_3512 = tst_375_2676_3510 > 0;
+            BoolTy fltIf_2682_2974 = tst_375_2334_2972 > 0;
 
-            if (fltIf_3218_3512) {
-                IntTy fltAppE_3219_3513 = mid_373_2674_3502 + 1;
-                IntTy tailapp_3775 =
-                       binarySearch__1282_2177(fltAppE_3219_3513, hi_367_2670_3496, vec_369_2671_3497, query_370_2672_3498);
+            if (fltIf_2682_2974) {
+                IntTy fltAppE_2683_2975 = mid_373_2332_2964 + 1;
+                IntTy tailapp_3237 =
+                       binarySearch__1257_1977(fltAppE_2683_2975, hi_367_2328_2958, vec_369_2329_2959, query_370_2330_2960);
 
-                return tailapp_3775;
+                return tailapp_3237;
             } else {
-                return mid_373_2674_3502;
+                return mid_373_2332_2964;
             }
         }
     }
 }
-VectorTy *writeSort2_1278_2173(VectorTy *src_253_2677_3514,
-                               VectorTy *tmp_254_2678_3515)
+VectorTy *writeSort2_1253_1973(VectorTy *src_253_2335_2976,
+                               VectorTy *tmp_254_2336_2977)
 {
-    IntTy len_256_2679_3517 = vector_length(src_253_2677_3514);
-    BoolTy fltIf_3220_3518 = len_256_2679_3517 < 8192;
+    IntTy len_256_2337_2979 = vector_length(src_253_2335_2976);
+    BoolTy fltIf_2684_2980 = len_256_2337_2979 < 8192;
 
-    if (fltIf_3220_3518) {
-        VectorTy *tmp_1_257_2680_3519 =
-                  write_loop_1280(0, 0, len_256_2679_3517, src_253_2677_3514, tmp_254_2678_3515);
-        VectorTy *tailprim_3776 = vector_inplace_sort(tmp_1_257_2680_3519,
-                                                      compare_float);
+    if (fltIf_2684_2980) {
+        VectorTy *tmp_1_257_2338_2981 =
+                  write_loop_1255(0, 0, len_256_2337_2979, src_253_2335_2976, tmp_254_2336_2977);
+        VectorTy *tailprim_3238 = vector_inplace_sort(tmp_1_257_2338_2981,
+                                                      compare_int);
 
-        return tailprim_3776;
+        return tailprim_3238;
     } else {
-        IntTy half_258_2681_3521 = len_256_2679_3517 / 2;
-        IntTy len_406_2497_2992_3524 = vector_length(src_253_2677_3514);
-        IntTy n__407_2498_2993_3525 =  maxInt(half_258_2681_3521, 0);
-        IntTy m_408_2499_2994_3526 =
-               minInt(n__407_2498_2993_3525, len_406_2497_2992_3524);
-        IntTy fltAppE_3221_3527 = len_406_2497_2992_3524 -
-              n__407_2498_2993_3525;
-        IntTy m__409_2500_2995_3528 =  maxInt(0, fltAppE_3221_3527);
-        VectorTy *fltPrd_3222_3529 = vector_slice(0, m_408_2499_2994_3526,
-                                                  src_253_2677_3514);
-        VectorTy *fltPrd_3223_3530 = vector_slice(m_408_2499_2994_3526,
-                                                  m__409_2500_2995_3528,
-                                                  src_253_2677_3514);
-        IntTy len_406_2497_2998_3536 = vector_length(tmp_254_2678_3515);
-        IntTy n__407_2498_2999_3537 =  maxInt(half_258_2681_3521, 0);
-        IntTy m_408_2499_3000_3538 =
-               minInt(n__407_2498_2999_3537, len_406_2497_2998_3536);
-        IntTy fltAppE_3224_3539 = len_406_2497_2998_3536 -
-              n__407_2498_2999_3537;
-        IntTy m__409_2500_3001_3540 =  maxInt(0, fltAppE_3224_3539);
-        VectorTy *fltPrd_3225_3541 = vector_slice(0, m_408_2499_3000_3538,
-                                                  tmp_254_2678_3515);
-        VectorTy *fltPrd_3226_3542 = vector_slice(m_408_2499_3000_3538,
-                                                  m__409_2500_3001_3540,
-                                                  tmp_254_2678_3515);
-        IntTy parent_id_3756 = __cilkrts_get_worker_number();
-        VectorTy *src_l1_265_2688_3546 =
-                 cilk_spawn writeSort1_1277_2171(fltPrd_3222_3529, fltPrd_3225_3541);
-        VectorTy *src_r1_266_2689_3547 =
-                  writeSort1_1277_2171(fltPrd_3223_3530, fltPrd_3226_3542);
+        IntTy half_258_2339_2983 = len_256_2337_2979 / 2;
+        IntTy len_406_2181_2546_2986 = vector_length(src_253_2335_2976);
+        IntTy n__407_2182_2547_2987 =  maxInt(half_258_2339_2983, 0);
+        IntTy m_408_2183_2548_2988 =
+               minInt(n__407_2182_2547_2987, len_406_2181_2546_2986);
+        IntTy fltAppE_2685_2989 = len_406_2181_2546_2986 -
+              n__407_2182_2547_2987;
+        IntTy m__409_2184_2549_2990 =  maxInt(0, fltAppE_2685_2989);
+        VectorTy *fltPrd_2686_2991 = vector_slice(0, m_408_2183_2548_2988,
+                                                  src_253_2335_2976);
+        VectorTy *fltPrd_2687_2992 = vector_slice(m_408_2183_2548_2988,
+                                                  m__409_2184_2549_2990,
+                                                  src_253_2335_2976);
+        IntTy len_406_2181_2552_2998 = vector_length(tmp_254_2336_2977);
+        IntTy n__407_2182_2553_2999 =  maxInt(half_258_2339_2983, 0);
+        IntTy m_408_2183_2554_3000 =
+               minInt(n__407_2182_2553_2999, len_406_2181_2552_2998);
+        IntTy fltAppE_2688_3001 = len_406_2181_2552_2998 -
+              n__407_2182_2553_2999;
+        IntTy m__409_2184_2555_3002 =  maxInt(0, fltAppE_2688_3001);
+        VectorTy *fltPrd_2689_3003 = vector_slice(0, m_408_2183_2554_3000,
+                                                  tmp_254_2336_2977);
+        VectorTy *fltPrd_2690_3004 = vector_slice(m_408_2183_2554_3000,
+                                                  m__409_2184_2555_3002,
+                                                  tmp_254_2336_2977);
+        IntTy parent_id_3218 = __cilkrts_get_worker_number();
+        VectorTy *src_l1_265_2346_3008 =
+                 cilk_spawn writeSort1_1252_1971(fltPrd_2686_2991, fltPrd_2689_3003);
+        VectorTy *src_r1_266_2347_3009 =
+                  writeSort1_1252_1971(fltPrd_2687_2992, fltPrd_2690_3004);
 
         cilk_sync;
 
-        VectorTy *res_268_2691_3549 =
-                  writeMerge_1279_2174(src_l1_265_2688_3546, src_r1_266_2689_3547, tmp_254_2678_3515);
+        VectorTy *res_268_2349_3011 =
+                  writeMerge_1254_1974(src_l1_265_2346_3008, src_r1_266_2347_3009, tmp_254_2336_2977);
 
-        return res_268_2691_3549;
+        return res_268_2349_3011;
     }
 }
-VectorTy *writeMerge_seq_loop_1261_2178(IntTy i1_329_2699_3550,
-                                        IntTy i2_330_2700_3551,
-                                        IntTy j_331_2701_3552,
-                                        IntTy n1_332_2702_3553,
-                                        IntTy n2_333_2703_3554,
-                                        VectorTy *src_1_335_2704_3555,
-                                        VectorTy *src_2_336_2705_3556,
-                                        VectorTy *tmp_337_2706_3557)
+VectorTy *writeMerge_seq_loop_1250_1978(IntTy i1_329_2357_3012,
+                                        IntTy i2_330_2358_3013,
+                                        IntTy j_331_2359_3014,
+                                        IntTy n1_332_2360_3015,
+                                        IntTy n2_333_2361_3016,
+                                        VectorTy *src_1_335_2362_3017,
+                                        VectorTy *src_2_336_2363_3018,
+                                        VectorTy *tmp_337_2364_3019)
 {
-    BoolTy fltIf_3227_3558 = i1_329_2699_3550 == n1_332_2702_3553;
+    BoolTy fltIf_2691_3020 = i1_329_2357_3012 == n1_332_2360_3015;
 
-    if (fltIf_3227_3558) {
-        VectorTy *tmp_2_339_2707_3559 =
-                  write_loop_seq_1260(j_331_2701_3552, i2_330_2700_3551, n2_333_2703_3554, src_2_336_2705_3556, tmp_337_2706_3557);
+    if (fltIf_2691_3020) {
+        VectorTy *tmp_2_339_2365_3021 =
+                  write_loop_seq_1249(j_331_2359_3014, i2_330_2358_3013, n2_333_2361_3016, src_2_336_2363_3018, tmp_337_2364_3019);
 
-        return tmp_2_339_2707_3559;
+        return tmp_2_339_2365_3021;
     } else {
-        BoolTy fltIf_3228_3560 = i2_330_2700_3551 == n2_333_2703_3554;
+        BoolTy fltIf_2692_3022 = i2_330_2358_3013 == n2_333_2361_3016;
 
-        if (fltIf_3228_3560) {
-            VectorTy *tmp_2_340_2708_3561 =
-                      write_loop_seq_1260(j_331_2701_3552, i1_329_2699_3550, n1_332_2702_3553, src_1_335_2704_3555, tmp_337_2706_3557);
+        if (fltIf_2692_3022) {
+            VectorTy *tmp_2_340_2366_3023 =
+                      write_loop_seq_1249(j_331_2359_3014, i1_329_2357_3012, n1_332_2360_3015, src_1_335_2362_3017, tmp_337_2364_3019);
 
-            return tmp_2_340_2708_3561;
+            return tmp_2_340_2366_3023;
         } else {
-            FloatTy *tmp_24;
+            IntTy *tmp_24;
 
-            tmp_24 = (FloatTy *) vector_nth(src_1_335_2704_3555,
-                                            i1_329_2699_3550);
+            tmp_24 = (IntTy *) vector_nth(src_1_335_2362_3017,
+                                          i1_329_2357_3012);
 
-            FloatTy x1_341_2709_3564 = *tmp_24;
-            FloatTy *tmp_23;
+            IntTy x1_341_2367_3026 = *tmp_24;
+            IntTy *tmp_23;
 
-            tmp_23 = (FloatTy *) vector_nth(src_2_336_2705_3556,
-                                            i2_330_2700_3551);
+            tmp_23 = (IntTy *) vector_nth(src_2_336_2363_3018,
+                                          i2_330_2358_3013);
 
-            FloatTy x2_342_2710_3567 = *tmp_23;
-            BoolTy fltIf_3231_3570 = x1_341_2709_3564 < x2_342_2710_3567;
-            IntTy fltPrm_3230_3572;
+            IntTy x2_342_2368_3029 = *tmp_23;
+            BoolTy fltIf_2695_3032 = x1_341_2367_3026 < x2_342_2368_3029;
+            IntTy fltPrm_2694_3034;
 
-            if (fltIf_3231_3570) {
-                IntTy flt_3798 = 0 - 1;
+            if (fltIf_2695_3032) {
+                IntTy flt_3260 = 0 - 1;
 
-                fltPrm_3230_3572 = flt_3798;
+                fltPrm_2694_3034 = flt_3260;
             } else {
-                BoolTy fltIf_3232_3571 = x1_341_2709_3564 > x2_342_2710_3567;
+                BoolTy fltIf_2696_3033 = x1_341_2367_3026 > x2_342_2368_3029;
 
-                if (fltIf_3232_3571) {
-                    fltPrm_3230_3572 = 1;
+                if (fltIf_2696_3033) {
+                    fltPrm_2694_3034 = 1;
                 } else {
-                    fltPrm_3230_3572 = 0;
+                    fltPrm_2694_3034 = 0;
                 }
             }
 
-            BoolTy fltIf_3229_3573 = fltPrm_3230_3572 < 0;
+            BoolTy fltIf_2693_3035 = fltPrm_2694_3034 < 0;
 
-            if (fltIf_3229_3573) {
-                VectorTy *tmp_1_343_2711_3577 =
-                         vector_inplace_update(tmp_337_2706_3557,
-                                               j_331_2701_3552,
-                                               &x1_341_2709_3564);
-                IntTy fltAppE_3233_3578 = i1_329_2699_3550 + 1;
-                IntTy fltAppE_3234_3579 = j_331_2701_3552 + 1;
-                VectorTy *tailapp_3777 =
-                          writeMerge_seq_loop_1261_2178(fltAppE_3233_3578, i2_330_2700_3551, fltAppE_3234_3579, n1_332_2702_3553, n2_333_2703_3554, src_1_335_2704_3555, src_2_336_2705_3556, tmp_1_343_2711_3577);
+            if (fltIf_2693_3035) {
+                VectorTy *tmp_1_343_2369_3039 =
+                         vector_inplace_update(tmp_337_2364_3019,
+                                               j_331_2359_3014,
+                                               &x1_341_2367_3026);
+                IntTy fltAppE_2697_3040 = i1_329_2357_3012 + 1;
+                IntTy fltAppE_2698_3041 = j_331_2359_3014 + 1;
+                VectorTy *tailapp_3239 =
+                          writeMerge_seq_loop_1250_1978(fltAppE_2697_3040, i2_330_2358_3013, fltAppE_2698_3041, n1_332_2360_3015, n2_333_2361_3016, src_1_335_2362_3017, src_2_336_2363_3018, tmp_1_343_2369_3039);
 
-                return tailapp_3777;
+                return tailapp_3239;
             } else {
-                VectorTy *tmp_1_344_2712_3583 =
-                         vector_inplace_update(tmp_337_2706_3557,
-                                               j_331_2701_3552,
-                                               &x2_342_2710_3567);
-                IntTy fltAppE_3235_3584 = i2_330_2700_3551 + 1;
-                IntTy fltAppE_3236_3585 = j_331_2701_3552 + 1;
-                VectorTy *tailapp_3778 =
-                          writeMerge_seq_loop_1261_2178(i1_329_2699_3550, fltAppE_3235_3584, fltAppE_3236_3585, n1_332_2702_3553, n2_333_2703_3554, src_1_335_2704_3555, src_2_336_2705_3556, tmp_1_344_2712_3583);
+                VectorTy *tmp_1_344_2370_3045 =
+                         vector_inplace_update(tmp_337_2364_3019,
+                                               j_331_2359_3014,
+                                               &x2_342_2368_3029);
+                IntTy fltAppE_2699_3046 = i2_330_2358_3013 + 1;
+                IntTy fltAppE_2700_3047 = j_331_2359_3014 + 1;
+                VectorTy *tailapp_3240 =
+                          writeMerge_seq_loop_1250_1978(i1_329_2357_3012, fltAppE_2699_3046, fltAppE_2700_3047, n1_332_2360_3015, n2_333_2361_3016, src_1_335_2362_3017, src_2_336_2363_3018, tmp_1_344_2370_3045);
 
-                return tailapp_3778;
+                return tailapp_3240;
             }
         }
     }
 }
-VectorTy *writeSort1_seq_1255_2189(VectorTy *src_270_2804_3591,
-                                   VectorTy *tmp_271_2805_3592)
+VectorTy *writeSort1_seq_1244_1980(VectorTy *src_270_2377_3053,
+                                   VectorTy *tmp_271_2378_3054)
 {
-    IntTy len_273_2806_3594 = vector_length(src_270_2804_3591);
-    BoolTy fltIf_3237_3595 = len_273_2806_3594 < 8192;
+    IntTy len_273_2379_3056 = vector_length(src_270_2377_3053);
+    BoolTy fltIf_2701_3057 = len_273_2379_3056 < 8192;
 
-    if (fltIf_3237_3595) {
-        VectorTy *tailprim_3779 = vector_inplace_sort(src_270_2804_3591,
-                                                      compare_float);
+    if (fltIf_2701_3057) {
+        VectorTy *tailprim_3241 = vector_inplace_sort(src_270_2377_3053,
+                                                      compare_int);
 
-        return tailprim_3779;
+        return tailprim_3241;
     } else {
-        IntTy half_274_2807_3597 = len_273_2806_3594 / 2;
-        IntTy len_406_2497_3114_3600 = vector_length(src_270_2804_3591);
-        IntTy n__407_2498_3115_3601 =  maxInt(half_274_2807_3597, 0);
-        IntTy m_408_2499_3116_3602 =
-               minInt(n__407_2498_3115_3601, len_406_2497_3114_3600);
-        IntTy fltAppE_3238_3603 = len_406_2497_3114_3600 -
-              n__407_2498_3115_3601;
-        IntTy m__409_2500_3117_3604 =  maxInt(0, fltAppE_3238_3603);
-        VectorTy *fltPrd_3239_3605 = vector_slice(0, m_408_2499_3116_3602,
-                                                  src_270_2804_3591);
-        VectorTy *fltPrd_3240_3606 = vector_slice(m_408_2499_3116_3602,
-                                                  m__409_2500_3117_3604,
-                                                  src_270_2804_3591);
-        IntTy len_406_2497_3120_3612 = vector_length(tmp_271_2805_3592);
-        IntTy n__407_2498_3121_3613 =  maxInt(half_274_2807_3597, 0);
-        IntTy m_408_2499_3122_3614 =
-               minInt(n__407_2498_3121_3613, len_406_2497_3120_3612);
-        IntTy fltAppE_3241_3615 = len_406_2497_3120_3612 -
-              n__407_2498_3121_3613;
-        IntTy m__409_2500_3123_3616 =  maxInt(0, fltAppE_3241_3615);
-        VectorTy *fltPrd_3242_3617 = vector_slice(0, m_408_2499_3122_3614,
-                                                  tmp_271_2805_3592);
-        VectorTy *fltPrd_3243_3618 = vector_slice(m_408_2499_3122_3614,
-                                                  m__409_2500_3123_3616,
-                                                  tmp_271_2805_3592);
-        VectorTy *tmp_l1_281_2814_3622 =
-                  writeSort2_seq_1258_2190(fltPrd_3239_3605, fltPrd_3242_3617);
-        VectorTy *tmp_r1_282_2815_3623 =
-                  writeSort2_seq_1258_2190(fltPrd_3240_3606, fltPrd_3243_3618);
-        IntTy n1_326_2696_3127_3627 = vector_length(tmp_l1_281_2814_3622);
-        IntTy n2_327_2697_3128_3628 = vector_length(tmp_r1_282_2815_3623);
-        VectorTy *res_328_2698_3129_3629 =
-                  writeMerge_seq_loop_1261_2178(0, 0, 0, n1_326_2696_3127_3627, n2_327_2697_3128_3628, tmp_l1_281_2814_3622, tmp_r1_282_2815_3623, src_270_2804_3591);
+        IntTy half_274_2380_3059 = len_273_2379_3056 / 2;
+        IntTy len_406_2181_2580_3062 = vector_length(src_270_2377_3053);
+        IntTy n__407_2182_2581_3063 =  maxInt(half_274_2380_3059, 0);
+        IntTy m_408_2183_2582_3064 =
+               minInt(n__407_2182_2581_3063, len_406_2181_2580_3062);
+        IntTy fltAppE_2702_3065 = len_406_2181_2580_3062 -
+              n__407_2182_2581_3063;
+        IntTy m__409_2184_2583_3066 =  maxInt(0, fltAppE_2702_3065);
+        VectorTy *fltPrd_2703_3067 = vector_slice(0, m_408_2183_2582_3064,
+                                                  src_270_2377_3053);
+        VectorTy *fltPrd_2704_3068 = vector_slice(m_408_2183_2582_3064,
+                                                  m__409_2184_2583_3066,
+                                                  src_270_2377_3053);
+        IntTy len_406_2181_2586_3074 = vector_length(tmp_271_2378_3054);
+        IntTy n__407_2182_2587_3075 =  maxInt(half_274_2380_3059, 0);
+        IntTy m_408_2183_2588_3076 =
+               minInt(n__407_2182_2587_3075, len_406_2181_2586_3074);
+        IntTy fltAppE_2705_3077 = len_406_2181_2586_3074 -
+              n__407_2182_2587_3075;
+        IntTy m__409_2184_2589_3078 =  maxInt(0, fltAppE_2705_3077);
+        VectorTy *fltPrd_2706_3079 = vector_slice(0, m_408_2183_2588_3076,
+                                                  tmp_271_2378_3054);
+        VectorTy *fltPrd_2707_3080 = vector_slice(m_408_2183_2588_3076,
+                                                  m__409_2184_2589_3078,
+                                                  tmp_271_2378_3054);
+        VectorTy *tmp_l1_281_2387_3084 =
+                  writeSort2_seq_1247_1981(fltPrd_2703_3067, fltPrd_2706_3079);
+        VectorTy *tmp_r1_282_2388_3085 =
+                  writeSort2_seq_1247_1981(fltPrd_2704_3068, fltPrd_2707_3080);
+        IntTy n1_326_2354_2593_3089 = vector_length(tmp_l1_281_2387_3084);
+        IntTy n2_327_2355_2594_3090 = vector_length(tmp_r1_282_2388_3085);
+        VectorTy *res_328_2356_2595_3091 =
+                  writeMerge_seq_loop_1250_1978(0, 0, 0, n1_326_2354_2593_3089, n2_327_2355_2594_3090, tmp_l1_281_2387_3084, tmp_r1_282_2388_3085, src_270_2377_3053);
 
-        return res_328_2698_3129_3629;
+        return res_328_2356_2595_3091;
     }
 }
-VectorTy *writeSort2_seq_1258_2190(VectorTy *src_237_2817_3631,
-                                   VectorTy *tmp_238_2818_3632)
+VectorTy *writeSort2_seq_1247_1981(VectorTy *src_237_2390_3093,
+                                   VectorTy *tmp_238_2391_3094)
 {
-    IntTy len_240_2819_3634 = vector_length(src_237_2817_3631);
-    BoolTy fltIf_3244_3635 = len_240_2819_3634 < 8192;
+    IntTy len_240_2392_3096 = vector_length(src_237_2390_3093);
+    BoolTy fltIf_2708_3097 = len_240_2392_3096 < 8192;
 
-    if (fltIf_3244_3635) {
-        VectorTy *tmp_1_241_2820_3636 =
-                  write_loop_seq_1260(0, 0, len_240_2819_3634, src_237_2817_3631, tmp_238_2818_3632);
-        VectorTy *tailprim_3780 = vector_inplace_sort(tmp_1_241_2820_3636,
-                                                      compare_float);
+    if (fltIf_2708_3097) {
+        VectorTy *tmp_1_241_2393_3098 =
+                  write_loop_seq_1249(0, 0, len_240_2392_3096, src_237_2390_3093, tmp_238_2391_3094);
+        VectorTy *tailprim_3242 = vector_inplace_sort(tmp_1_241_2393_3098,
+                                                      compare_int);
 
-        return tailprim_3780;
+        return tailprim_3242;
     } else {
-        IntTy half_242_2821_3638 = len_240_2819_3634 / 2;
-        IntTy len_406_2497_3134_3641 = vector_length(src_237_2817_3631);
-        IntTy n__407_2498_3135_3642 =  maxInt(half_242_2821_3638, 0);
-        IntTy m_408_2499_3136_3643 =
-               minInt(n__407_2498_3135_3642, len_406_2497_3134_3641);
-        IntTy fltAppE_3245_3644 = len_406_2497_3134_3641 -
-              n__407_2498_3135_3642;
-        IntTy m__409_2500_3137_3645 =  maxInt(0, fltAppE_3245_3644);
-        VectorTy *fltPrd_3246_3646 = vector_slice(0, m_408_2499_3136_3643,
-                                                  src_237_2817_3631);
-        VectorTy *fltPrd_3247_3647 = vector_slice(m_408_2499_3136_3643,
-                                                  m__409_2500_3137_3645,
-                                                  src_237_2817_3631);
-        IntTy len_406_2497_3140_3653 = vector_length(tmp_238_2818_3632);
-        IntTy n__407_2498_3141_3654 =  maxInt(half_242_2821_3638, 0);
-        IntTy m_408_2499_3142_3655 =
-               minInt(n__407_2498_3141_3654, len_406_2497_3140_3653);
-        IntTy fltAppE_3248_3656 = len_406_2497_3140_3653 -
-              n__407_2498_3141_3654;
-        IntTy m__409_2500_3143_3657 =  maxInt(0, fltAppE_3248_3656);
-        VectorTy *fltPrd_3249_3658 = vector_slice(0, m_408_2499_3142_3655,
-                                                  tmp_238_2818_3632);
-        VectorTy *fltPrd_3250_3659 = vector_slice(m_408_2499_3142_3655,
-                                                  m__409_2500_3143_3657,
-                                                  tmp_238_2818_3632);
-        VectorTy *src_l1_249_2828_3663 =
-                  writeSort1_seq_1255_2189(fltPrd_3246_3646, fltPrd_3249_3658);
-        VectorTy *src_r1_250_2829_3664 =
-                  writeSort1_seq_1255_2189(fltPrd_3247_3647, fltPrd_3250_3659);
-        IntTy n1_326_2696_3147_3668 = vector_length(src_l1_249_2828_3663);
-        IntTy n2_327_2697_3148_3669 = vector_length(src_r1_250_2829_3664);
-        VectorTy *res_328_2698_3149_3670 =
-                  writeMerge_seq_loop_1261_2178(0, 0, 0, n1_326_2696_3147_3668, n2_327_2697_3148_3669, src_l1_249_2828_3663, src_r1_250_2829_3664, tmp_238_2818_3632);
+        IntTy half_242_2394_3100 = len_240_2392_3096 / 2;
+        IntTy len_406_2181_2600_3103 = vector_length(src_237_2390_3093);
+        IntTy n__407_2182_2601_3104 =  maxInt(half_242_2394_3100, 0);
+        IntTy m_408_2183_2602_3105 =
+               minInt(n__407_2182_2601_3104, len_406_2181_2600_3103);
+        IntTy fltAppE_2709_3106 = len_406_2181_2600_3103 -
+              n__407_2182_2601_3104;
+        IntTy m__409_2184_2603_3107 =  maxInt(0, fltAppE_2709_3106);
+        VectorTy *fltPrd_2710_3108 = vector_slice(0, m_408_2183_2602_3105,
+                                                  src_237_2390_3093);
+        VectorTy *fltPrd_2711_3109 = vector_slice(m_408_2183_2602_3105,
+                                                  m__409_2184_2603_3107,
+                                                  src_237_2390_3093);
+        IntTy len_406_2181_2606_3115 = vector_length(tmp_238_2391_3094);
+        IntTy n__407_2182_2607_3116 =  maxInt(half_242_2394_3100, 0);
+        IntTy m_408_2183_2608_3117 =
+               minInt(n__407_2182_2607_3116, len_406_2181_2606_3115);
+        IntTy fltAppE_2712_3118 = len_406_2181_2606_3115 -
+              n__407_2182_2607_3116;
+        IntTy m__409_2184_2609_3119 =  maxInt(0, fltAppE_2712_3118);
+        VectorTy *fltPrd_2713_3120 = vector_slice(0, m_408_2183_2608_3117,
+                                                  tmp_238_2391_3094);
+        VectorTy *fltPrd_2714_3121 = vector_slice(m_408_2183_2608_3117,
+                                                  m__409_2184_2609_3119,
+                                                  tmp_238_2391_3094);
+        VectorTy *src_l1_249_2401_3125 =
+                  writeSort1_seq_1244_1980(fltPrd_2710_3108, fltPrd_2713_3120);
+        VectorTy *src_r1_250_2402_3126 =
+                  writeSort1_seq_1244_1980(fltPrd_2711_3109, fltPrd_2714_3121);
+        IntTy n1_326_2354_2613_3130 = vector_length(src_l1_249_2401_3125);
+        IntTy n2_327_2355_2614_3131 = vector_length(src_r1_250_2402_3126);
+        VectorTy *res_328_2356_2615_3132 =
+                  writeMerge_seq_loop_1250_1978(0, 0, 0, n1_326_2354_2613_3130, n2_327_2355_2614_3131, src_l1_249_2401_3125, src_r1_250_2402_3126, tmp_238_2391_3094);
 
-        return res_328_2698_3149_3670;
+        return res_328_2356_2615_3132;
     }
 }
-unsigned char check_sorted_1227_2143(VectorTy *sorted_207_2839_3672)
+unsigned char check_sorted_1227_1948(VectorTy *sorted_207_2412_3134)
 {
-    IntTy len_209_2840_3674 = vector_length(sorted_207_2839_3672);
-    BoolTy fltIf_3251_3675 = len_209_2840_3674 <= 1;
+    IntTy len_209_2413_3136 = vector_length(sorted_207_2412_3134);
+    BoolTy fltIf_2715_3137 = len_209_2413_3136 <= 1;
 
-    if (fltIf_3251_3675) {
-        unsigned char tailapp_3781 =  print_check(true);
+    if (fltIf_2715_3137) {
+        unsigned char tailapp_3243 =  print_check(true);
 
-        return tailapp_3781;
+        return tailapp_3243;
     } else {
-        IntTy n_397_2517_3156_3678 = len_209_2840_3674 - 2;
-        VectorTy *arr1_210_2841_3680 = vector_slice(0, n_397_2517_3156_3678,
-                                                    sorted_207_2839_3672);
-        IntTy fltAppE_3253_3684 = vector_length(arr1_210_2841_3680);
-        BoolTy check_215_2842_3685 =
-                ifoldl_loop_1249_2193(0, fltAppE_3253_3684, true, arr1_210_2841_3680, arr1_210_2841_3680);
-        unsigned char tailapp_3782 =  print_check(check_215_2842_3685);
+        IntTy n_397_2197_2622_3140 = len_209_2413_3136 - 2;
+        VectorTy *arr1_210_2414_3142 = vector_slice(0, n_397_2197_2622_3140,
+                                                    sorted_207_2412_3134);
+        IntTy fltAppE_2717_3146 = vector_length(arr1_210_2414_3142);
+        BoolTy check_215_2415_3147 =
+                ifoldl_loop_1240_1984(0, fltAppE_2717_3146, true, arr1_210_2414_3142, arr1_210_2414_3142);
+        unsigned char tailapp_3244 =  print_check(check_215_2415_3147);
 
-        return tailapp_3782;
+        return tailapp_3244;
     }
 }
-BoolTy ifoldl_loop_1249_2193(IntTy idx_503_2843_3686, IntTy end_504_2844_3687,
-                             BoolTy acc_506_2845_3688,
-                             VectorTy *vec_507_2846_3689,
-                             VectorTy *arr1_210_2847_3690)
+BoolTy ifoldl_loop_1240_1984(IntTy idx_503_2416_3148, IntTy end_504_2417_3149,
+                             BoolTy acc_506_2418_3150,
+                             VectorTy *vec_507_2419_3151,
+                             VectorTy *arr1_210_2420_3152)
 {
-    BoolTy fltIf_3254_3691 = idx_503_2843_3686 == end_504_2844_3687;
+    BoolTy fltIf_2718_3153 = idx_503_2416_3148 == end_504_2417_3149;
 
-    if (fltIf_3254_3691) {
-        return acc_506_2845_3688;
+    if (fltIf_2718_3153) {
+        return acc_506_2418_3150;
     } else {
-        FloatTy *tmp_26;
+        IntTy *tmp_26;
 
-        tmp_26 = (FloatTy *) vector_nth(vec_507_2846_3689, idx_503_2843_3686);
+        tmp_26 = (IntTy *) vector_nth(vec_507_2419_3151, idx_503_2416_3148);
 
-        FloatTy elt1_211_2833_3163_3694 = *tmp_26;
-        IntTy fltAppE_3255_3696 = idx_503_2843_3686 + 1;
-        FloatTy *tmp_25;
+        IntTy elt1_211_2406_2629_3156 = *tmp_26;
+        IntTy fltAppE_2719_3158 = idx_503_2416_3148 + 1;
+        IntTy *tmp_25;
 
-        tmp_25 = (FloatTy *) vector_nth(arr1_210_2847_3690, fltAppE_3255_3696);
+        tmp_25 = (IntTy *) vector_nth(arr1_210_2420_3152, fltAppE_2719_3158);
 
-        FloatTy elt2_214_2835_3165_3697 = *tmp_25;
-        BoolTy fltIf_3167_3285_3746 = elt1_211_2833_3163_3694 <
-               elt2_214_2835_3165_3697;
-        IntTy fltPrm_3257_3698;
+        IntTy elt2_214_2408_2631_3159 = *tmp_25;
+        BoolTy fltIf_2633_2749_3208 = elt1_211_2406_2629_3156 <
+               elt2_214_2408_2631_3159;
+        IntTy fltPrm_2721_3160;
 
-        if (fltIf_3167_3285_3746) {
-            IntTy flt_3807 = 0 - 1;
+        if (fltIf_2633_2749_3208) {
+            IntTy flt_3269 = 0 - 1;
 
-            fltPrm_3257_3698 = flt_3807;
+            fltPrm_2721_3160 = flt_3269;
         } else {
-            BoolTy fltIf_3168_3286_3747 = elt1_211_2833_3163_3694 >
-                   elt2_214_2835_3165_3697;
+            BoolTy fltIf_2634_2750_3209 = elt1_211_2406_2629_3156 >
+                   elt2_214_2408_2631_3159;
 
-            if (fltIf_3168_3286_3747) {
-                fltPrm_3257_3698 = 1;
+            if (fltIf_2634_2750_3209) {
+                fltPrm_2721_3160 = 1;
             } else {
-                fltPrm_3257_3698 = 0;
+                fltPrm_2721_3160 = 0;
             }
         }
 
-        BoolTy fltPrm_3256_3699 = fltPrm_3257_3698 <= 0;
-        BoolTy acc1_510_2848_3700 = acc_506_2845_3688 && fltPrm_3256_3699;
-        IntTy fltAppE_3258_3701 = idx_503_2843_3686 + 1;
-        BoolTy tailapp_3783 =
-                ifoldl_loop_1249_2193(fltAppE_3258_3701, end_504_2844_3687, acc1_510_2848_3700, vec_507_2846_3689, arr1_210_2847_3690);
+        BoolTy fltPrm_2720_3161 = fltPrm_2721_3160 <= 0;
+        BoolTy acc1_510_2421_3162 = acc_506_2418_3150 && fltPrm_2720_3161;
+        IntTy fltAppE_2722_3163 = idx_503_2416_3148 + 1;
+        BoolTy tailapp_3245 =
+                ifoldl_loop_1240_1984(fltAppE_2722_3163, end_504_2417_3149, acc1_510_2421_3162, vec_507_2419_3151, arr1_210_2420_3152);
 
-        return tailapp_3783;
+        return tailapp_3245;
     }
 }
 int __main_expr()
 {
-    add_symbol(3787, "OK\n");
-    add_symbol(3788, "Err\n");
+    add_symbol(3249, "OK\n");
+    add_symbol(3250, "Err\n");
 
-    unsigned char tailapp_3784 =  bench_main();
+    unsigned char tailapp_3246 =  bench_main();
 
     printf("'#()");
     printf("\n");
