@@ -18,9 +18,9 @@
 #include <fcntl.h>
 #include <stdarg.h> // For va_start etc
 #include <errno.h>
-#include <utlist.h>
-#include <uthash.h>
-#include <utarray.h>
+//#include <utlist.h>
+//#include <uthash.h>
+//#include <utarray.h>
 #ifdef _POINTER
 #include <gc.h>
 #endif
@@ -347,102 +347,6 @@ static SymTy global_gensym_counter = 0;
 
 // Its value is updated by the flags parser.
 static char *global_bench_prog_param;
-
-static SymTy newline_symbol = -1;
-static SymTy space_symbol = -1;
-static SymTy comma_symbol = -1;
-static SymTy leftparen_symbol = -1;
-static SymTy rightparen_symbol = -1;
-
-typedef struct SymTable_elem {
-    SymTy idx;                 /* key */
-    char value[global_max_symbol_len];
-    UT_hash_handle hh;         /* makes this structure hashable */
-} SymTable_elem;
-
-// important! initialize to NULL
-SymTable_elem *global_sym_table = NULL;
-
-void add_symbol(SymTy idx, char *value) {
-    struct SymTable_elem *s;
-    s = ALLOC(sizeof(struct SymTable_elem));
-    s->idx = idx;
-    strcpy(s->value, value);
-    HASH_ADD(hh, global_sym_table, idx, sizeof(IntTy), s);
-    if (idx > global_gensym_counter) {
-        global_gensym_counter = idx;
-    }
-}
-
-void set_newline(SymTy idx) {
-  newline_symbol = idx;
-  add_symbol(idx,"NEWLINE");
-}
-
-void set_space(SymTy idx) {
-  space_symbol = idx;
-  add_symbol(idx,"SPACE");
-}
-
-void set_comma(SymTy idx) {
-  comma_symbol = idx;
-  add_symbol(idx,"COMMA");
-}
-
-void set_leftparen(SymTy idx) {
-  leftparen_symbol = idx;
-  add_symbol(idx,"LEFTPAREN");
-}
-
-void set_rightparen(SymTy idx) {
-  rightparen_symbol = idx;
-  add_symbol(idx,"RIGHTPAREN");
-}
-
-IntTy print_symbol(SymTy idx) {
-  if (idx == comma_symbol) {
-    return printf(",");
-  } else if (idx == newline_symbol) {
-    return printf("\n");
-  } else if (idx == space_symbol) {
-    return printf(" ");
-  } else if (idx == leftparen_symbol) {
-    return printf("(");
-  } else if (idx == rightparen_symbol) {
-    return printf(")");
-  } else {
-    struct SymTable_elem *s;
-    HASH_FIND(hh, global_sym_table, &idx, sizeof(SymTy), s);
-    if (s == NULL) {
-        return printf("%lld", idx);
-    } else {
-        return printf("%s", s->value);
-    }
-
-  }
-}
-
-#ifdef _PARALLEL
-SymTy gensym() {
-    SymTy idx = __atomic_add_fetch(&global_gensym_counter, 1, __ATOMIC_SEQ_CST);
-    return idx;
-}
-#else
-SymTy gensym() {
-    global_gensym_counter += 1;
-    SymTy idx = global_gensym_counter;
-    return idx;
-}
-#endif
-
-void free_symtable() {
-    struct SymTable_elem *elt, *tmp;
-    HASH_ITER(hh, global_sym_table, elt, tmp) {
-        HASH_DEL(global_sym_table,elt);
-    }
-    free(elt);
-    free(tmp);
-}
 
 
 // -------------------------------------
@@ -950,12 +854,10 @@ unsigned char bench_main()
 unsigned char print_check(BoolTy b_418_2149_2744)
 {
     if (b_418_2149_2744) {
-        unsigned char wildcard__14_419_2150_2745 = print_symbol(3249);
-
+        printf("OK\n");
         return 0;
     } else {
-        unsigned char wildcard__16_420_2151_2746 = print_symbol(3250);
-
+        printf("ERR\n");
         return 0;
     }
 }
@@ -1683,13 +1585,12 @@ BoolTy ifoldl_loop_1240_1984(IntTy idx_503_2416_3148, IntTy end_504_2417_3149,
 }
 int __main_expr()
 {
-    add_symbol(3249, "OK\n");
-    add_symbol(3250, "Err\n");
+    //add_symbol(3249, "OK\n");
+    //add_symbol(3250, "Err\n");
 
     unsigned char tailapp_3246 =  bench_main();
 
     printf("'#()");
     printf("\n");
-    free_symtable();
     return 0;
 }

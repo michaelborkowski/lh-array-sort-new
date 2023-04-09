@@ -88,7 +88,7 @@ void *mergesort_par(void *const pbase, size_t total_elems, size_t size, __compar
         fprintf(stderr, "mergesort: couldn't allocate");
         exit(1);
     }
-    our_memcpy(cpy, (char *) pbase, (size * total_elems));
+    our_memcpy_par(cpy, (char *) pbase, (size * total_elems));
 
     // Temporary buffer.
     char *tmp = malloc(total_elems * size);
