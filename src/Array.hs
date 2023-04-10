@@ -2,6 +2,7 @@
 {-# LANGUAGE BangPatterns  #-}
 {-# LANGUAGE DeriveFunctor #-}
 {-# LANGUAGE LinearTypes   #-}
+{-# LANGUAGE Strict        #-}
 
 {-@ LIQUID "--reflection"  @-}
 -- {-@ LIQUID "--diff"        @-}
@@ -14,7 +15,9 @@ module Array
     Array
 
     -- * Construction and querying
-  , alloc, make, size, get, set, slice, append, splitMid, swap
+  , alloc, make, generate, generate_par, generate_par_m
+  , copy, copy_par, copy_par_m
+  , size, get, set, slice, append, splitMid, swap
 
     -- * Linear versions
   , size2, get2, slice2, copy2
@@ -30,7 +33,8 @@ module Array
 
 import qualified Unsafe.Linear as Unsafe
 import           Data.Unrestricted.Linear (Ur(..))
-import           Prelude hiding (take, drop)
+import           Prelude hiding (take, drop,splitAt)
+import           GHC.Conc ( numCapabilities, par, pseq )
 import           Array.List ( lma_gs_list, lma_gns_list
                             , lem_take_conc, lem_drop_conc, lem_take_all
                             , lem_getList_take, lem_getList_drop
@@ -40,7 +44,7 @@ import           Array.List ( lma_gs_list, lma_gns_list
 #ifdef MUTABLE_ARRAYS
 import           Array.Mutable
 import           Control.Parallel.Strategies (runEval, rpar, rseq)
-import qualified Control.Monad.Par as P (runPar, spawnP, spawn_, get, fork, put, new)
+import qualified Control.Monad.Par as P (Par, runPar, spawnP, spawn_, get, fork, put, new)
 #else
 import           Array.List
 #endif
@@ -50,13 +54,13 @@ import           Language.Haskell.Liquid.ProofCombinators hiding ((?))
 import           ProofCombinators
 
 --------------------------------------------------------------------------------
+-- Advanced operations
+--------------------------------------------------------------------------------
 
 {-# INLINE alloc #-}
 {-@ alloc :: i:Nat -> x:_ -> f:_ -> ret:_ @-}
 alloc :: Int -> a -> (Array a %1-> Ur b) %1-> Ur b
 alloc i a f = f (make i a)
-
--- advanced operations
 
 {-@ reflect swap @-}
 {-@ swap :: xs:(Array a) -> { i:Int | 0 <= i && i < size xs }
@@ -91,8 +95,93 @@ splitMid = Unsafe.toLinear go
         n = size xs
         m = n `div` 2
 
+--------------------------------------------------------------------------------
+-- Parallel operations
+--------------------------------------------------------------------------------
+
+-- Same default as Cilk.
+defaultGrainSize :: Int -> Int
+{-# INLINE defaultGrainSize #-}
+defaultGrainSize n =
+    let p = numCapabilities
+        grain = max 1 (n `div` (8 * p))
+    in min 2048 grain
+
+generate_par :: Int -> (Int -> a) -> Array a
+{-# INLINE generate_par #-}
+generate_par n f =
+    let n'  = n `max` 0
+        arr  = make n' (f 0)
+        cutoff = defaultGrainSize n'
+    in generate_par_loop cutoff arr 0 n' f
+
+generate_par_loop :: Int -> Array a -> Int -> Int -> (Int -> a) -> Array a
+generate_par_loop cutoff arr start end f =
+    if (end - start) <= cutoff
+    then generate_loop arr start end f
+    else
+      let mid  = (start + end) `div` 2
+          arr1 = generate_par_loop cutoff arr start mid f
+          arr2 = generate_par_loop cutoff arr mid end f
+      in arr1 `par` arr2 `pseq` append arr1 arr2
+
+generate_par_m :: Int -> (Int -> a) -> P.Par (Array a)
+{-# INLINE generate_par_m #-}
+generate_par_m n f = do
+    let n'  = n `max` 0
+        arr  = make n' (f 0)
+        cutoff = defaultGrainSize n'
+    generate_par_loop_m cutoff arr 0 n' f
+
+generate_par_loop_m :: Int -> Array a -> Int -> Int -> (Int -> a) -> P.Par (Array a)
+generate_par_loop_m cutoff arr start end f =
+    if (end - start) <= cutoff
+    then pure $ generate_loop arr start end f
+    else do
+      let mid  = (start + end) `div` 2
+      arr1_f <- P.spawn_$ generate_par_loop_m cutoff arr start mid f
+      arr2 <- generate_par_loop_m cutoff arr mid end f
+      arr1 <- P.get arr1_f
+      pure $ append arr1 arr2
+
+generate :: Int -> (Int -> a) -> Array a
+{-# INLINE generate #-}
+generate n f =
+    let n'  = n `max` 0
+        arr = make n' (f 0)
+    in generate_loop arr 0 n' f
+
+generate_loop :: Array a -> Int -> Int -> (Int -> a) -> Array a
+generate_loop arr idx end f =
+    if idx == end
+    then arr
+    else
+      let arr1 = set arr idx (f idx)
+      in generate_loop arr1 (idx+1) end f
+
 copy_par :: Array a -> Int -> Array a -> Int -> Int -> Array a
-copy_par = _todo
+copy_par src src_offset dst dst_offset len =
+  if len <= 8192
+  then copy src src_offset dst dst_offset len
+  else let half = len `div` 2
+           (src_l, src_r) = splitAt half src
+           (dst_l, dst_r) = splitAt (len-half) dst
+           left = copy_par src_l 0 dst_l 0 half
+           right = copy_par src_r 0 dst_r 0 (len-half)
+       in left `par` right `pseq` append left right
+
+copy_par_m :: Array a -> Int -> Array a -> Int -> Int -> P.Par (Array a)
+copy_par_m src src_offset dst dst_offset len =
+  if len <= 8192
+  then pure $ copy src src_offset dst dst_offset len
+  else do
+       let half = len `div` 2
+           (src_l, src_r) = splitAt half src
+           (dst_l, dst_r) = splitAt (len-half) dst
+       left_f <- P.spawn_$ copy_par_m src_l 0 dst_l 0 half
+       right <- copy_par_m src_r 0 dst_r 0 (len-half)
+       left <- P.get left_f
+       pure $ append left right
 
 foldl1_par :: Int -> (a -> a -> a) -> a -> Array a -> a
 foldl1_par = _todo
@@ -152,7 +241,7 @@ lma_gs arr n x = lma_gs_list (toList arr) n x
 lma_gns :: Array a -> Int -> Int -> a -> Proof
 lma_gns arr n m x = lma_gns_list (toList arr) n m x
 
---{-@ lma_gns2 :: xs:_ -> n:{v:Nat | v < size xs } 
+--{-@ lma_gns2 :: xs:_ -> n:{v:Nat | v < size xs }
 --          -> m:{v:Nat | v /= n && v < size xs } -> x:_
 --          -> { pf:_ | fst (get2 (set xs n x) m) == fst (get2 xs m) } @-}
 --lma_gns2 :: Array a -> Int -> Int -> a -> Proof
