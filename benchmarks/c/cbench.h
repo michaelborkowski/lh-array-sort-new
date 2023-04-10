@@ -23,6 +23,9 @@ typedef int64_t* (*copyarray_setup_fn_t) (size_t total_elems);
 typedef void (*copyarray_run_fn_t) (void *dst, void *src, size_t nbytes);
 typedef void (*copyarray_teardown_fn_t) (void *array);
 
+// Fib function types.
+typedef int64_t (*fib_run_fn_t) (int64_t n);
+
 // Copied from stdlib.h for reference.
 typedef int (*__compar_fn_t) (const void *, const void *);
 
@@ -37,6 +40,7 @@ enum benchmark_tag {
     FILLARRAY,
     SUMARRAY,
     COPYARRAY,
+    FIB,
 };
 
 static inline char *benchmark_tag_str(enum benchmark_tag tag)
@@ -50,6 +54,8 @@ static inline char *benchmark_tag_str(enum benchmark_tag tag)
             return "SUMARRAY";
         case COPYARRAY:
             return "COPYARRAY";
+        case FIB:
+            return "FIB";
         default:
             return "UNKNOWN";
     }
@@ -93,6 +99,12 @@ typedef struct benchmark_t_ {
             void *cp_dst;
             size_t cp_nbytes;
             size_t cp_total_elems;
+        };
+
+        // Fibonacci.
+        struct {
+             fib_run_fn_t fib_run;
+             int64_t fib_n;
         };
 
         // Sort function.

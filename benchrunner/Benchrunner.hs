@@ -16,6 +16,7 @@ import qualified DpsMergeSort4 as DMS4
 import qualified DpsMergeSortPar as DMSP
 import qualified DpsMergeSort4Par as DMS4P
 import qualified Microbench as MB
+import qualified Fib as F
 import qualified Array as A
 
 --------------------------------------------------------------------------------
@@ -24,7 +25,9 @@ data Benchmark
   = FillArray
   | SumArray
   | Seqfib
+  | Seqfib1
   | Parfib
+  | Parfib1
   | Insertionsort
   | Mergesort
   | MergesortPar
@@ -45,7 +48,9 @@ getInput bench mb_size = case bench of
   FillArray     -> pure $ EltsIn (mb 10000000) 1024
   SumArray      -> pure $ ArrayIn (A.make (mb 10000000) 1)
   Seqfib        -> pure $ IntIn 45
+  Seqfib1       -> pure $ IntIn 45
   Parfib        -> pure $ IntIn 45
+  Parfib1       -> pure $ IntIn 45
   Insertionsort -> ArrayIn <$> randArray (Proxy :: Proxy Int64) (mb 100)
   Quicksort     -> ArrayIn <$> randArray (Proxy :: Proxy Int64) (mb 1000000)
   Mergesort     -> ArrayIn <$> randArray (Proxy :: Proxy Int64) (mb 8000000)
@@ -87,8 +92,14 @@ dobench bench mb_size = do
       Seqfib    -> do (IntIn i) <- getInput bench mb_size
                       (res0, tmed0, tall0) <- M.bench MB.seqfib (fromIntegral i) iters
                       pure (i, fromIntegral res0, tmed0, tall0)
+      Seqfib1   -> do (IntIn i) <- getInput bench mb_size
+                      (res0, tmed0, tall0) <- M.bench F.seqfib1 (fromIntegral i) iters
+                      pure (i, fromIntegral res0, tmed0, tall0)
       Parfib    -> do (IntIn i) <- getInput bench mb_size
                       (res0, tmed0, tall0) <- M.bench MB.parfib (fromIntegral i) iters
+                      pure (i, fromIntegral res0, tmed0, tall0)
+      Parfib1   -> do (IntIn i) <- getInput bench mb_size
+                      (res0, tmed0, tall0) <- M.benchPar F.parfib1 (fromIntegral i) iters
                       pure (i, fromIntegral res0, tmed0, tall0)
       FillArray -> do (EltsIn total_elems elt) <- getInput bench mb_size
                       (res0, tmed0, tall0) <- M.bench MB.fillArray (total_elems,elt) iters

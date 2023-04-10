@@ -104,6 +104,14 @@ int bench_main(int argc, char** argv)
         if (strcmp(argv[1], "copyarray_par") == 0) {
             b->cp_run = copy_par;
         }
+    } else if (prefix("fib", argv[1])) {
+        printf("benchmarking fib\n");
+        b->tag = FIB;
+        b->fib_run = fib;
+        b->fib_n = total_elems;
+        if (strcmp(argv[1], "fib_par") == 0) {
+            b->fib_run = fib_par;
+        }
     } else if (prefix("sort", argv[1])) {
         b->tag = SORT;
         b->sort_setup = fill_array_rand_seq;
@@ -209,6 +217,21 @@ void simple_bench(const benchmark_t *b)
             // Teardown.
             (*(b->sa_teardown))(nums);
 
+            break;
+        }
+        case FIB: {
+            total_elems = b->fib_n;
+            int64_t ret;
+            // Run the benchmark.
+            for (size_t i = 0; i < NUM_ITERS; i++) {
+                clock_gettime(CLOCK_MONOTONIC_RAW, &begin_timed);
+                ret = (*(b->fib_run))(b->fib_n);
+                clock_gettime(CLOCK_MONOTONIC_RAW, &end_timed);
+                itertime = difftimespecs(&begin_timed, &end_timed);
+                printf("itertime: %lf\n", itertime);
+                batchtime += itertime;
+            }
+            printf("FIB: %ld\n", ret);
             break;
         }
 

@@ -37,6 +37,7 @@ library
       DpsMergeSortPar
       DpsMergeSort4Par
       Microbench
+      Fib
 --      QuickSort
 --      CilkSort
   other-modules:

@@ -6,6 +6,7 @@ import           GHC.Conc ( par, pseq )
 import           Data.Int ( Int64 )
 import qualified Array as A
 import           Par
+import           Control.Monad.Par
 
 --------------------------------------------------------------------------------
 
@@ -26,7 +27,7 @@ seqfib !n | n < 2 = 1
 seqfib !n = seqfib (n-1) + seqfib (n-2)
 
 parfib :: Int64 -> Int64
-parfib !n | n < 33 = seqfib n
+parfib !n | n <= 32 = seqfib n
 parfib !n =
   x `par` y `pseq` (x+y)
   where

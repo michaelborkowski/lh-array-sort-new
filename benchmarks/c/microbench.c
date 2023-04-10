@@ -113,3 +113,22 @@ void __attribute__ ((noinline)) copy_par(void *dst, void *src, size_t nbytes)
 {
     our_memcpy_par(dst, src, nbytes);
 }
+
+int64_t fib(int64_t n)
+{
+    if (n < 2) {
+        return 1;
+    }
+    return fib (n-1) + fib(n-2);
+}
+
+int64_t fib_par(int64_t n)
+{
+    if (n <= 32) {
+        return fib(n);
+    }
+    int64_t x = cilk_spawn fib_par(n-1);
+    int64_t y = fib_par(n-2);
+    cilk_sync;
+    return x+y;
+}
