@@ -43,6 +43,7 @@ library
   other-modules:
       Array.List
       Array.Mutable
+      Array.Mutable.Unlifted
       ProofCombinators
   hs-source-dirs:
       src
@@ -59,7 +60,6 @@ library
       linear-base
   default-language: Haskell2010
   ghc-options: -Wall -Wcompat
-               -threaded
                -fdefer-typed-holes
                -ddump-simpl
                -ddump-to-file
