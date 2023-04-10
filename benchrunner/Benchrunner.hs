@@ -1,3 +1,5 @@
+{-# LANGUAGE Strict   #-}
+
 module Main where
 
 import           Data.Int           ( Int64 )
@@ -22,17 +24,18 @@ import qualified Array as A
 --------------------------------------------------------------------------------
 
 data Benchmark
-  = FillArray
+  = GenerateArray
+  | FillArray
+  | CopyArray
   | SumArray
-  | Seqfib
-  | Seqfib1
-  | Parfib
-  | Parfib1
+  | Fib
   | Insertionsort
   | Mergesort
-  | MergesortPar
   | Quicksort
   | Cilksort
+  deriving (Eq, Show, Read)
+
+data ParOrSeq = Seq | Par | ParM
   deriving (Eq, Show, Read)
 
 data Input a
@@ -45,16 +48,14 @@ data Input a
 
 getInput :: Benchmark -> Maybe Int -> IO (Input Int64)
 getInput bench mb_size = case bench of
+  GenerateArray -> pure $ IntIn (mb 10000000)
   FillArray     -> pure $ EltsIn (mb 10000000) 1024
+  CopyArray     -> pure $ ArrayIn (A.make (mb 10000000) 1)
   SumArray      -> pure $ ArrayIn (A.make (mb 10000000) 1)
-  Seqfib        -> pure $ IntIn 45
-  Seqfib1       -> pure $ IntIn 45
-  Parfib        -> pure $ IntIn 45
-  Parfib1       -> pure $ IntIn 45
+  Fib           -> pure $ IntIn (mb 45)
   Insertionsort -> ArrayIn <$> randArray (Proxy :: Proxy Int64) (mb 100)
   Quicksort     -> ArrayIn <$> randArray (Proxy :: Proxy Int64) (mb 1000000)
   Mergesort     -> ArrayIn <$> randArray (Proxy :: Proxy Int64) (mb 8000000)
-  MergesortPar  -> ArrayIn <$> randArray (Proxy :: Proxy Int64) (mb 8000000)
   Cilksort      -> ArrayIn <$> randArray (Proxy :: Proxy Int64) (mb 8000000)
   where
     mb x = case mb_size of
@@ -73,7 +74,7 @@ sortFn :: (Show a, Ord a, NFData a) => Benchmark -> (A.Array a -> A.Array a)
 sortFn bench = case bench of
   Insertionsort -> I.isort_top
   Mergesort     -> DMS.msort
-  MergesortPar  -> DMSP.msort
+  -- MergesortPar  -> DMSP.msort
 
 --------------------------------------------------------------------------------
 
@@ -83,36 +84,74 @@ isSorted [_]      = True
 isSorted (x:y:xs) = x <= y && isSorted (y:xs)
 
 
-dobench :: Benchmark -> Maybe Int -> IO ()
-dobench bench mb_size = do
+dobench :: Benchmark -> ParOrSeq -> Maybe Int -> IO ()
+dobench bench parorseq mb_size = do
   let iters = 9 :: Int
-  putStrLn $ "Running " ++ show bench ++ "\n========================================"
+  putStrLn $ "Running " ++ show bench ++ " (" ++ show parorseq ++ ")"
+             ++ "\n========================================"
   (size, res, tmed, tall) <-
     case bench of
-      Seqfib    -> do (IntIn i) <- getInput bench mb_size
-                      (res0, tmed0, tall0) <- M.bench MB.seqfib (fromIntegral i) iters
-                      pure (i, fromIntegral res0, tmed0, tall0)
-      Seqfib1   -> do (IntIn i) <- getInput bench mb_size
-                      (res0, tmed0, tall0) <- M.bench F.seqfib1 (fromIntegral i) iters
-                      pure (i, fromIntegral res0, tmed0, tall0)
-      Parfib    -> do (IntIn i) <- getInput bench mb_size
-                      (res0, tmed0, tall0) <- M.bench MB.parfib (fromIntegral i) iters
-                      pure (i, fromIntegral res0, tmed0, tall0)
-      Parfib1   -> do (IntIn i) <- getInput bench mb_size
-                      (res0, tmed0, tall0) <- M.benchPar F.parfib1 (fromIntegral i) iters
-                      pure (i, fromIntegral res0, tmed0, tall0)
+      Fib -> do
+        (IntIn i) <- getInput bench mb_size
+        case parorseq of
+          Seq -> do
+            (res0, tmed0, tall0) <- M.bench MB.seqfib (fromIntegral i) iters
+            pure (i, fromIntegral res0, tmed0, tall0)
+          Par -> do
+            (res0, tmed0, tall0) <- M.bench MB.parfib (fromIntegral i) iters
+            pure (i, fromIntegral res0, tmed0, tall0)
+          ParM -> do
+            (res0, tmed0, tall0) <- M.benchPar F.parfib1 (fromIntegral i) iters
+            pure (i, fromIntegral res0, tmed0, tall0)
+      GenerateArray -> do
+        (IntIn i) <- getInput bench mb_size
+        case parorseq of
+          Seq -> do
+            let gen n = A.generate n id
+            (res0, tmed0, tall0) <- M.bench gen (fromIntegral i) iters
+            pure (i, A.size res0, tmed0, tall0)
+          Par -> do
+            let gen n = A.generate_par n id
+            (res0, tmed0, tall0) <- M.bench gen (fromIntegral i) iters
+            pure (i, A.size res0, tmed0, tall0)
+          ParM -> do
+            let gen n = A.generate_par_m n id
+            (res0, tmed0, tall0) <- M.benchPar gen (fromIntegral i) iters
+            pure (i, A.size res0, tmed0, tall0)
+      CopyArray -> do
+        (ArrayIn arr) <- getInput bench mb_size
+        case parorseq of
+          Seq -> do
+            let dst = A.make (A.size arr) (A.get arr 0)
+            let docopy input = A.copy input 0 dst 0 (A.size arr)
+            (res0, tmed0, tall0) <- M.bench docopy arr iters
+            pure (A.size arr, A.size res0, tmed0, tall0)
+          Par ->  do
+            let dst = A.make (A.size arr) (A.get arr 0)
+            let docopy_par input = A.copy_par input 0 dst 0 (A.size arr)
+            (res0, tmed0, tall0) <- M.bench docopy_par arr iters
+            pure (A.size arr, A.size res0, tmed0, tall0)
+          ParM -> do
+            let dst = A.make (A.size arr) (A.get arr 0)
+            let docopy_par_m input = A.copy_par_m input 0 dst 0 (A.size arr)
+            (res0, tmed0, tall0) <- M.benchPar docopy_par_m arr iters
+            pure (A.size arr, A.size res0, tmed0, tall0)
+
+{-
       FillArray -> do (EltsIn total_elems elt) <- getInput bench mb_size
                       (res0, tmed0, tall0) <- M.bench MB.fillArray (total_elems,elt) iters
                       pure (total_elems, A.size res0, tmed0, tall0)
       SumArray  -> do (ArrayIn arr) <- getInput bench mb_size
                       (res0, tmed0, tall0) <- M.bench MB.sumArray arr iters
                       pure (A.size arr, fromIntegral res0, tmed0, tall0)
+
       _         -> do (ArrayIn arr) <- getInput bench mb_size
                       let fn = sortFn bench
                       putStrLn $ "array size = " ++ show (A.size arr)
                       (res0, tmed0, tall0) <- M.bench fn arr iters
                       unless (isSorted (A.toList res0)) (error $ show bench ++ ": result not sorted.")
                       pure (A.size arr, A.size res0, tmed0, tall0)
+-}
   putStrLn $ "BENCHMARK: " ++ show bench
   putStrLn $ "RESULT: " ++ show res
   putStrLn $ "SIZE: " ++ show size
@@ -125,17 +164,15 @@ main :: IO ()
 main = do
   allargs <- getArgs
   let usage = "USAGE: benchrunner -- BENCH_ARGS -- CRITERION_ARGS"
-      (benchmark, size, _rst) =
+  let (benchmark, parorseq, size, _rst) =
         case splitOn ["--"] allargs of
-          [] -> (Insertionsort,Just 10,[])
+          [] -> (Insertionsort,Seq,Just 10,[])
+          [(bnch:parorseq0:sz:_)] ->
+            (read bnch :: Benchmark, read parorseq0 :: ParOrSeq, Just (read sz :: Int), [])
           [(bnch:sz:_)] ->
-            if sz == "--help"
-            then error usage
-            else (read bnch :: Benchmark, Just (read sz :: Int), [])
-          [(bnch:_)] -> (read bnch :: Benchmark, Nothing, [])
-          [(bnch:sz:_), rst'] ->
-            if sz == "--help"
-            then error usage
-            else (read bnch :: Benchmark, Just (read sz :: Int), rst')
+            (read bnch :: Benchmark, Seq, Just (read sz :: Int), [])
+          [(bnch:_)] ->
+            (read bnch :: Benchmark, Seq, Nothing, [])
+
           _ -> error usage
-  dobench benchmark size
+  dobench benchmark parorseq size
