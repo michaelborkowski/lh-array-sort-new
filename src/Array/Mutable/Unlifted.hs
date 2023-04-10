@@ -19,10 +19,9 @@ newtype Array# a = Array# (GHC.MutableArray# GHC.RealWorld a)
 
 {-# NOINLINE make# #-}
 make# :: GHC.Int# -> a -> Array# a
-make# s a =
-  GHC.runRW# $ \st ->
-    case GHC.newArray# s a st of
-      (# _, arr #) -> Array# arr
+make# len elt =
+  case GHC.runRW# (GHC.newArray# len elt) of
+    (# _, arr #) -> Array# arr
 
 
 {-# NOINLINE get# #-}
@@ -44,24 +43,5 @@ copy# (Array# !src) src_offset (Array# !dst) dst_offset n =
   case GHC.runRW# (GHC.copyMutableArray# src src_offset dst dst_offset n) of
     _ -> Array# dst
 
-size# :: Array# a -> Int
-size# (Array# arr) =
-  let !s = GHC.sizeofMutableArray# arr
-  in GHC.I# s
-
-toList# :: Array# a -> [a]
-toList# arr =
-  let ixs = [0..(size# arr - 1)]
-  in [ get# arr i | (GHC.I# i) <- ixs ]
-
-fromList# :: [a] -> Array# a
-fromList# [] = make# 0# undefined
-fromList# ls =
-  let (GHC.I# len)= (length ls)
-      a0 = make# len (head ls)
-  -- in foldl (\acc (i,x) -> set# acc i x) a0 (zip [0..] ls)
-  in go a0 (zip [0..] ls)
-  where
-    go :: Array# a -> [(Int,a)] -> Array# a
-    go acc []          = acc
-    go acc ((GHC.I# i,x):rst) = go (set# acc i x) rst
+size# :: Array# a -> GHC.Int#
+size# (Array# arr) = GHC.sizeofMutableArray# arr

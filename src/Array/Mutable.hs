@@ -16,26 +16,18 @@ Most of the source code here is taken from Data.Array.Mutable.Unlifted.Linear
 in [linear-base](https://github.com/tweag/linear-base).
 
 -}
-module Array.Mutable {-
-  (
-    -- * Array type
-    Array
-
-    -- * Construction and querying
-  , make, get, set, slice, size, append, swap
-
-    -- * Linear versions
-  , size2, get2
-
-    -- * Convert to/from lists
-  , fromList, toList
-
-  ) -} where
+module Array.Mutable where
 
 import qualified Unsafe.Linear as Unsafe
 import           Control.DeepSeq ( NFData(..) )
 import qualified GHC.Exts as GHC
+
+#ifdef PRIM_MUTABLE_ARRAYS
+import           Array.Mutable.PrimUnlifted
+import qualified Data.Primitive.Types as P
+#else
 import           Array.Mutable.Unlifted
+#endif
 
 --------------------------------------------------------------------------------
 -- Mutable, lifted array API
@@ -44,10 +36,15 @@ import           Array.Mutable.Unlifted
 
 data Array a = Array { lower :: {-# UNPACK #-} !Int
                      , upper :: {-# UNPACK #-} !Int
-                     , array :: {-# UNPACK #-} !(Array# a)
+                     , array ::                !(Array# a)
                      }
 
+
+#ifdef PRIM_MUTABLE_ARRAYS
+instance (Show a, P.Prim a) => Show (Array a) where
+#else
 instance Show a => Show (Array a) where
+#endif
   show (Array l r arr) =
     "Array { lower = " ++ show l ++ ", upper = " ++ show r ++ ", arr = " ++
     (show $ toList# arr)
@@ -56,7 +53,11 @@ instance NFData a => NFData (Array a) where
   rnf (Array lo hi _arr) = rnf lo `seq` rnf hi `seq` ()
 
 {-# INLINE make #-}
-make :: Int -> a -> Array a
+make ::
+#ifdef PRIM_MUTABLE_ARRAYS
+  P.Prim a =>
+#endif
+  Int -> a -> Array a
 make 0 _ = Array 0 0 undefined
 make (GHC.I# s) x = Array 0 (GHC.I# s) (make# s x)
 
@@ -65,7 +66,11 @@ size :: Array a -> Int
 size (Array !lo !hi _arr) = hi-lo
 
 {-# INLINE get #-}
-get :: Array a -> Int -> a
+get ::
+#ifdef PRIM_MUTABLE_ARRAYS
+  P.Prim a =>
+#endif
+  Array a -> Int -> a
 get (Array (GHC.I# lo) _hi !arr) (GHC.I# i) =
   seq
 #ifdef RUNTIME_CHECKS
@@ -78,7 +83,11 @@ get (Array (GHC.I# lo) _hi !arr) (GHC.I# i) =
   get# arr (lo GHC.+# i)
 
 {-# INLINE set #-}
-set :: Array a -> Int -> a -> Array a
+set ::
+#ifdef PRIM_MUTABLE_ARRAYS
+  P.Prim a =>
+#endif
+  Array a -> Int -> a -> Array a
 set (Array (GHC.I# lo) hi !arr) (GHC.I# i) !a =
   seq
 #ifdef RUNTIME_CHECKS
@@ -91,20 +100,39 @@ set (Array (GHC.I# lo) hi !arr) (GHC.I# i) !a =
   Array (GHC.I# lo) hi (set# arr (lo GHC.+# i) a)
 
 {-# INLINE copy #-}
-copy :: Array a -> Int -> Array a -> Int -> Int -> Array a
+copy ::
+#ifdef PRIM_MUTABLE_ARRAYS
+  P.Prim a =>
+#endif
+  Array a -> Int -> Array a -> Int -> Int -> Array a
 copy s@(Array (GHC.I# lo1) _hi1 src) (GHC.I# src_offset)
       d@(Array (GHC.I# lo2) _hi2 dst) (GHC.I# dst_offset)
-      (GHC.I# n)
-  = case copy# src (lo1 GHC.+# src_offset) dst (lo2 GHC.+# dst_offset) n of
-      dst_arr' -> d { array = dst_arr' }
+      (GHC.I# n) =
+#ifdef PRIM_MUTABLE_ARRAYS
+  case copy# (get s 0) src (lo1 GHC.+# src_offset) dst (lo2 GHC.+# dst_offset) n of
+    dst_arr' -> d { array = dst_arr' }
+#else
+  case copy# src (lo1 GHC.+# src_offset) dst (lo2 GHC.+# dst_offset) n of
+    dst_arr' -> d { array = dst_arr' }
+#endif
+
 
 {-# INLINE copy2 #-}
-copy2 :: Array a -> Int -> Array a -> Int -> Int -> (Array a, Array a)
+copy2 ::
+#ifdef PRIM_MUTABLE_ARRAYS
+  P.Prim a =>
+#endif
+  Array a -> Int -> Array a -> Int -> Int -> (Array a, Array a)
 copy2 s@(Array (GHC.I# lo1) _hi1 src) (GHC.I# src_offset)
       d@(Array (GHC.I# lo2) _hi2 dst) (GHC.I# dst_offset)
-      (GHC.I# n)
-  = case copy# src (lo1 GHC.+# src_offset) dst (lo2 GHC.+# dst_offset) n of
-      dst_arr' -> (s, d { array = dst_arr' })
+      (GHC.I# n) =
+#ifdef PRIM_MUTABLE_ARRAYS
+  case copy# (get s 0) src (lo1 GHC.+# src_offset) dst (lo2 GHC.+# dst_offset) n of
+    dst_arr' -> (s, d { array = dst_arr' })
+#else
+  case copy# src (lo1 GHC.+# src_offset) dst (lo2 GHC.+# dst_offset) n of
+    dst_arr' -> (s, d { array = dst_arr' })
+#endif
 
 {-# INLINE slice #-}
 slice :: Array a -> Int -> Int -> Array a
@@ -133,16 +161,56 @@ size2 = Unsafe.toLinear go
   where
     go !ar = (size ar, ar)
 
-get2 :: Array a -> Int -> (a, Array a)
+get2 ::
+#ifdef PRIM_MUTABLE_ARRAYS
+  P.Prim a =>
+#endif
+  Array a -> Int -> (a, Array a)
 get2 !ar i = (get ar i, ar)
 
-fromList :: [a] -> Array a
+fromList ::
+#ifdef PRIM_MUTABLE_ARRAYS
+  P.Prim a =>
+#endif
+  [a] -> Array a
 fromList [] = Array 0 0 undefined
 fromList ls =
   let a0 = make (length ls) (head ls)
   in foldl (\acc (i,x) -> set acc i x) a0 (zip [0..] ls)
 
-toList :: Array a -> [a]
+toList ::
+#ifdef PRIM_MUTABLE_ARRAYS
+  P.Prim a =>
+#endif
+  Array a -> [a]
 toList arr =
   let ixs = [0..(size arr - 1)]
   in [ get arr i | i <- ixs ]
+
+
+--------------------------------------------------------------------------------
+
+toList# ::
+#ifdef PRIM_MUTABLE_ARRAYS
+  P.Prim a =>
+#endif
+  Array# a -> [a]
+toList# arr =
+  let ixs = [0..(GHC.I# (size# arr) - 1)]
+  in [ get# arr i | (GHC.I# i) <- ixs ]
+
+fromList# ::
+#ifdef PRIM_MUTABLE_ARRAYS
+  P.Prim a =>
+#endif
+  [a] -> Array# a
+fromList# [] = make# 0# undefined
+fromList# ls =
+  let !(GHC.I# len) = length ls
+      a0 = make# len (head ls)
+  -- in foldl (\acc (i,x) -> set# acc i x) a0 (zip [0..] ls)
+  in go a0 (zip [0..] ls)
+  where
+    -- go :: Array# a -> [(Int,a)] -> Array# a
+    go acc []          = acc
+    go acc ((GHC.I# i,x):rst) = go (set# acc i x) rst

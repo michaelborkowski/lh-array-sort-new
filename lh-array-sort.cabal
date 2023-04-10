@@ -16,10 +16,18 @@ Flag mutable-arrays
    Description: Use mutable arrays.
    Default: False
 
+Flag prim-mutable-arrays
+   Description: Use mutable arrays of primitive types.
+   Default: False
+
+
 library
 
   if flag(mutable-arrays)
     cpp-options: -DMUTABLE_ARRAYS
+
+  if flag(prim-mutable-arrays)
+    cpp-options: -DPRIM_MUTABLE_ARRAYS -DMUTABLE_ARRAYS
 
   exposed-modules:
       Par
@@ -44,6 +52,7 @@ library
       Array.List
       Array.Mutable
       Array.Mutable.Unlifted
+      Array.Mutable.PrimUnlifted
       ProofCombinators
   hs-source-dirs:
       src
@@ -57,12 +66,13 @@ library
       liquidhaskell,
       parallel,
       monad-par,
-      linear-base
+      linear-base,
+      primitive
   default-language: Haskell2010
   ghc-options: -Wall -Wcompat
                -fdefer-typed-holes
                -ddump-simpl
                -ddump-to-file
-  if !flag(mutable-arrays)
+  if !(flag(mutable-arrays) || flag(prim-mutable-arrays))
     ghc-options: -fplugin=LiquidHaskell
                  -fplugin-opt=LiquidHaskell:--ple-with-undecided-guards
