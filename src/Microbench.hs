@@ -33,3 +33,12 @@ parfib !n =
   where
     x = parfib (n-1)
     y = parfib (n-2)
+
+-- Par monad version, with threshold:
+parfib1 :: Int64 -> Par Int64
+parfib1 !n | n <= 32 = return $ seqfib n
+parfib1 !n = do
+    xf <- spawn_$ parfib1 (n-1)
+    !y  <-        parfib1 (n-2)
+    !x  <- get xf
+    return (x+y)

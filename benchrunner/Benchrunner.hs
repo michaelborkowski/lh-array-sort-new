@@ -18,7 +18,6 @@ import qualified DpsMergeSort4 as DMS4
 import qualified DpsMergeSortPar as DMSP
 import qualified DpsMergeSort4Par as DMS4P
 import qualified Microbench as MB
-import qualified Fib as F
 import qualified Array as A
 
 --------------------------------------------------------------------------------
@@ -101,7 +100,7 @@ dobench bench parorseq mb_size = do
             (res0, tmed0, tall0) <- M.bench MB.parfib (fromIntegral i) iters
             pure (i, fromIntegral res0, tmed0, tall0)
           ParM -> do
-            (res0, tmed0, tall0) <- M.benchPar F.parfib1 (fromIntegral i) iters
+            (res0, tmed0, tall0) <- M.benchPar MB.parfib1 (fromIntegral i) iters
             pure (i, fromIntegral res0, tmed0, tall0)
       GenerateArray -> do
         (IntIn i) <- getInput bench mb_size

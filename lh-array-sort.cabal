@@ -45,7 +45,6 @@ library
       DpsMergeSortPar
       DpsMergeSort4Par
       Microbench
-      Fib
 --      QuickSort
 --      CilkSort
   other-modules:
@@ -73,6 +72,7 @@ library
                -fdefer-typed-holes
                -ddump-simpl
                -ddump-to-file
+               -O2
   if !(flag(mutable-arrays) || flag(prim-mutable-arrays))
     ghc-options: -fplugin=LiquidHaskell
                  -fplugin-opt=LiquidHaskell:--ple-with-undecided-guards

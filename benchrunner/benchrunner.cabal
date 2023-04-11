@@ -27,3 +27,4 @@ executable benchrunner
     ghc-options:        -Wall -Wcompat
                         -threaded -rtsopts
                         -fdefer-typed-holes
+                        -O2
