@@ -2,7 +2,7 @@
 {-# LANGUAGE BangPatterns  #-}
 {-# LANGUAGE DeriveFunctor #-}
 {-# LANGUAGE LinearTypes   #-}
-{-# LANGUAGE Strict        #-}
+-- {-# LANGUAGE Strict        #-}
 
 {-@ LIQUID "--reflection"  @-}
 -- {-@ LIQUID "--diff"        @-}
@@ -114,16 +114,16 @@ generate_par n f =
         arr  = make n' (f 0)
         cutoff = defaultGrainSize n'
     in generate_par_loop cutoff arr 0 n' f
-
-generate_par_loop :: Int -> Array a -> Int -> Int -> (Int -> a) -> Array a
-generate_par_loop cutoff arr start end f =
-    if (end - start) <= cutoff
-    then generate_loop arr start end f
-    else
-      let mid  = (start + end) `div` 2
-          arr1 = generate_par_loop cutoff arr start mid f
-          arr2 = generate_par_loop cutoff arr mid end f
-      in arr1 `par` arr2 `pseq` append arr1 arr2
+  where
+    generate_par_loop :: Int -> Array a -> Int -> Int -> (Int -> a) -> Array a
+    generate_par_loop !cutoff !arr !start !end f =
+        if (end - start) <= cutoff
+        then generate_loop arr start end f
+        else
+          let !mid  = (start + end) `div` 2
+              arr1 = generate_par_loop cutoff arr start mid f
+              arr2 = generate_par_loop cutoff arr mid end f
+          in arr1 `par` arr2 `pseq` append arr1 arr2
 
 generate_par_m :: Int -> (Int -> a) -> P.Par (Array a)
 {-# INLINE generate_par_m #-}
@@ -132,17 +132,17 @@ generate_par_m n f = do
         arr  = make n' (f 0)
         cutoff = defaultGrainSize n'
     generate_par_loop_m cutoff arr 0 n' f
-
-generate_par_loop_m :: Int -> Array a -> Int -> Int -> (Int -> a) -> P.Par (Array a)
-generate_par_loop_m cutoff arr start end f =
-    if (end - start) <= cutoff
-    then pure $ generate_loop arr start end f
-    else do
-      let mid  = (start + end) `div` 2
-      arr1_f <- P.spawn_$ generate_par_loop_m cutoff arr start mid f
-      arr2 <- generate_par_loop_m cutoff arr mid end f
-      arr1 <- P.get arr1_f
-      pure $ append arr1 arr2
+  where
+    generate_par_loop_m :: Int -> Array a -> Int -> Int -> (Int -> a) -> P.Par (Array a)
+    generate_par_loop_m !cutoff !arr !start !end f =
+        if (end - start) <= cutoff
+        then pure $ generate_loop arr start end f
+        else do
+          let !mid  = (start + end) `div` 2
+          !arr1_f <- P.spawn_$ generate_par_loop_m cutoff arr start mid f
+          !arr2 <- generate_par_loop_m cutoff arr mid end f
+          !arr1 <- P.get arr1_f
+          pure $ append arr1 arr2
 
 generate :: Int -> (Int -> a) -> Array a
 {-# INLINE generate #-}
@@ -155,33 +155,38 @@ generate_loop :: Array a -> Int -> Int -> (Int -> a) -> Array a
 generate_loop arr idx end f =
     if idx == end
     then arr
-    else
-      let arr1 = set arr idx (f idx)
-      in generate_loop arr1 (idx+1) end f
+    else let arr1 = set arr idx (f idx)
+         in generate_loop arr1 (idx+1) end f
 
 copy_par :: Array a -> Int -> Array a -> Int -> Int -> Array a
-copy_par src src_offset dst dst_offset len =
-  if len <= 8192
-  then copy src src_offset dst dst_offset len
-  else let half = len `div` 2
-           (src_l, src_r) = splitAt half src
-           (dst_l, dst_r) = splitAt (len-half) dst
-           left = copy_par src_l 0 dst_l 0 half
-           right = copy_par src_r 0 dst_r 0 (len-half)
-       in left `par` right `pseq` append left right
+copy_par src0 src_offset0 dst0 dst_offset0 len0 = copy_par' src0 src_offset0 dst0 dst_offset0 len0
+  where
+    cutoff = defaultGrainSize len0
+    copy_par' !src src_offset !dst dst_offset !len =
+      if len <= 1000000
+      then copy src src_offset dst dst_offset len
+      else let !half = len `div` 2
+               !(src_l, src_r) = splitAt half src
+               !(dst_l, dst_r) = splitAt (len-half) dst
+               left = copy_par' src_l 0 dst_l 0 half
+               right = copy_par' src_r 0 dst_r 0 (len-half)
+           in left `par` right `pseq` append left right
 
 copy_par_m :: Array a -> Int -> Array a -> Int -> Int -> P.Par (Array a)
-copy_par_m src src_offset dst dst_offset len =
-  if len <= 8192
-  then pure $ copy src src_offset dst dst_offset len
-  else do
-       let half = len `div` 2
-           (src_l, src_r) = splitAt half src
-           (dst_l, dst_r) = splitAt (len-half) dst
-       left_f <- P.spawn_$ copy_par_m src_l 0 dst_l 0 half
-       right <- copy_par_m src_r 0 dst_r 0 (len-half)
-       left <- P.get left_f
-       pure $ append left right
+copy_par_m !src0 src_offset0 !dst0 dst_offset0 !len0 = copy_par_m' src0 src_offset0 dst0 dst_offset0 len0
+  where
+    cutoff = defaultGrainSize len0
+    copy_par_m' !src src_offset !dst dst_offset !len =
+      if len <= 1000000
+      then pure $ copy src src_offset dst dst_offset len
+      else do
+           let !half = len `div` 2
+               !(src_l, src_r) = splitAt half src
+               !(dst_l, dst_r) = splitAt (len-half) dst
+           !left_f <- P.spawn_$ copy_par_m' src_l 0 dst_l 0 half
+           !right <- copy_par_m' src_r 0 dst_r 0 (len-half)
+           !left <- P.get left_f
+           pure $ append left right
 
 foldl1_par :: Int -> (a -> a -> a) -> a -> Array a -> a
 foldl1_par = _todo

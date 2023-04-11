@@ -69,11 +69,12 @@ randArray _ty size = do
       !arr = force (A.fromList ls)
   pure arr
 
-sortFn :: (Show a, Ord a, NFData a) => Benchmark -> (A.Array a -> A.Array a)
-sortFn bench = case bench of
-  Insertionsort -> I.isort_top
-  Mergesort     -> DMS.msort
-  -- MergesortPar  -> DMSP.msort
+sortFn :: (Show a, Ord a, NFData a) => Benchmark -> ParOrSeq -> (A.Array a -> A.Array a)
+sortFn bench parorseq = case (bench,parorseq) of
+  (Insertionsort, Seq) -> I.isort_top
+  (Mergesort, Seq) -> DMS.msort
+  (Mergesort, Par) -> DMSP.msort
+  oth -> error $ "sortFn: " ++ show oth
 
 --------------------------------------------------------------------------------
 
@@ -135,6 +136,13 @@ dobench bench parorseq mb_size = do
             let docopy_par_m input = A.copy_par_m input 0 dst 0 (A.size arr)
             (res0, tmed0, tall0) <- M.benchPar docopy_par_m arr iters
             pure (A.size arr, A.size res0, tmed0, tall0)
+      _ -> do
+        (ArrayIn arr) <- getInput bench mb_size
+        let fn = sortFn bench parorseq
+        putStrLn $ "array size = " ++ show (A.size arr)
+        (res0, tmed0, tall0) <- M.bench fn arr iters
+        unless (isSorted (A.toList res0)) (error $ show bench ++ ": result not sorted.")
+        pure (A.size arr, A.size res0, tmed0, tall0)
 
 {-
       FillArray -> do (EltsIn total_elems elt) <- getInput bench mb_size
@@ -143,13 +151,6 @@ dobench bench parorseq mb_size = do
       SumArray  -> do (ArrayIn arr) <- getInput bench mb_size
                       (res0, tmed0, tall0) <- M.bench MB.sumArray arr iters
                       pure (A.size arr, fromIntegral res0, tmed0, tall0)
-
-      _         -> do (ArrayIn arr) <- getInput bench mb_size
-                      let fn = sortFn bench
-                      putStrLn $ "array size = " ++ show (A.size arr)
-                      (res0, tmed0, tall0) <- M.bench fn arr iters
-                      unless (isSorted (A.toList res0)) (error $ show bench ++ ": result not sorted.")
-                      pure (A.size arr, A.size res0, tmed0, tall0)
 -}
   putStrLn $ "BENCHMARK: " ++ show bench
   putStrLn $ "RESULT: " ++ show res
