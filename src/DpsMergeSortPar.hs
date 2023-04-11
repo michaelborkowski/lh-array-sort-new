@@ -18,10 +18,10 @@ import qualified DpsMerge as Seq
 import           Equivalence
 import           Order
 import           Par
+import           Control.DeepSeq ( NFData(..) )
 
 #ifdef MUTABLE_ARRAYS
 import           Array.Mutable as A
-import           Control.DeepSeq ( NFData(..) )
 #else
 import           Array.List as A
 #endif

@@ -33,18 +33,18 @@ module Array
 
 import qualified Unsafe.Linear as Unsafe
 import           Data.Unrestricted.Linear (Ur(..))
-import           Prelude hiding (take, drop,splitAt)
+import           Prelude hiding (take, drop, splitAt)
 import           GHC.Conc ( numCapabilities, par, pseq )
 import           Array.List ( lma_gs_list, lma_gns_list
                             , lem_take_conc, lem_drop_conc, lem_take_all
                             , lem_getList_take, lem_getList_drop
                             , take, drop
                             )
+import           Control.Parallel.Strategies (runEval, rpar, rseq)
+import qualified Control.Monad.Par as P (Par, runPar, spawnP, spawn_, get, fork, put, new)
 
 #ifdef MUTABLE_ARRAYS
 import           Array.Mutable
-import           Control.Parallel.Strategies (runEval, rpar, rseq)
-import qualified Control.Monad.Par as P (Par, runPar, spawnP, spawn_, get, fork, put, new)
 #else
 import           Array.List
 #endif

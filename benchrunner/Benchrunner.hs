@@ -125,16 +125,19 @@ dobench bench parorseq mb_size = do
             let dst = A.make (A.size arr) (A.get arr 0)
             let docopy input = A.copy input 0 dst 0 (A.size arr)
             (res0, tmed0, tall0) <- M.bench docopy arr iters
+            unless ((A.toList res0) == (A.toList arr)) (error $ show bench ++ ": result not equal to source.")
             pure (A.size arr, A.size res0, tmed0, tall0)
           Par ->  do
             let dst = A.make (A.size arr) (A.get arr 0)
             let docopy_par input = A.copy_par input 0 dst 0 (A.size arr)
             (res0, tmed0, tall0) <- M.bench docopy_par arr iters
+            unless ((A.toList res0) == (A.toList arr)) (error $ show bench ++ ": result not equal to source.")
             pure (A.size arr, A.size res0, tmed0, tall0)
           ParM -> do
             let dst = A.make (A.size arr) (A.get arr 0)
             let docopy_par_m input = A.copy_par_m input 0 dst 0 (A.size arr)
             (res0, tmed0, tall0) <- M.benchPar docopy_par_m arr iters
+            unless ((A.toList res0) == (A.toList arr)) (error $ show bench ++ ": result not equal to source.")
             pure (A.size arr, A.size res0, tmed0, tall0)
       _ -> do
         (ArrayIn arr) <- getInput bench mb_size

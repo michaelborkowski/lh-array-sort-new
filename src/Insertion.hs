@@ -14,9 +14,11 @@ import           Prelude
 import           Language.Haskell.Liquid.ProofCombinators hiding ((?))
 import qualified Language.Haskell.Liquid.Bag as B
 import           ProofCombinators
-import           Array     
+import           Array
 import           Order
 import           Equivalence
+
+import qualified Unsafe.Linear as Unsafe
 
 #ifdef MUTABLE_ARRAYS
 import           Array.Mutable as A
@@ -24,6 +26,7 @@ import           Array.Mutable as A
 import           Array.List as A
 #endif
 
+import qualified Array as A
 
 
 --------------------------------------------------------------------------------
@@ -36,15 +39,16 @@ import           Array.List as A
        -> ys:{A.size ys == A.size xs} / [n] @-}
 
 insert :: Ord a => A.Array a -> a -> Int -> A.Array a
-insert xs x 0 = A.set xs 0 x  -- first element is sorted
-insert xs x n                 -- sort the nth element into the first n+1 elements
-  | x < a     =  insert (A.set xs' (n) a) x (n - 1)
-  | otherwise =  A.set xs' n x
-    where 
-      (a, xs') = (A.get2 xs (n-1))
+insert !xs !x 0 = A.set xs 0 x  -- first element is sorted
+insert !xs !x !n =              -- sort the nth element into the first n+1 elements
+  let (!a, !xs') = A.get2 xs (n-1)
+  in if x < a
+     then let !xs'' = A.set xs' (n) a
+          in insert xs'' x (n - 1)
+     else A.set xs' n x
 
 {-
-// JL: inplace c style of the above insert method. 
+// JL: inplace c style of the above insert method.
 void insert(int* xs, int x, int n){
   if(n == 0) {
     xs[0] = x;
@@ -65,18 +69,19 @@ void insert(int* xs, int x, int n){
 {-@ reflect isort @-}
 {-@ isort :: xs:_ -> n:{v:Nat | v <= A.size xs}
       -> ys:{A.size ys == A.size xs} / [n] @-}
+-- | Sort in-place.
 isort :: Ord a => A.Array a -> Int -> A.Array a
 isort xs n
   | ( s == 0 ) = xs'
   | ( s == 1 ) = xs'
   | ( n == 0 ) = xs'
-  | otherwise  = let (a, xs'') = (A.get2 xs' (s-n)) 
-                  in isort (insert xs'' a (s-n)) (n-1) -- switch to tail recursive
-    where 
+  | otherwise  = let !(a, xs'') = (A.get2 xs' (s-n))
+                 in isort (insert xs'' a (s-n)) (n-1) -- switch to tail recursive
+    where
       (s, xs') = A.size2 xs
 
 {-
-// JL: inplace c style of the above isort method. 
+// JL: inplace c style of the above isort method.
 void isort(int* xs, int n, int s){
   if(s == 0 || s == 1 || n == 0){
     return;
@@ -93,16 +98,18 @@ int main(void){
 -}
 
 {-@ isort_top :: xs:_ -> ys:{isSorted ys && (toBag xs == toBag ys)} @-}
+-- | Sort a copy of the input array.
 isort_top :: Ord a => A.Array a -> A.Array a
-isort_top xs' =
-    if s <= 1
-    then xs
-    else 
-      let ys = isort xs s in ys 
-        ? ((lma_isort xs s) &&& (lma_isort_eq xs s) 
-        &&& (lma_toBag_toBagLeft xs (size xs)) &&& (lma_toBag_toBagLeft ys (size ys)))
+isort_top xs0 =
+    if s <= 1 then xs0 else
+      let Ur cpy = A.alloc s hd (Unsafe.toLinear (\tmp -> Ur (A.copy xs2 0 tmp 0 s)))
+          ys = isort cpy s
+      in ys
+        ? ((lma_isort xs2 s) &&& (lma_isort_eq xs2 s)
+        &&& (lma_toBag_toBagLeft xs2 (size xs2)) &&& (lma_toBag_toBagLeft ys (size ys)))
   where
-    (s, xs) = A.size2 xs'
+    (s, xs1) = A.size2 xs0
+    (hd, xs2) = A.get2 xs1 0
 
 --------------------------------------------------------------------------------
 -- | Proofs for Sortedness

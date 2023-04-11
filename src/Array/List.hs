@@ -208,7 +208,7 @@ slice2 xs l r = (slice xs l r, xs)
                                   size (snd tup) == size xs - m && token (snd tup) == token xs &&
                                   left (snd tup) == left xs + m && right (snd tup) == right xs &&
                                   fst tup == slice xs 0 m       && snd tup == slice xs m (size xs) } @-}
-splitAt :: Ord a => Int -> Array a -> (Array a, Array a)
+splitAt :: Int -> Array a -> (Array a, Array a)
 splitAt m xs = (slice xs 0 m, slice xs m n)
   where
     n = size xs
