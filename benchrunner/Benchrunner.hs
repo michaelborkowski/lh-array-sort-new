@@ -13,6 +13,7 @@ import           Control.Monad      ( unless )
 
 import qualified Measure as M
 import qualified Insertion as I
+import qualified QuickSort as Q
 import qualified DpsMergeSort as DMS
 import qualified DpsMergeSort4 as DMS4
 import qualified DpsMergeSortPar as DMSP
@@ -72,6 +73,7 @@ randArray _ty size = do
 sortFn :: (Show a, Ord a, NFData a) => Benchmark -> ParOrSeq -> (A.Array a -> A.Array a)
 sortFn bench parorseq = case (bench,parorseq) of
   (Insertionsort, Seq) -> I.isort_top
+  (Quicksort, Seq)     -> Q.quickSort
   (Mergesort, Seq) -> DMS.msort
   (Mergesort, Par) -> DMSP.msort
   oth -> error $ "sortFn: " ++ show oth
@@ -126,18 +128,21 @@ dobench bench parorseq mb_size = do
             let docopy input = A.copy input 0 dst 0 (A.size arr)
             (res0, tmed0, tall0) <- M.bench docopy arr iters
             unless ((A.toList res0) == (A.toList arr)) (error $ show bench ++ ": result not equal to source.")
+            putStrLn "Copied: OK"
             pure (A.size arr, A.size res0, tmed0, tall0)
           Par ->  do
             let dst = A.make (A.size arr) (A.get arr 0)
             let docopy_par input = A.copy_par input 0 dst 0 (A.size arr)
             (res0, tmed0, tall0) <- M.bench docopy_par arr iters
             unless ((A.toList res0) == (A.toList arr)) (error $ show bench ++ ": result not equal to source.")
+            putStrLn "Copied: OK"
             pure (A.size arr, A.size res0, tmed0, tall0)
           ParM -> do
             let dst = A.make (A.size arr) (A.get arr 0)
             let docopy_par_m input = A.copy_par_m input 0 dst 0 (A.size arr)
             (res0, tmed0, tall0) <- M.benchPar docopy_par_m arr iters
             unless ((A.toList res0) == (A.toList arr)) (error $ show bench ++ ": result not equal to source.")
+            putStrLn "Copied: OK"
             pure (A.size arr, A.size res0, tmed0, tall0)
       _ -> do
         (ArrayIn arr) <- getInput bench mb_size
@@ -145,6 +150,7 @@ dobench bench parorseq mb_size = do
         putStrLn $ "array size = " ++ show (A.size arr)
         (res0, tmed0, tall0) <- M.bench fn arr iters
         unless (isSorted (A.toList res0)) (error $ show bench ++ ": result not sorted.")
+        putStrLn "Sorted: OK"
         pure (A.size arr, A.size res0, tmed0, tall0)
 
 {-
