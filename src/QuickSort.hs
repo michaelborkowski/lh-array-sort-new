@@ -9,9 +9,10 @@ module QuickSort where
 
 import qualified Language.Haskell.Liquid.Bag as B
 import           Language.Haskell.Liquid.ProofCombinators hiding ((?))
+import qualified Unsafe.Linear as Unsafe
 
 import ProofCombinators
-import Array 
+import Array
 import Equivalence
 import Order
 import Properties
@@ -21,11 +22,16 @@ import           Array.Mutable as A
 #else
 import           Array.List as A
 #endif
+import qualified Array as A
 
 {-@ quickSort :: xs:(Array a) -> { ys:(Array a) | isSorted' ys && A.size xs == A.size ys &&
                                                                   toBag  xs == toBag  ys } @-}
-quickSort :: Ord a => Array a -> Array a 
-quickSort xs = quickSortBtw xs 0 (size xs)
+quickSort :: (Ord a, Show a) => Array a -> Array a
+quickSort xs =
+  let (len, xs1) = A.size2 xs
+      (hd, xs2) = A.get2 xs1 0
+      Ur cpy = A.alloc len hd (Unsafe.toLinear (\tmp -> Ur (A.copy xs2 0 tmp 0 len)))
+  in quickSortBtw cpy 0 len
 
 {-@ quickSortBtw :: xs:(Array a) -> { i:Int | 0 <= i } -> { j:Int | i <= j && j <= A.size xs }
                 -> { ys:(Array a) | isSortedBtw ys i j && A.size xs == A.size ys &&
@@ -86,8 +92,8 @@ shuffleBtw xs i j =
           then goShuffle zs' (jl+1 ? lem_rangeProperty_build_right zs (belowPivot (get zs (j-1))) 
                                        i (jl ? toProof (belowPivot (get zs (j-1)) (get zs jl)))) 
                              jr
-          else let (vr, zs'') = A.get2 zs jr in
-            if vr >  piv  
+          else let (vr, zs'') = A.get2 zs' jr in
+            if vr >  piv
             then goShuffle zs'' jl     (jr-1)
             else let zs''' = swap zs'' jl jr 
                            ? lem_range_outside_swap zs i jl jr (j-1) piv

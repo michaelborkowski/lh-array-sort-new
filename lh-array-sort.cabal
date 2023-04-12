@@ -45,7 +45,7 @@ library
       DpsMergeSortPar
       DpsMergeSort4Par
       Microbench
---      QuickSort
+      QuickSort
 --      CilkSort
   other-modules:
       Array.List
@@ -73,6 +73,7 @@ library
                -ddump-simpl
                -ddump-to-file
                -O2
+               -w
   if !(flag(mutable-arrays) || flag(prim-mutable-arrays))
-    ghc-options: -fplugin=LiquidHaskell
-                 -fplugin-opt=LiquidHaskell:--ple-with-undecided-guards
+    -- ghc-options: -fplugin=LiquidHaskell
+    --              -fplugin-opt=LiquidHaskell:--ple-with-undecided-guards
