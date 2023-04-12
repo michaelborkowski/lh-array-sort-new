@@ -9,6 +9,8 @@
 {-@ LIQUID "--ple"         @-}
 {-@ LIQUID "--short-names" @-}
 
+{-@ LIQUID "--higherorder" @-}
+
 module Array
   (
     -- * Array type
@@ -31,7 +33,7 @@ module Array
   , lma_gs, lma_gns, lma_swap, lma_swap_eql, lem_slice_append, lem_get_slice
   ) where
 
-import qualified Unsafe.Linear as Unsafe
+import qualified UnsafeLinear as Unsafe
 import           Data.Unrestricted.Linear (Ur(..))
 import           Prelude hiding (take, drop, splitAt)
 import           GHC.Conc ( numCapabilities, par, pseq )
@@ -67,9 +69,25 @@ alloc i a f = f (make i a)
                          -> { j:Int | 0 <= j && j < size xs }
                          -> { ys:(Array a) | size xs == size ys && token xs == token ys &&
                                              left xs == left ys && right xs == right ys } @-}
-swap :: Array a %1-> Int -> Int -> Array a
-swap = Unsafe.toLinear3 go
+swap :: Array a -> Int -> Int -> Array a
+swap xs i j = let xi   = get xs i
+                  xs'  = set xs i (get xs j)
+                  xs'' = set xs' j xi
+               in xs''
+
+{-@ swap2 :: xs:(Array a) -> { i:Int | 0 <= i && i < size xs }
+                          -> { j:Int | 0 <= j && j < size xs }
+                          -> { ys:(Array a) | size xs == size ys && token xs == token ys &&
+                                              left xs == left ys && right xs == right ys &&
+                                              ys == swap xs i j } @-}
+swap2 :: Array a -> Int -> Int -> Array a
+swap2 xs i j  = {-Unsafe.toLinear3-} go xs i j 
   where
+    {-@ go :: xs:(Array a) -> { i:Int | 0 <= i && i < size xs }
+                           -> { j:Int | 0 <= j && j < size xs }
+                           -> { ys:(Array a) | size xs == size ys && token xs == token ys &&
+                                               left xs == left ys && right xs == right ys &&
+                                               ys == swap xs i j } @-}
     go xs i j =
       let (xi, xs1) = get2 xs i
           (xj, xs2) = get2 xs1 j
@@ -87,9 +105,17 @@ swap = Unsafe.toLinear3 go
                 size (fst t) == div (size xs) 2 &&
                 size (snd t) == size xs - div (size xs) 2 &&
                 size xs = (size (fst t)) + (size (snd t)) } @-}
-splitMid :: Ord a => Array a %1-> (Array a, Array a)
-splitMid = Unsafe.toLinear go
+splitMid :: Ord a => Array a -> (Array a, Array a)
+splitMid = {- Unsafe.toLinear -} go
   where
+    {-@ go :: xs:(Array a)
+          -> {t:_ | token (fst t) == token xs && token (snd t) == token xs &&
+                    right (fst t) == left (snd t) &&
+                    right (fst t) == left xs + div (size xs) 2 &&
+                    left (fst t) == left xs && right (snd t) == right xs &&
+                    size (fst t) == div (size xs) 2 &&
+                    size (snd t) == size xs - div (size xs) 2 &&
+                    size xs = (size (fst t)) + (size (snd t)) } @-} 
     go xs = (slice xs 0 m, slice xs m n)
       where
         n = size xs
@@ -97,9 +123,10 @@ splitMid = Unsafe.toLinear go
 
 --------------------------------------------------------------------------------
 -- Parallel operations
---------------------------------------------------------------------------------
+-------------------------------------------------------------------------------- 
 
 -- Same default as Cilk.
+{-@ ignore defaultGrainSize @-}
 defaultGrainSize :: Int -> Int
 {-# INLINE defaultGrainSize #-}
 defaultGrainSize n =
@@ -107,6 +134,7 @@ defaultGrainSize n =
         grain = max 1 (n `div` (8 * p))
     in min 2048 grain
 
+{-@ ignore generate_par @-}
 generate_par :: Int -> (Int -> a) -> Array a
 {-# INLINE generate_par #-}
 generate_par n f =
@@ -125,6 +153,7 @@ generate_par n f =
               arr2 = generate_par_loop cutoff arr mid end f
           in arr1 `par` arr2 `pseq` append arr1 arr2
 
+{-@ ignore generate_par_m @-}
 generate_par_m :: Int -> (Int -> a) -> P.Par (Array a)
 {-# INLINE generate_par_m #-}
 generate_par_m n f = do
@@ -144,6 +173,7 @@ generate_par_m n f = do
           !arr1 <- P.get arr1_f
           pure $ append arr1 arr2
 
+{-@ ignore generate @-}
 generate :: Int -> (Int -> a) -> Array a
 {-# INLINE generate #-}
 generate n f =
@@ -151,6 +181,7 @@ generate n f =
         arr = make n' (f 0)
     in generate_loop arr 0 n' f
 
+{-@ ignore generate_loop @-}
 generate_loop :: Array a -> Int -> Int -> (Int -> a) -> Array a
 generate_loop arr idx end f =
     if idx == end
@@ -158,6 +189,7 @@ generate_loop arr idx end f =
     else let arr1 = set arr idx (f idx)
          in generate_loop arr1 (idx+1) end f
 
+{-@ ignore copy_par @-}
 copy_par :: Array a -> Int -> Array a -> Int -> Int -> Array a
 copy_par src0 src_offset0 dst0 dst_offset0 len0 = copy_par' src0 src_offset0 dst0 dst_offset0 len0
   where
@@ -172,6 +204,7 @@ copy_par src0 src_offset0 dst0 dst_offset0 len0 = copy_par' src0 src_offset0 dst
                right = copy_par' src_r 0 dst_r 0 (len-half)
            in left `par` right `pseq` append left right
 
+{-@ ignore copy_par_m @-}
 copy_par_m :: Array a -> Int -> Array a -> Int -> Int -> P.Par (Array a)
 copy_par_m !src0 src_offset0 !dst0 dst_offset0 !len0 = copy_par_m' src0 src_offset0 dst0 dst_offset0 len0
   where
@@ -188,10 +221,12 @@ copy_par_m !src0 src_offset0 !dst0 dst_offset0 !len0 = copy_par_m' src0 src_offs
            !left <- P.get left_f
            pure $ append left right
 
+{-@ ignore foldl1_par @-}
 foldl1_par :: Int -> (a -> a -> a) -> a -> Array a -> a
 foldl1_par = _todo
 
 -- (?) how do we do parallel fill array?
+{-@ ignore make_par @-}
 make_par :: Int -> a -> Array a
 make_par = _todo
 

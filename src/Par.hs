@@ -1,5 +1,7 @@
 {-# LANGUAGE CPP #-}
 
+{-@ LIQUID "--higherorder" @-}
+
 module Par where
 
 import           Control.DeepSeq ( NFData(..) )
