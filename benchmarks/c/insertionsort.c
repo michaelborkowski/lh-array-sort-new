@@ -54,5 +54,5 @@ void insertionsort_inplace(void *const pbase, size_t total_elems, size_t size, _
         memcpy(tmp_ptr, temp, size);
         run_ptr += size;
     }
-
+    return;
 }

@@ -124,6 +124,10 @@ int bench_main(int argc, char** argv)
             b->sort_run = insertionsort_glibc;
         } else if (strcmp(argv[1], "sort_insertion") == 0) {
             b->sort_run = insertionsort;
+        } else if (strcmp(argv[1], "sort_quick_glibc") == 0) {
+            b->sort_run = quicksort_glibc;
+        } else if (strcmp(argv[1], "sort_quick") == 0) {
+            b->sort_run = quicksort;
         } else if (strcmp(argv[1], "sort_merge_seq") == 0) {
             b->sort_run = mergesort;
         } else if (strcmp(argv[1], "sort_merge_par") == 0) {
