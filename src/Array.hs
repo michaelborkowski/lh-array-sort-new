@@ -22,7 +22,7 @@ module Array
   , size, get, set, slice, append, splitMid, swap
 
     -- * Linear versions
-  , size2, get2, slice2, copy2
+  , size2, get2, slice2, copy2, copy2_par
 
     -- * Convert to/from lists
   , fromList, toList
