@@ -6,7 +6,7 @@ import           GHC.Conc ( par, pseq )
 import           Data.Int ( Int64 )
 import qualified Array as A
 import           Par
-import           Control.Monad.Par
+import           Control.Monad.Par as P
 
 --------------------------------------------------------------------------------
 
@@ -17,6 +17,19 @@ sumArray arr = go 0 0 (A.size arr)
       if idx == n
       then acc
       else go (acc + A.get arr idx) (idx+1) n
+
+sumArray_par :: Num a => Int -> A.Array a -> a
+sumArray_par cutoff = go
+  where
+    go arr =
+      let n = A.size arr in
+        if n <= cutoff
+        then sumArray arr
+        else let half = n `div` 2
+                 !(left,right) = A.splitAt half arr
+                 x = go left
+                 y = go right
+             in x `par` y `pseq` x+y
 
 fillArray :: (Int, a) -> A.Array a
 fillArray (sz, val) = A.make sz val

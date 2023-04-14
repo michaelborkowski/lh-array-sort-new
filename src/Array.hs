@@ -31,6 +31,13 @@ module Array
 
     -- * LiqidHaskell lemmas
   , lma_gs, lma_gns, lma_swap, lma_swap_eql, lem_slice_append, lem_get_slice
+
+#ifdef MUTABLE_ARRAYS
+  , module Array.Mutable
+#else
+  , module Array.List
+#endif
+
   ) where
 
 import qualified UnsafeLinear as Unsafe
@@ -86,7 +93,7 @@ swap xs i j = let !xi   = get xs i
                                               left xs == left ys && right xs == right ys &&
                                               ys == swap xs i j } @-}
 swap2 :: Array a -> Int -> Int -> Array a
-swap2 xs i j  = {-Unsafe.toLinear3-} go xs i j 
+swap2 xs i j  = {-Unsafe.toLinear3-} go xs i j
   where
     {-@ go :: xs:(Array a) -> { i:Int | 0 <= i && i < size xs }
                            -> { j:Int | 0 <= j && j < size xs }
@@ -121,7 +128,7 @@ splitMid = {- Unsafe.toLinear -} go
                     left (fst t) == left xs && right (snd t) == right xs &&
                     size (fst t) == div (size xs) 2 &&
                     size (snd t) == size xs - div (size xs) 2 &&
-                    size xs = (size (fst t)) + (size (snd t)) } @-} 
+                    size xs = (size (fst t)) + (size (snd t)) } @-}
     go xs = (slice xs 0 m, slice xs m n)
       where
         n = size xs
@@ -129,7 +136,7 @@ splitMid = {- Unsafe.toLinear -} go
 
 --------------------------------------------------------------------------------
 -- Parallel operations
--------------------------------------------------------------------------------- 
+--------------------------------------------------------------------------------
 
 -- Same default as Cilk.
 {-@ ignore defaultGrainSize @-}

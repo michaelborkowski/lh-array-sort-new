@@ -120,6 +120,15 @@ dobench bench parorseq mb_size = do
             let gen n = A.generate_par_m n id
             (res0, tmed0, tall0) <- M.benchPar gen (fromIntegral i) iters
             pure (i, A.size res0, tmed0, tall0)
+      SumArray  -> do
+        (ArrayIn arr) <- getInput bench mb_size
+        case parorseq of
+          Seq -> do
+            (res0, tmed0, tall0) <- M.bench MB.sumArray arr iters
+            pure (A.size arr, fromIntegral res0, tmed0, tall0)
+          Par -> do
+            (res0, tmed0, tall0) <- M.bench (MB.sumArray_par 4096) arr iters
+            pure (A.size arr, fromIntegral res0, tmed0, tall0)
       CopyArray -> do
         (ArrayIn arr) <- getInput bench mb_size
         case parorseq of
@@ -157,9 +166,6 @@ dobench bench parorseq mb_size = do
       FillArray -> do (EltsIn total_elems elt) <- getInput bench mb_size
                       (res0, tmed0, tall0) <- M.bench MB.fillArray (total_elems,elt) iters
                       pure (total_elems, A.size res0, tmed0, tall0)
-      SumArray  -> do (ArrayIn arr) <- getInput bench mb_size
-                      (res0, tmed0, tall0) <- M.bench MB.sumArray arr iters
-                      pure (A.size arr, fromIntegral res0, tmed0, tall0)
 -}
   putStrLn $ "BENCHMARK: " ++ show bench
   putStrLn $ "RESULT: " ++ show res
