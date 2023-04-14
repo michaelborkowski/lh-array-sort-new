@@ -70,10 +70,15 @@ alloc i a f = f (make i a)
                          -> { ys:(Array a) | size xs == size ys && token xs == token ys &&
                                              left xs == left ys && right xs == right ys } @-}
 swap :: Array a -> Int -> Int -> Array a
-swap xs i j = let xi   = get xs i
-                  xs'  = set xs i (get xs j)
-                  xs'' = set xs' j xi
-               in xs''
+swap xs i j = let !xi   = get xs i
+                  !xj   = get xs j
+                  xs'   = set xs i xj
+                  xs''  = set xs' j xi
+#ifdef MUTABLE_ARRAYS
+              in  xs' `pseq` xs''
+#else
+              in xs''
+#endif
 
 {-@ swap2 :: xs:(Array a) -> { i:Int | 0 <= i && i < size xs }
                           -> { j:Int | 0 <= j && j < size xs }
@@ -141,38 +146,42 @@ generate_par :: Int -> (Int -> a) -> Array a
 generate_par n f =
     let n'  = n `max` 0
         arr  = make n' (f 0)
-        cutoff = defaultGrainSize n'
-    in generate_par_loop cutoff arr 0 n' f
+        -- cutoff = defaultGrainSize n'
+        cutoff = 4096
+    in go cutoff arr
   where
-    generate_par_loop :: Int -> Array a -> Int -> Int -> (Int -> a) -> Array a
-    generate_par_loop !cutoff !arr !start !end f =
-        if (end - start) <= cutoff
-        then generate_loop arr start end f
+    go !cutoff !arr =
+      let n = size arr in
+        if n <= cutoff
+        then generate_loop arr 0 n f
         else
-          let !mid  = (start + end) `div` 2
-              arr1 = generate_par_loop cutoff arr start mid f
-              arr2 = generate_par_loop cutoff arr mid end f
+          let !mid  = n `div` 2
+              (left, right) = splitAt mid arr
+              arr1 = go cutoff left
+              arr2 = go cutoff right
           in arr1 `par` arr2 `pseq` append arr1 arr2
 
 {-@ ignore generate_par_m @-}
 generate_par_m :: Int -> (Int -> a) -> P.Par (Array a)
 {-# INLINE generate_par_m #-}
-generate_par_m n f = do
+generate_par_m n f =
     let n'  = n `max` 0
         arr  = make n' (f 0)
-        cutoff = defaultGrainSize n'
-    generate_par_loop_m cutoff arr 0 n' f
+        -- cutoff = defaultGrainSize n'
+        cutoff = 4096
+    in go cutoff arr
   where
-    generate_par_loop_m :: Int -> Array a -> Int -> Int -> (Int -> a) -> P.Par (Array a)
-    generate_par_loop_m !cutoff !arr !start !end f =
-        if (end - start) <= cutoff
-        then pure $ generate_loop arr start end f
+    go !cutoff !arr =
+      let n = size arr in
+        if n <= cutoff
+        then pure $ generate_loop arr 0 n f
         else do
-          let !mid  = (start + end) `div` 2
-          !arr1_f <- P.spawn_$ generate_par_loop_m cutoff arr start mid f
-          !arr2 <- generate_par_loop_m cutoff arr mid end f
+          let !mid  = n `div` 2
+              (left, right) = splitAt mid arr
+          !arr1_f <- P.spawn_$ go cutoff left
+          !arr2 <- go cutoff right
           !arr1 <- P.get arr1_f
-          pure $ append arr1 arr2
+          pure $ append left right
 
 {-@ ignore generate @-}
 generate :: Int -> (Int -> a) -> Array a
@@ -194,6 +203,7 @@ generate_loop arr idx end f =
 copy2_par :: Array a -> Int -> Array a -> Int -> Int -> (Array a, Array a)
 copy2_par src0 src_offset0 dst0 dst_offset0 len0 = (src0, copy_par src0 src_offset0 dst0 dst_offset0 len0)
 
+--TODO: src_offset0 and dst_offset0 are not respected.
 {-@ ignore copy_par @-}
 copy_par :: Array a -> Int -> Array a -> Int -> Int -> Array a
 copy_par src0 src_offset0 dst0 dst_offset0 len0 = copy_par' src0 src_offset0 dst0 dst_offset0 len0
@@ -209,6 +219,7 @@ copy_par src0 src_offset0 dst0 dst_offset0 len0 = copy_par' src0 src_offset0 dst
                right = copy_par' src_r 0 dst_r 0 (len-half)
            in left `par` right `pseq` append left right
 
+--TODO: src_offset0 and dst_offset0 are not respected.
 {-@ ignore copy_par_m @-}
 copy_par_m :: Array a -> Int -> Array a -> Int -> Int -> P.Par (Array a)
 copy_par_m !src0 src_offset0 !dst0 dst_offset0 !len0 = copy_par_m' src0 src_offset0 dst0 dst_offset0 len0
