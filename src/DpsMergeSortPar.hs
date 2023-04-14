@@ -44,9 +44,11 @@ import           Array.List as A
 msortSwap :: (Show a, Ord a, NFData a) => A.Array a -> A.Array a -> (A.Array a, A.Array a)
 msortSwap src tmp =
   let (len, src') = A.size2 src in
-  if len <= 1
-  then let !(src'', tmp'') = copy2_par src' 0 tmp 0 len in
-       (src'', tmp'')
+--  if len <= 1
+--  then let !(src'', tmp'') = copy2_par src' 0 tmp 0 len in
+--       (src'', tmp'')
+  if len <= SEQSIZE
+  then Seq.msortSwap src' tmp
   else
     let (src1, src2)  = splitMid src'
         (tmp1, tmp2)  = splitMid tmp
@@ -71,8 +73,7 @@ msortInplace :: (Show a, Ord a, NFData a) => A.Array a -> A.Array a -> (A.Array 
 msortInplace src tmp =
   let (len, src') = A.size2 src in
   if len <= SEQSIZE
-  then let (src'', tmp'') = Seq.msortInplace src' tmp
-       in  (src'', tmp'')
+  then Seq.msortInplace src' tmp
   else
     let (src1, src2)   = splitMid src'
         (tmp1, tmp2)   = splitMid tmp
