@@ -21,6 +21,9 @@ import           Array.Mutable as A
 #else
 import           Array.List as A
 #endif
+import qualified Array as A
+
+--------------------------------------------------------------------------------
 
 -- DPS merge -- non-parallel, non-consecutive source slices, return them unchanged
              -- unneeded:            fst (fst t) == xs1 && snd (fst t) == xs2 &&
@@ -50,7 +53,7 @@ merge' !src1 !src2 !dst i1 i2 j =
       !(len2, src2') = A.size2 src2 in
   if i1 >= len1
   then
-    let !(src2'1, dst') = A.copy2 src2' i2 dst j (len2-i2) in ((src1', src2'1), dst')
+    let !(src2'1, dst') = A.copy2_par src2' i2 dst j (len2-i2) in ((src1', src2'1), dst')
             {- equivalence -}     ? lem_toBagBtw_compose' src1 0 i1 len1
                                   ? lem_toBagBtw_compose' src2 0 i2 len2
                                   ? lem_toBagBtw_compose' dst' 0 j  (A.size dst')
@@ -60,13 +63,13 @@ merge' !src1 !src2 !dst i1 i2 j =
             {- sortedness -}      ? lem_isSorted_copy src2' i2 dst j (len2-i2)
   else if i2 >= len2
   then
-    let !(src1'1, dst') = A.copy2 src1' i1 dst j (len1-i1) in ((src1'1, src2'), dst')
+    let !(src1'1, dst') = A.copy2_par src1' i1 dst j (len1-i1) in ((src1'1, src2'), dst')
             {- equivalence -}     ? lem_toBagBtw_compose' src1 0 i1 len1
                                   ? lem_toBagBtw_compose' src2 0 i2 len2
                                   ? lem_toBagBtw_compose' dst' 0 j  (A.size dst')
                                   ? lem_equal_slice_bag   dst   dst' 0 (j
                                       ? lem_copy_equal_slice  src1' i1 dst j (len1-i1) )
-                                  ? lem_equal_slice_bag'  src1' dst'  i1 len1 j (A.size dst') 
+                                  ? lem_equal_slice_bag'  src1' dst'  i1 len1 j (A.size dst')
             {- sortedness -}      ? lem_isSorted_copy src1' i1 dst j (len1-i1)
   else
     let !(v1, src1'1) = A.get2 src1' i1
@@ -153,13 +156,13 @@ merge_par' !src1 !src2 !dst =
            !(n2, src2') = A.size2 src2
            !(n3, dst')  = A.size2 dst
         in if n1 == 0
-           then let !(src2'1, dst'') = A.copy2 src2' 0 dst' 0 n2
-                 in ((src1', src2'1), dst'') ? lem_equal_slice_bag  src2'   dst'' 0 (n2 
-                                                   ? lem_copy_equal_slice src2' 0 dst' 0 n2)                                             
+           then let !(src2'1, dst'') = A.copy2_par src2' 0 dst' 0 n2
+                 in ((src1', src2'1), dst'') ? lem_equal_slice_bag  src2'   dst'' 0 (n2
+                                                   ? lem_copy_equal_slice src2' 0 dst' 0 n2)
            else if n2 == 0
-                then let !(src1'1, dst'') = A.copy2 src1' 0 dst' 0 n1  
-                      in ((src1'1, src2'), dst'') ? lem_equal_slice_bag  src1'   dst'' 0 (n1 
-                                                        ? lem_copy_equal_slice src1' 0 dst' 0 n1)  
+                then let !(src1'1, dst'') = A.copy2_par src1' 0 dst' 0 n1
+                      in ((src1'1, src2'), dst'') ? lem_equal_slice_bag  src1'   dst'' 0 (n1
+                                                        ? lem_copy_equal_slice src1' 0 dst' 0 n1)
                 else let mid1            = n1 `div` 2
                          (pivot, src1'1) = A.get2 src1' mid1
                          (mid2,  src2'1) = binarySearch src2' pivot -- src2[mid2] must <= all src1[mid1+1..]

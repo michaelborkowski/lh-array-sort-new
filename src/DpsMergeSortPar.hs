@@ -45,7 +45,7 @@ msortSwap :: (Show a, Ord a, NFData a) => A.Array a -> A.Array a -> (A.Array a, 
 msortSwap src tmp =
   let (len, src') = A.size2 src in
   if len <= 1
-  then let !(src'', tmp'') = copy2 src' 0 tmp 0 len in
+  then let !(src'', tmp'') = copy2_par src' 0 tmp 0 len in
        (src'', tmp'')
   else
     let (src1, src2)  = splitMid src'
@@ -106,5 +106,5 @@ msort src =
   let (len, src1) = A.size2 src in
       if len == 0 then src1
       else let (x0, src2) = A.get2 src1 0
-               Ur cpy2 = A.alloc len x0 (Unsafe.toLinear (\tmp -> Ur (A.copy src2 0 tmp 0 len)))
+               Ur cpy2 = A.alloc len x0 (Unsafe.toLinear (\tmp -> Ur (A.copy_par src2 0 tmp 0 len)))
            in msort' cpy2 x0

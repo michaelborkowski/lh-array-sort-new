@@ -190,6 +190,10 @@ generate_loop arr idx end f =
     else let arr1 = set arr idx (f idx)
          in generate_loop arr1 (idx+1) end f
 
+{-@ ignore copy2_par @-}
+copy2_par :: Array a -> Int -> Array a -> Int -> Int -> (Array a, Array a)
+copy2_par src0 src_offset0 dst0 dst_offset0 len0 = (src0, copy_par src0 src_offset0 dst0 dst_offset0 len0)
+
 {-@ ignore copy_par @-}
 copy_par :: Array a -> Int -> Array a -> Int -> Int -> Array a
 copy_par src0 src_offset0 dst0 dst_offset0 len0 = copy_par' src0 src_offset0 dst0 dst_offset0 len0
