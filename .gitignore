@@ -31,7 +31,7 @@ cabal.project.local~
 # ~~~~~~~~~~~~~~~~~~~~
 src/.liquid/
 src/Array/.liquid
-src/Mutable/.liquid
+src/Array/Mutable/.liquid
 
 # C
 # ~~~~~~~~~~~~~~~~~~~~
