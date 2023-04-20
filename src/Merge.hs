@@ -1,3 +1,5 @@
+{-# LANGUAGE CPP #-}
+
 {-@ LIQUID "--reflection"  @-}
 -- {-@ LIQUID "--diff"        @-}
 {-@ LIQUID "--ple"         @-}
@@ -13,6 +15,12 @@ import           Language.Haskell.Liquid.ProofCombinators hiding ((?))
 import           ProofCombinators
 import qualified Array as A
 import           Order
+
+#ifdef MUTABLE_ARRAYS
+import           Array.Mutable as A
+#else
+import           Array.List as A
+#endif
 
 --------------------------------------------------------------------------------
 -- | Implementations

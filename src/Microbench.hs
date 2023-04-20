@@ -1,5 +1,9 @@
 {-# LANGUAGE BangPatterns #-}
 
+{-@ LIQUID "--exact-data-cons" @-}
+{-@ LIQUID "--higherorder" @-}
+{-@ LIQUID "--prune-unsorted" @-}
+
 module Microbench where
 
 import           GHC.Conc ( par, pseq )

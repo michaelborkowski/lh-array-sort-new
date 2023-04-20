@@ -9,6 +9,7 @@
 {-@ LIQUID "--ple"         @-}
 {-@ LIQUID "--short-names" @-}
 
+{-@ LIQUID "--exact-data-cons" @-}
 {-@ LIQUID "--higherorder" @-}
 
 module Array
@@ -17,17 +18,18 @@ module Array
     Array
 
     -- * Construction and querying
-  , alloc, make, generate, generate_par, generate_par_m
+  , alloc, alloc1, alloc_invariant
+  , make, generate, generate_par, generate_par_m
   , copy, copy_par, copy_par_m
   , size, get, set, slice, append, splitMid, swap
 
     -- * Linear versions
-  , size2, get2, slice2, copy2, copy2_par
+  , size2, get2, slice2, copy2, copy2_par, swap2
 
     -- * Convert to/from lists
   , fromList, toList
 
-  , Ur(..)
+  , Ur(..), unur
 
     -- * LiqidHaskell lemmas
   , lma_gs, lma_gns, lma_swap, lma_swap_eql, lem_slice_append, lem_get_slice
@@ -62,14 +64,61 @@ import           Control.DeepSeq ( NFData(..) )
 import           Language.Haskell.Liquid.ProofCombinators hiding ((?))
 import           ProofCombinators
 
+{-@ measure unur @-}
+unur :: Ur a %1-> a
+unur (Ur a) = a
+
 --------------------------------------------------------------------------------
 -- Advanced operations
 --------------------------------------------------------------------------------
 
 {-# INLINE alloc #-}
 {-@ alloc :: i:Nat -> x:_ -> f:_ -> ret:_ @-}
-alloc :: Int -> a -> (Array a %1-> Ur b) %1-> Ur b
+--alloc :: Int -> a -> (Array a %1-> Ur b) %1-> Ur b
+alloc :: Int -> a -> (Array a -> Ur b) %1-> Ur b
 alloc i a f = f (make i a)
+
+{-# INLINE alloc_invariant #-}
+{-@ alloc_invariant :: n:Nat -> x:_ -> f:_ -> c:_
+          -> prop:(ub:_ -> { v:c | v == c}) 
+          -> { ret:_ | prop ret == c } @-}
+--alloc_invariant :: Int -> a -> (Array a %1-> Ur b) -> c -> (Ur b -> c) -> Ur b
+alloc_invariant :: Int -> a -> (Array a -> Ur b) -> c -> (Ur b -> c) -> Ur b
+alloc_invariant i a f c prop = alloc i a f 
+    ? toProof ( prop (alloc i a f)
+            === prop (f (make i a)) )
+
+{-
+{-@ alloc :: n:Nat -> x:_ -> f:_ -> c:_
+          -> prop:(ub:_ -> { v:c | v == c}) 
+          -> { ret:_ | prop ret == c } @-}
+--alloc :: Int -> a -> (Array a %1-> Ur b) %1-> Ur b
+alloc :: Int -> a -> (Array a -> Ur b) -> c -> (Ur b -> c) -> Ur b
+alloc i a f c prop = f (make i a) ? toProof (prop (f (make i a)))
+-}
+
+{- @  lem_alloc_properties ::  n:Nat -> x:_ -> f:_ 
+        -> allo:_ -> mk:_ -> prop:_ -> 
+        -> { pf:_ | all n x f == f (mk n x) }
+        -> { pf:_ | prop (all n x f) == prop (f (mk n x)) } @- }
+lem_alloc_properties :: Int -> a -> (Array a -> Ur b)
+    -> (Int -> a -> (Array a -> Ur b) %1-> Ur b) 
+    -> (Int -> a -> Array a)
+    -> (Ur b -> c) -> Proof -> Proof
+lem_alloc_properties n x f allo mk prop -}
+
+  -- | linear function to allocate an array 
+
+{-# INLINE alloc1 #-}
+{-@ alloc1 :: n:Nat -> x:_ 
+           -> f:({ys:(Array a) | size ys == n} 
+                     -> {zs:(Ur (Array a)) | size (unur zs) == n}) 
+           -> { ret:(Ur (Array a)) | size (unur ret) == n } @-}
+--alloc :: Int -> a -> (Array a %1-> Ur (Array a)) %1-> Ur (Array a)
+alloc1 :: Int -> a -> (Array a -> Ur (Array a)) %1-> Ur (Array a)
+alloc1 i a f = {-alloc i a f -} f (make i a)
+
+
 
 {-@ reflect swap @-}
 {-@ swap :: xs:(Array a) -> { i:Int | 0 <= i && i < size xs }

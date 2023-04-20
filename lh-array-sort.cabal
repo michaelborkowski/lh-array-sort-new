@@ -44,15 +44,17 @@ library
       DpsMergeSort4
       DpsMergeSortPar
       DpsMergeSort4Par
-      Microbench
+--      Microbench
       QuickSort
---      CilkSort
+--  the last not quite ready yet?
+      CilkSort
   other-modules:
       Array.List
       Array.Mutable
       Array.Mutable.Unlifted
       Array.Mutable.PrimUnlifted
       ProofCombinators
+      UnsafeLinear
   hs-source-dirs:
       src
   build-depends:
@@ -75,5 +77,5 @@ library
                -O2
                -w
   if !(flag(mutable-arrays) || flag(prim-mutable-arrays))
-    -- ghc-options: -fplugin=LiquidHaskell
-    --              -fplugin-opt=LiquidHaskell:--ple-with-undecided-guards
+    ghc-options: -fplugin=LiquidHaskell
+                 -fplugin-opt=LiquidHaskell:--ple-with-undecided-guards

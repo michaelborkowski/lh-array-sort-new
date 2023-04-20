@@ -3,6 +3,7 @@
 {-@ LIQUID "--ple"         @-}
 {-@ LIQUID "--short-names" @-}
 
+{-@ LIQUID "--exact-data-cons" @-}
 {-@ LIQUID "--higherorder" @-}
 
 {- @ LIQUID "--no-environment-reduction"      @-}
@@ -77,7 +78,7 @@ token xs = tok xs
 
   -- make and size
 
-{- @ reflect make' @-}
+{-@ reflect make' @-}
 {-@ make' :: n:Nat -> x:_ -> xs:{(size xs) = n && left xs == 0 && right xs == n} @-}
 make' :: Int -> a -> Array a
 make' 0 x = Arr [] 0 0 0
@@ -156,7 +157,7 @@ setList (x:xs) n y = x:(setList xs (n-1) y)
 set :: Array a -> Int -> a -> Array a
 set (Arr arr l r t) n y = Arr (setList arr n y) l r t
 
-  -- slices, splits, and appends
+  -- copies
 
 {-@ reflect copy @-}
 {-@ copy :: xs:_ -> { xi:Nat | xi <= size xs } -> ys:_
@@ -183,6 +184,8 @@ copy xs xi ys yi n = set (copy xs xi ys yi (n-1)) (yi + n - 1) (get xs (xi + n -
                                 left (snd zs) == left ys && right (snd zs) == right ys } @-}
 copy2 :: Array a -> Int -> Array a -> Int -> Int -> (Array a, Array a)
 copy2 xs xi ys yi n = (xs, copy xs xi ys yi n)
+
+  -- slices, splits, and appends
 
 {-@ reflect slice @-} -- need axiom for the token being the same
 {-@ slice :: xs:_ -> { l:Nat | l <= size xs } -> { r:Nat | l <= r && r <= size xs }
@@ -296,6 +299,34 @@ lma_gns_list (x:xs) n m x'
   === getList (x:xs) m
   *** QED
 
+{-}
+{-@ lem_copy_all_dst_indep :: xs:(Array a) -> ys:_ 
+        -> { ys':_  | size ys == size ys' }
+          -> { n:Nat  | xi + n <= size xs && yi + n <= size ys }
+        -> { pf:_   | toBag (copy xs 0 ys 0 n) == copy xs 0 ys 0 n } / [n] @-}
+lem_copy_dst_indep :: Array a -> Array a -> Array a -> Int -> Proof
+lem_copy_dst_indep xs xi ys ys' yi 0 = ()
+lem_copy_dst_indep xs xi ys ys' yi n = ()
+
+copy xs xi ys yi 0 = ys
+copy xs xi ys yi n = set (copy xs xi ys yi (n-1)) (yi + n - 1) (get xs (xi + n - 1))
+--            *or*   copy xs xi (set ys (yi + n - 1) (get xs (xi + n - 1))) yi (n-1)
+-- alternative would be
+-- copy xs xi ys yi 0 = ys
+-- copy xs xi ys yi n | xi == size xs  = ys
+--                    | otherwise      = set (copy xs (xi+1) ys (yi+1) (n-1)) yi (get xs xi)
+--            *or*                       copy xs (xi+1) (set ys yi (get xs xi)) (yi+1) (n-1)
+
+{-@ reflect copy2 @-}
+{-@ copy2 :: xs:_ -> { xi:Nat | xi <= size xs } -> ys:_
+                  -> { yi:Nat | yi <= size ys }
+                  -> { n:Nat  | xi + n <= size xs && yi + n <= size ys }
+                  -> { zs:_   | xs == fst zs && snd zs == copy xs xi ys yi n &&
+                                size (snd zs) == size ys && token (snd zs) == token ys &&
+                                left (snd zs) == left ys && right (snd zs) == right ys } @-}
+copy2 :: Array a -> Int -> Array a -> Int -> Int -> (Array a, Array a)
+copy2 xs xi ys yi n = (xs, copy xs xi ys yi n)
+-}
 
 {-@ lem_getList_drop :: xs:_ -> { n:Nat | n < len xs } -> { i:Nat | n <= i && i < len xs }
                              -> { pf:_ | getList (drop n xs) (i-n) == getList xs i } @-}
