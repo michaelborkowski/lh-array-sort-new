@@ -37,18 +37,19 @@ alloc_invariant :: Int -> a -> (Array a %1-> Ur b) -> c -> (Ur b -> c) -> Ur b
 alloc_invariant i a f c prop = alloc i a f ? toProof (prop (f (make i a)))
 -}
 
-{-@ promise :: xs:(Array a) -> { tmp:(Array a) | size xs == size tmp }
+{- @ promise :: xs:(Array a) -> { tmp:(Array a) | size xs == size tmp }
       -> { out:(Ur (Array a)) | size (unur out) == size tmp && 
                                 unur out == copy xs 0 tmp 0 (size tmp) &&
-                                toSlice (unur out) 0 (size tmp) == toSlice xs 0 (size tmp) } @-}
+                                toSlice (unur out) 0 (size tmp) == toSlice xs 0 (size tmp) } @- }
 promise :: (Ord a) => Array a -> Array a -> Ur (Array a)
-promise xs tmp = Ur (A.copy xs 0 tmp 0 (size tmp)) ? lem_copy_equal_slice  xs 0 tmp 0 (size tmp)
+promise xs tmp = Ur (A.copy xs 0 tmp 0 (size tmp)) ? lem_copy_equal_slice  xs 0 tmp 0 (size tmp)-}
 
-{-@ alloc_and_copy_into :: n:_ -> x:_ -> { xs:_ | size xs == n }
+{- @ alloc_and_copy_into :: n:_ -> x:_ -> { xs:_ | size xs == n }
         -> { out:(Ur (Array a)) | size (unur out) == n && 
-                                  toSlice (unur out) 0 n == toSlice xs 0 n} @-}
+                                  toSlice (unur out) 0 n == toSlice xs 0 n} @- }
 alloc_and_copy_into :: (Ord a) => Int -> a -> Array a -> Ur (Array a)
-alloc_and_copy_into n hd xs = A.alloc1 n hd (promise xs)
+alloc_and_copy_into n hd xs = -- A.alloc1 n hd (promise xs)
+                              promise xs (A.make n hd)-}
 
 {-@ quickSort :: xs:(Array a) -> { ys:(Array a) | isSorted' ys && A.size xs == A.size ys &&
                                                                   toBag  xs == toBag  ys } @-}
@@ -57,30 +58,21 @@ quickSort xs =
   let (n, xs1) = A.size2 xs in
       if n == 0 then xs1
       else let (hd, xs2) = A.get2 xs1 0
-               {- @ promise :: { tmp:(Array a) | size tmp == n } 
+               {-@ promise :: { tmp:(Array a) | size tmp == n } 
                            -> { out:(Ur (Array a)) | size (unur out) == n && 
                                                      unur out == copy xs2 0 tmp 0 n &&
-                                                     toSlice (unur out) 0 n == toSlice xs2 0 n} @- }
+                                                     toSlice (unur out) 0 n == toSlice xs2 0 n} @-}
                promise tmp = Ur (A.copy xs2 0 tmp 0 n) 
-                           ? lem_copy_equal_slice  xs2 0 tmp 0 n -}
+                           ? lem_copy_equal_slice  xs2 0 tmp 0 n 
                {-@ cpy :: { ys:(Array a) | size ys == n && toSlice ys 0 n == toSlice xs2 0 n } @-}
-               Ur cpy = alloc_and_copy_into n hd xs2 
-       {-}        Ur cpy = A.alloc_invariant n hd {-Unsafe.toLinear-} promise {-(\tmp -> Ur (A.copy xs2 0 tmp 0 n))-}
-                                          (toSlice xs2 0 n) (\urarr -> toSlice (unur urarr) 0 n)   -}
-               {-Ur cpy = A.alloc1 n hd {-Unsafe.toLinear-} promise {-(\tmp -> Ur (A.copy xs2 0 tmp 0 n))-}
+               Ur cpy = promise (A.make n hd)             -- alloc_and_copy_into n hd xs2 
+               {-Ur cpy = A.alloc n hd {-Unsafe.toLinear-} promise {-(\tmp -> Ur (A.copy xs2 0 tmp 0 n))-}
                                           ? toProof ( {-unur-} (A.alloc1 n hd promise)
                                                   === {-unur-} (promise (A.make n hd))
                                                   === Ur (A.copy xs2 0 (A.make n hd) 0 n) ) -}
                                             --Unsafe.toLinear promise (make n hd) === promise (make n hd) )
-                                          {-? toProof (size cpy 
-                                                 === size (unur (A.alloc n hd promise))
-                                                 === size (unur (promise (make n hd)))
-                                                 === n ) -}
                                           
-            in quickSortBtw (cpy ? lem_equal_slice_bag   xs2   cpy 0 (n
-                                      -- ? toProof (cpy === unur (A.alloc1 n hd promise))
-                                      {-? lem_copy_equal_slice  xs2 0 (A.make n hd) 0 n -}))
-                            0 n
+            in quickSortBtw (cpy ? lem_equal_slice_bag   xs2   cpy 0 n) 0 n
 
 {-@ quickSortBtw :: xs:(Array a) -> { i:Int | 0 <= i } -> { j:Int | i <= j && j <= A.size xs }
                 -> { ys:(Array a) | isSortedBtw ys i j && A.size xs == A.size ys &&
