@@ -18,8 +18,7 @@ module Array
     Array
 
     -- * Construction and querying
-  , alloc, alloc1, alloc_invariant
-  , make, generate, generate_par, generate_par_m
+  , alloc, make, generate, generate_par, generate_par_m
   , copy, copy_par, copy_par_m
   , size, get, set, slice, append, splitMid, swap
 
@@ -73,52 +72,17 @@ unur (Ur a) = a
 --------------------------------------------------------------------------------
 
 {-# INLINE alloc #-}
-{-@ alloc :: i:Nat -> x:_ -> f:_ -> ret:_ @-}
---alloc :: Int -> a -> (Array a %1-> Ur b) %1-> Ur b
-alloc :: Int -> a -> (Array a -> Ur b) %1-> Ur b
+{-@ alloc :: forall <p :: Ur b -> Bool>. n:Nat -> x:_ 
+                -> f:({ys:(Array a) | size ys == n} -> Ur<p> b) -> ret:Ur<p> b @-}
+alloc :: Int -> a -> (Array a %1-> Ur b) %1-> Ur b
+--alloc :: Int -> a -> (Array a -> Ur b) %1-> Ur b
 alloc i a f = f (make i a)
 
-{-# INLINE alloc_invariant #-}
-{-@ alloc_invariant :: n:Nat -> x:_ -> f:_ -> c:_
-          -> prop:(ub:_ -> { v:c | v == c}) 
-          -> { ret:_ | prop ret == c } @-}
---alloc_invariant :: Int -> a -> (Array a %1-> Ur b) -> c -> (Ur b -> c) -> Ur b
-alloc_invariant :: Int -> a -> (Array a -> Ur b) -> c -> (Ur b -> c) -> Ur b
-alloc_invariant i a f c prop = alloc i a f 
-    ? toProof ( prop (alloc i a f)
-            === prop (f (make i a)) )
-
-{-
-{-@ alloc :: n:Nat -> x:_ -> f:_ -> c:_
-          -> prop:(ub:_ -> { v:c | v == c}) 
-          -> { ret:_ | prop ret == c } @-}
---alloc :: Int -> a -> (Array a %1-> Ur b) %1-> Ur b
-alloc :: Int -> a -> (Array a -> Ur b) -> c -> (Ur b -> c) -> Ur b
-alloc i a f c prop = f (make i a) ? toProof (prop (f (make i a)))
--}
-
-{- @  lem_alloc_properties ::  n:Nat -> x:_ -> f:_ 
-        -> allo:_ -> mk:_ -> prop:_ -> 
-        -> { pf:_ | all n x f == f (mk n x) }
-        -> { pf:_ | prop (all n x f) == prop (f (mk n x)) } @- }
-lem_alloc_properties :: Int -> a -> (Array a -> Ur b)
-    -> (Int -> a -> (Array a -> Ur b) %1-> Ur b) 
-    -> (Int -> a -> Array a)
-    -> (Ur b -> c) -> Proof -> Proof
-lem_alloc_properties n x f allo mk prop -}
-
-  -- | linear function to allocate an array 
-
-{-# INLINE alloc1 #-}
-{-@ alloc1 :: n:Nat -> x:_ 
+-- with a concrete `b` type
+{- @ alloc1 :: forall <p :: Ur (Array a) -> Bool>. n:Nat -> x:_ 
            -> f:({ys:(Array a) | size ys == n} 
-                     -> {zs:(Ur (Array a)) | size (unur zs) == n}) 
-           -> { ret:(Ur (Array a)) | size (unur ret) == n } @-}
---alloc :: Int -> a -> (Array a %1-> Ur (Array a)) %1-> Ur (Array a)
-alloc1 :: Int -> a -> (Array a -> Ur (Array a)) %1-> Ur (Array a)
-alloc1 i a f = {-alloc i a f -} f (make i a)
-
-
+                     -> {zs:(Ur<p> (Array a)) | size (unur zs) == n}) 
+           -> { ret:(Ur<p> (Array a)) | size (unur ret) == n } @-}
 
 {-@ reflect swap @-}
 {-@ swap :: xs:(Array a) -> { i:Int | 0 <= i && i < size xs }

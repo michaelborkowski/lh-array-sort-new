@@ -33,6 +33,72 @@ import qualified Array as A
 -- | Implementations
 --------------------------------------------------------------------------------
 
+{-@ insert :: xs:_ -> x:_ 
+           -> { i:Nat | i < A.size xs && isSortedBtw xs 0 i }
+           -> { ys:_ | toBag ys == toBag (A.set xs i x) && isSortedBtw ys 0 (i+1) &&
+                       A.size ys == A.size xs && token xs == token ys } / [i] @-} 
+insert :: Ord a => A.Array a -> a -> Int -> A.Array a
+insert !xs !x 0 = A.set xs 0 x  -- first element is sorted
+insert !xs !x !n =              -- sort the nth element into the first n+1 elements
+  let (!a, !xs') = A.get2 xs (n-1)
+  in if x < a
+     then let !xs'' = A.set xs' (n) a
+          in insert xs'' x (n - 1)
+     else A.set xs' n x 
+     -- ? lem_isSortedBtw_build_right xs 0 n
+
+{-
+// JL: inplace c style of the above insert method.
+void insert(int* xs, int x, int n){
+  if(n == 0) {
+    xs[0] = x;
+    return;
+  }
+  int a = xs[n-1];
+  if(x < a){
+    // swapping
+    xs[n] = a;
+    insert(xs,x,n-1); // tail recursive
+  }else{
+    xs[n] = x;
+  }
+}
+-}
+
+
+{-@ isort :: { xs:_ | A.size xs > 1 }  
+      -> { i:Nat | i < A.size xs && isSortedBtw xs 0 i }
+      -> { ys:_ | toBag xs == toBag ys && isSorted' ys &&
+                  A.size xs == A.size ys && token xs == token ys } / [A.size xs - i] @-}
+isort :: Ord a => A.Array a -> Int -> A.Array a -- | Sort in-place.
+isort xs n = let (s, xs') = A.size2 xs {-in-}
+               {-if s <= 1 then xs' 
+               --else if i == 0 then xs'
+               else let-} 
+                 !(a, xs'') = (A.get2 xs' i) in
+               isort (insert xs'' a i) (i+1) -- switch to tail recursive
+
+
+{-@ isort_top' :: { xs:_ | A.size xs > 1 } 
+      -> { ys:_ | toBag xs == toBag ys && isSorted' ys &&
+                  A.size xs == A.size ys && token xs == token ys } @-}
+isort_top' :: Ord a => A.Array a -> A.Array a
+isort_top' xs = isort xs 0
+
+-- | Sort a copy of the input array.
+isort_top :: Ord a => A.Array a -> A.Array a
+isort_top xs0 = let (n, xs1) = A.size2 xs0 in
+    if n <= 1 then xs1 
+    else let (hd, xs2) = A.get2 xs1 0
+             Ur cpy = A.alloc s hd (Unsafe.toLinear (\tmp -> Ur (A.copy xs2 0 tmp 0 s)))
+             ys = isort_top' cpy 0 --s
+          in ys
+        {-? ((lma_isort xs2 s) &&& (lma_isort_eq xs2 s)
+        &&& (lma_toBag_toBagLeft xs2 (size xs2)) &&& (lma_toBag_toBagLeft ys (size ys)))-}
+  where
+    (s, xs1) = A.size2 xs0
+    
+    
 {- @ lma_insert_fix :: xs:_ -> x:_ -> n:{v:Nat | v < A.size xs} -> m:{v:Nat | v > n && v < A.size xs}
       -> {A.get (insert xs x n) m == A.get xs m} / [n] @- }
 lma_insert_fix :: Ord a => A.Array a -> a -> Int -> Int -> Proof
@@ -134,49 +200,6 @@ lma_insert xs x n
         === True
         *** QED -}
 
-{-
-// JL: inplace c style of the above insert method.
-void insert(int* xs, int x, int n){
-  if(n == 0) {
-    xs[0] = x;
-    return;
-  }
-  int a = xs[n-1];
-  if(x < a){
-    // swapping
-    xs[n] = a;
-    insert(xs,x,n-1); // tail recursive
-  }else{
-    xs[n] = x;
-  }
-}
--}
-
-{-@ insert :: xs:_ -> x:_ 
-           -> { i:Nat | i < A.size xs && isSortedBtw xs 0 i }
-           -> { ys:_ | toBag ys == toBag (A.set xs i x) && isSortedBtw ys 0 (i+1) &&
-                       A.size ys == A.size xs && token xs == token ys } / [i] @-} 
-insert :: Ord a => A.Array a -> a -> Int -> A.Array a
-insert !xs !x 0 = A.set xs 0 x  -- first element is sorted
-insert !xs !x !n =              -- sort the nth element into the first n+1 elements
-  let (!a, !xs') = A.get2 xs (n-1)
-  in if x < a
-     then let !xs'' = A.set xs' (n) a
-          in insert xs'' x (n - 1)
-     else A.set xs' n x 
-     -- ? lem_isSortedBtw_build_right xs 0 n
-
-{-@ isort :: { xs:_ | A.size xs > 1 }  
-      -> { i:Nat | i < A.size xs && isSortedBtw xs 0 i }
-      -> { ys:_ | toBag xs == toBag ys && isSorted' ys &&
-                  A.size xs == A.size ys && token xs == token ys } / [A.size xs - i] @-}
-isort :: Ord a => A.Array a -> Int -> A.Array a -- | Sort in-place.
-isort xs n = let (s, xs') = A.size2 xs in
-               {-if s <= 1 then xs' 
-               --else if i == 0 then xs'
-               else let-} 
-                 !(a, xs'') = (A.get2 xs' i) in
-               isort (insert xs'' a i) (i+1) -- switch to tail recursive
 
 {- @ lma_isort_eq :: xs:_ -> n:{ Nat | n <= A.size xs } -> { toBagEqual (isort xs n) xs } @- }
 lma_isort_eq :: Ord a => A.Array a -> Int -> Proof
@@ -197,25 +220,6 @@ lma_isort_eq xs n
       -- === toBagLeft xs s
       *** QED -}
 
-{-@ isort_top' :: { xs:_ | A.size xs > 1 } 
-      -> { ys:_ | toBag xs == toBag ys && isSorted' ys &&
-                  A.size xs == A.size ys && token xs == token ys } @-}
-isort_top' :: Ord a => A.Array a -> A.Array a
-isort_top' xs = isort xs 0
-
--- | Sort a copy of the input array.
-isort_top :: Ord a => A.Array a -> A.Array a
-isort_top xs0 = let (n, xs1) = A.size2 xs0 in
-    if n <= 1 then xs1 
-    else let (hd, xs2) = A.get2 xs1 0
-             Ur cpy = A.alloc s hd (Unsafe.toLinear (\tmp -> Ur (A.copy xs2 0 tmp 0 s)))
-             ys = isort_top' cpy 0 --s
-          in ys
-        {-? ((lma_isort xs2 s) &&& (lma_isort_eq xs2 s)
-        &&& (lma_toBag_toBagLeft xs2 (size xs2)) &&& (lma_toBag_toBagLeft ys (size ys)))-}
-  where
-    (s, xs1) = A.size2 xs0
-    
 
 --------------------------------------------------------------------------------
 -- | Proofs for Sortedness
