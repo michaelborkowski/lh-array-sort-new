@@ -31,7 +31,8 @@ module Array
   , Ur(..), unur
 
     -- * LiqidHaskell lemmas
-  , lma_gs, lma_gns, lma_swap, lma_swap_eql, lem_slice_append, lem_get_slice
+  , lma_gs, lma_gns, lma_swap, lma_swap_eql, lem_swap_order
+  , lem_slice_append, lem_get_slice
 
 #ifdef MUTABLE_ARRAYS
   , module Array.Mutable
@@ -350,6 +351,14 @@ lma_swap_eql xs i j k = () ? lma_gns xs' j k xi
     xs'  = set xs  i (get xs j)
 
 #ifndef MUTABLE_ARRAYS
+{-@ lem_swap_order :: xs:(Array a) -> { i:Int | 0 <= i && i < size xs }
+                        -> { j:Int | 0 <= j && j < size xs }
+                        -> { pf:_ | swap xs i j == swap xs j i } @-}
+lem_swap_order :: Array a -> Int -> Int -> Proof
+lem_swap_order xs i j 
+  | i == j    = ()
+  | otherwise = () ? lem_set_commute xs i (get xs j) j (get xs i)
+
 {-@ lem_get_slice :: xs:_ -> { l:Nat | l <= size xs } -> { r:Nat | l < r && r <= size xs }
                           -> { i:Nat | l <= i && i < r }
                           -> { pf:_ | get (slice xs l r) (i - l) == get xs i } @-}

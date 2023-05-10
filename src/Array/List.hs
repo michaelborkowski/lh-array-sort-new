@@ -299,34 +299,31 @@ lma_gns_list (x:xs) n m x'
   === getList (x:xs) m
   *** QED
 
-{-}
-{-@ lem_copy_all_dst_indep :: xs:(Array a) -> ys:_ 
-        -> { ys':_  | size ys == size ys' }
-          -> { n:Nat  | xi + n <= size xs && yi + n <= size ys }
-        -> { pf:_   | toBag (copy xs 0 ys 0 n) == copy xs 0 ys 0 n } / [n] @-}
-lem_copy_dst_indep :: Array a -> Array a -> Array a -> Int -> Proof
-lem_copy_dst_indep xs xi ys ys' yi 0 = ()
-lem_copy_dst_indep xs xi ys ys' yi n = ()
+{-@ lem_setList_commute :: xs:_ -> i:Nat -> xi:_
+        -> { j:Nat | i < j && j < len xs } -> xj:_
+        -> { pf:_ | setList (setList xs j xj) i xi == setList (setList xs i xi) j xj } @-}
+lem_setList_commute :: [a] -> Int -> a -> Int -> a -> Proof
+lem_setList_commute (x:xs) 0 xi j xj = ()
+lem_setList_commute (x:xs) i xi j xj = () ? lem_setList_commute xs (i-1) xi (j-1) xj 
 
-copy xs xi ys yi 0 = ys
-copy xs xi ys yi n = set (copy xs xi ys yi (n-1)) (yi + n - 1) (get xs (xi + n - 1))
---            *or*   copy xs xi (set ys (yi + n - 1) (get xs (xi + n - 1))) yi (n-1)
--- alternative would be
--- copy xs xi ys yi 0 = ys
--- copy xs xi ys yi n | xi == size xs  = ys
---                    | otherwise      = set (copy xs (xi+1) ys (yi+1) (n-1)) yi (get xs xi)
---            *or*                       copy xs (xi+1) (set ys yi (get xs xi)) (yi+1) (n-1)
+{-@ lem_set_commute :: xs:_ -> { i:Nat | i < size xs } -> xi:_
+        -> { j:Nat | not (i = j) && j < size xs } -> xj:_
+        -> { pf:_ | set (set xs j xj) i xi == set (set xs i xi) j xj } @-}
+lem_set_commute :: Array a -> Int -> a -> Int -> a -> Proof
+lem_set_commute (Arr arr _ _ _) i xi j xj 
+  | i < j     = () ? lem_setList_commute arr i xi j xj 
+  | otherwise = () ? lem_setList_commute arr j xj i xi
 
-{-@ reflect copy2 @-}
-{-@ copy2 :: xs:_ -> { xi:Nat | xi <= size xs } -> ys:_
-                  -> { yi:Nat | yi <= size ys }
-                  -> { n:Nat  | xi + n <= size xs && yi + n <= size ys }
-                  -> { zs:_   | xs == fst zs && snd zs == copy xs xi ys yi n &&
-                                size (snd zs) == size ys && token (snd zs) == token ys &&
-                                left (snd zs) == left ys && right (snd zs) == right ys } @-}
-copy2 :: Array a -> Int -> Array a -> Int -> Int -> (Array a, Array a)
-copy2 xs xi ys yi n = (xs, copy xs xi ys yi n)
--}
+{-@ lem_setList_twice :: xs:_ -> { i:Nat | i < len xs } -> xi:_ -> xi':_ 
+        -> { pf:_ | setList (setList xs i xi') i xi == setList xs i xi } @-}
+lem_setList_twice :: [a] -> Int -> a -> a -> Proof
+lem_setList_twice (x:xs) 0 xi xi' = ()
+lem_setList_twice (x:xs) i xi xi' = () ? lem_setList_twice xs (i-1) xi xi'
+
+{-@ lem_set_twice :: xs:_ -> { i:Nat | i < size xs } -> xi:_ -> xi':_ 
+        -> { pf:_ | set (set xs i xi') i xi == set xs i xi } @-}
+lem_set_twice :: Array a -> Int -> a -> a -> Proof
+lem_set_twice (Arr arr _ _ _) i xi xi' = lem_setList_twice arr i xi xi'
 
 {-@ lem_getList_drop :: xs:_ -> { n:Nat | n < len xs } -> { i:Nat | n <= i && i < len xs }
                              -> { pf:_ | getList (drop n xs) (i-n) == getList xs i } @-}

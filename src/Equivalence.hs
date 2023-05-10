@@ -144,7 +144,18 @@ lem_toBag_append xs ys
          ? lem_toBag_slice       (A.append xs ys)   (A.size xs) (A.size xs + A.size ys)
          ? lem_slice_append    xs ys 
                           
+  -- | Lemma: toBag/toBagBtw is preserved under writes that don't change the array (Insertion.hs)
 
+{-@ lem_bag_unchanged :: xs:(Array a) -> { i:Nat | i < A.size xs } 
+                      -> { pf:_  | toBag (A.set xs i (A.get xs i)) == toBag xs } @-} 
+lem_bag_unchanged :: Ord a => Array a -> Int -> Proof
+lem_bag_unchanged xs i = () ? lma_gs xs i (A.get xs i)
+                            ? lem_toSlice_set xs i (A.get xs i)
+                            ? lem_toBagBtw_compose xs ys 0 
+                                (i         ? lem_equal_slice_bag xs ys 0     i)
+                                (A.size xs ? lem_equal_slice_bag xs ys (i+1) (A.size xs))                      
+  where
+    ys = (A.set xs i (A.get xs i))                          
 
   -- | Lemmas establishing that toBag/toBagBtw is preserved under swaps
 
@@ -182,12 +193,16 @@ lem_toBagBtw_swap xs i j | i == j    = () ? lma_swap xs i i
                                           ? lem_toBagBtw_right (swap xs i j) i (j+1)
 
 
-{-@ lem_bag_swap :: xs:(Array a) -> { i:Int | 0 <= i } 
-                                 -> { j:Int | i <= j && j < A.size xs }
+{-@ lem_bag_swap :: xs:(Array a) -> { i:Int | 0 <= i && i < A.size xs } 
+                                 -> { j:Int | 0 <= j && j < A.size xs }
                                  -> { pf:_  | toBag (swap xs i j) == toBag xs } @-}
 lem_bag_swap :: Ord a => Array a -> Int -> Int -> Proof
-lem_bag_swap xs i j = () ? lem_bagBtw_swap xs 0 i j (size xs) 
-                         ? toProof (size (swap xs i j) === size xs)
+lem_bag_swap xs i j
+  | i <= j    = () ? lem_bagBtw_swap xs 0 i j (size xs) 
+                   ? toProof (size (swap xs i j) === size xs)
+  | otherwise = () ? lem_swap_order xs i j
+                   ? lem_bagBtw_swap xs 0 j i (size xs) 
+                   ? toProof (size (swap xs i j) === size xs)
 
 {-@ lem_bagBtw_swap :: xs:(Array a) -> { il:Int | 0 <= il } -> { i:Int | il <= i }
                                  -> { j:Int | i <= j } -> { ir:Int | j < ir && ir <= A.size xs }
