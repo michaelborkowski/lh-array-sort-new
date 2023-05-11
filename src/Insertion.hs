@@ -2,7 +2,7 @@
 -- {-@ LIQUID "--diff"        @-}
 {-@ LIQUID "--ple"         @-}
 {-@ LIQUID "--short-names" @-}
--- {-@ LIQUID "--checks=lma_insert_eq" @-}
+{-@ LIQUID "--fuel=2"      @-}
 
 {-# LANGUAGE CPP #-}
 {-# LANGUAGE GADTs #-}
@@ -56,17 +56,27 @@ min x y = if x <= y then x else y
       -> n:{Nat | (n < A.size xs) && (n > 0) && (x <= y) && ((A.get xs (n-1)) <= y)}
       -> {y >= A.get (insert xs x n) n} / [n] @-}
 
+--                       A.get ys i >= x &&
+--                       (i == 0 || A.get ys i >= (A.get xs (i-1)) ) &&
+--                        (i == 0 || (A.get ys i >= x && A.get ys i >= (A.get xs (i-1)) )) &&
+
+--
 -- Given xs[0..i] sorted and xs[i] doesn't matter, insert x so that xs[0..i+1] is sorted.
 {-@ insert :: xs:_ -> x:_        
            -> { i:Nat | i < A.size xs && isSortedBtw xs 0 i }
            -> { ys:_ | toBag ys == toBag (A.set xs i x) && 
                        toSlice ys (i+1) (size xs) == toSlice xs (i+1) (size xs) &&
                        isSortedBtw ys 0 (i+1) &&
-                       A.get ys i >= x && A.get ys i >= (A.get xs (i-1)) &&
+                       (i == 0 || A.get ys i <= max x (A.get xs (i-1)) ) &&                       
                        A.size ys == A.size xs && token xs == token ys } / [i] @-} 
 insert :: Ord a => A.Array a -> a -> Int -> A.Array a                             -- boundary cond ineq.
 insert !xs !x 0 = A.set xs 0 x  
                 ? lem_toSlice_set_right xs 0 x 1 (A.size xs)
+insert !xs !x 1 = 
+  let (!a, !xs') = A.get2 xs 0 -- a is above xs[0..i-1], insert must preserve?
+  in if x < a
+     then A.set (A.set xs 1 a) 0 x 
+     else A.set xs        1 x
 insert !xs !x !i =                 -- sort the element at offset i into the first i+1 elements
   let (!a, !xs') = A.get2 xs (i-1) -- a is above xs[0..i-1], insert must preserve?
   in if x < a
@@ -74,9 +84,23 @@ insert !xs !x !i =                 -- sort the element at offset i into the firs
                      ? lem_isSortedBtw_set_right xs 0 i a
                      ? lem_toSlice_set xs i a
               !xs''' = insert (xs'' ? lem_isSortedBtw_narrow xs'' 0 0 (i-1) (i+1)) x (i - 1)
-           in xs''' ? lem_isSortedBtw_build_right xs''' 0 (i
-                        ? lma_gs          xs'  (i-1) a
-                        ? lem_get_toSlice xs'' xs''' i i (A.size xs))
+           in xs'''  ? lem_isSortedBtw_build_right xs''' 0 (i
+                        ? toProof ( A.get xs''' (i-1)
+                              =<= max x (A.get xs'' (i-2))
+                                ? lma_gns xs i (i-2) a
+                              =<= max x (A.get xs   (i-2)) ---
+                                ? lem_isSortedBtw_narrow xs 0 (i-2) i i
+                              =<= max x (A.get xs   (i-1))
+                              =<= A.get xs    (i-1)
+                                ? lma_gs          xs  i a
+                              =<= A.get xs''  i            ---
+                                ? lem_get_toSlice xs'' xs''' i i (A.size xs) 
+                              =<= A.get xs''' i            ---
+                                )
+                      --  ? lma_gs          xs'  i a
+                      --  ? lem_get_toSlice xs'' xs''' i i (A.size xs) 
+                      )
+                    ? lem_equal_slice_narrow xs'' xs''' i (i+1) (A.size xs) (A.size xs)
            ? toProof ( toBag (insert (set xs i a) x (i-1)) 
                    === toBag (set (set xs           i (get xs (i-1))) (i-1) x) -- by the IH
                      ? lma_gns xs i (i-1) x
