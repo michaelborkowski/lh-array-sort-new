@@ -74,7 +74,7 @@ msortInplace !src !tmp =
     in (src4', tmp'')  ? lem_toBag_splitMid src -- src4' holds the sorted data
                        ? lem_toBag_splitMid tmp
 
-{- @ msort' :: { xs:(Array a) | A.size xs > 0 && left xs == 0 && right xs == size xs }
+{-@ msort' :: { xs:(Array a) | A.size xs > 0 && left xs == 0 && right xs == size xs }
            -> { y:a | y == A.get xs 0 }
            -> { zs:(Array a) | toBag xs == toBag zs && isSorted' zs &&
                                A.size xs == A.size zs && token xs == token zs } @-}
@@ -85,7 +85,7 @@ msort' src anyVal =
   _tmp `seq` src2
 
 -- finally, the top-level merge sort function
-{- @ msort :: { xs:(A.Array a) | left xs == 0 && right xs == size xs }
+{-@ msort :: { xs:(A.Array a) | left xs == 0 && right xs == size xs }
                     -> { ys:_ | toBag xs == toBag ys && isSorted' ys &&
                                 A.size xs == A.size ys && token xs == token ys  } @-}
 {-# SPECIALISE msort :: A.Array Float -> A.Array Float #-}
