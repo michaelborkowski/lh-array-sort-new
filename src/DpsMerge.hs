@@ -121,7 +121,6 @@ merge src1 src2 dst = merge' src1 src2 dst 0 0 0   -- the 0's are relative to th
 goto_seqmerge :: Int
 goto_seqmerge = 4
 
-
 --
 -- Version (1): explicitly set the pivot element
 --

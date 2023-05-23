@@ -90,6 +90,7 @@ lem_merge_func_untouched src1 src2 dst i1 i2 j
                  = lem_equal_slice_narrow dst 
                      (merge_func src1 src2 (A.set dst j (A.get src1 i1)) (i1+1) i2 (j+1)) 
                      0 0 j (j+1 ? if j > 0 then lma_gns dst j (j-1) (A.get src1 i1) else ()
+                                ? lem_toSlice_set       dst j (A.get src1 i1)
                                 ? lem_merge_func_untouched src1 src2 
                                       (A.set dst j (A.get src1 i1)) 
                                       (i1+1) i2 (j+1)
@@ -97,6 +98,7 @@ lem_merge_func_untouched src1 src2 dst i1 i2 j
     | otherwise  = lem_equal_slice_narrow dst 
                      (merge_func src1 src2 (A.set dst j (A.get src2 i2)) i1 (i2+1) (j+1)) 
                      0 0 j (j+1 ? if j > 0 then lma_gns dst j (j-1) (A.get src2 i2) else ()
+                                ? lem_toSlice_set       dst j (A.get src2 i2)
                                 ? lem_merge_func_untouched src1 src2 
                                       (A.set dst j (A.get src2 i2)) 
                                       i1 (i2+1) (j+1)
@@ -292,12 +294,12 @@ merge_par' !((src1, src2), dst) =
            !(n3, dst')  = A.size2 dst
         in if n1 == 0
            then let !(src2'1, dst'') = A.copy2_par src2' 0 dst' 0 n2
-                 in ((src1', src2'1), dst'') ? lem_equal_slice_bag  src2'   dst'' 0 (n2
-                                                   ? lem_copy_equal_slice src2' 0 dst' 0 n2)
+                 in ((src1', src2'1), dst'') {-? lem_equal_slice_bag  src2'   dst'' 0 (n2
+                                                   ? lem_copy_equal_slice src2' 0 dst' 0 n2)-}
            else if n2 == 0
                 then let !(src1'1, dst'') = A.copy2_par src1' 0 dst' 0 n1
-                      in ((src1'1, src2'), dst'') ? lem_equal_slice_bag  src1'   dst'' 0 (n1
-                                                        ? lem_copy_equal_slice src1' 0 dst' 0 n1)
+                      in ((src1'1, src2'), dst'') {-? lem_equal_slice_bag  src1'   dst'' 0 (n1
+                                                        ? lem_copy_equal_slice src1' 0 dst' 0 n1)-}
                 else let mid1            = n1 `div` 2
                          (pivot, src1'1) = A.get2 src1' mid1
                          (mid2,  src2'1) = binarySearch src2' pivot -- src2[mid2] must <= all src1[mid1+1..]
@@ -338,7 +340,7 @@ merge_par' !((src1, src2), dst) =
                          src1'3       = A.append src1_l' src1_cr'
                          src2'3       = A.append src2_l' src2_r'
                          dst''        = A.append dst_l' dst_c'
-                         dst'''       = A.append dst''  dst_r'
+                         dst'''       = A.append dst''  dst_r' {-}
                                       ? lem_toBag_splitAt mid1 src1
                                       ? lem_toBag_splitAt 1    src1_cr
                                       ? lem_toBag_splitAt mid2 src2
@@ -348,7 +350,7 @@ merge_par' !((src1, src2), dst) =
                                             ? lma_gs dst_c 0 pivot
                                             ? lem_get_slice src1    mid1 n1 mid1
                                             ? lem_get_slice src1_cr 0 1 0
-                                            )
+                                            )-}
                                       -- ? toProof (toBag src1_c === toBag dst_c')
                       in ((src1'3, src2'3), dst''')
 
