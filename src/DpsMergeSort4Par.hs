@@ -8,7 +8,7 @@ module DpsMergeSort4Par where
 import qualified Language.Haskell.Liquid.Bag as B
 import           Language.Haskell.Liquid.ProofCombinators hiding ((?))
 import           ProofCombinators
-import           Array 
+import           Array
 import           DpsMergePar
 import qualified DpsMergeSort4 as Seq
 import           Equivalence
@@ -27,20 +27,20 @@ import           Array.List as A
 
 --------------------------------------------------------------------------------
 
--- DPS mergesort -- unfold twice, merge twice 
-{-@ msortInplace :: xs:Array a 
-      -> { ys:(Array a ) | A.size ys  == A.size xs   && left xs == left ys && 
+-- DPS mergesort -- unfold twice, merge twice
+{-@ msortInplace :: xs:Array a
+      -> { ys:(Array a ) | A.size ys  == A.size xs   && left xs == left ys &&
                            right xs == right ys }
       -> (Array a, Array a)<{\zs ts -> toBag xs == toBag zs && isSorted' zs &&
                                        token xs == token zs && token ys == token ts &&
                                        A.size xs == A.size zs && A.size ys == A.size ts &&
                                        left zs == left xs && right zs == right xs &&
-                                       left ts == left ys && right ts == right ys }> 
+                                       left ts == left ys && right ts == right ys }>
        / [A.size xs] @-}
 #ifdef MUTABLE_ARRAYS
-msortInplace :: (Show a, Ord a, NFData a) => 
+msortInplace :: (Show a, HasPrimOrd a, NFData a) =>
 #else
-msortInplace :: (Show a, Ord a) =>
+msortInplace :: (Show a, HasPrimOrd a) =>
 #endif
   A.Array a -> A.Array a -> (A.Array a, A.Array a)
 msortInplace src tmp =
@@ -55,19 +55,19 @@ msortInplace src tmp =
         (src3, src4)     = splitMid srcB
         (tmp1, tmp2)     = splitMid tmpA
         (tmp3, tmp4)     = splitMid tmpB
-        (((src1', tmp1'), (src2', tmp2')), ((src3', tmp3'), (src4', tmp4'))) 
+        (((src1', tmp1'), (src2', tmp2')), ((src3', tmp3'), (src4', tmp4')))
                          = tuple4 (msortInplace src1) tmp1 (msortInplace src2) tmp2
                                   (msortInplace src3) tmp3 (msortInplace src4) tmp4
 --                         = (msortInplace src1 tmp1 .||. msortInplace src2 tmp2) .|*|.
   --                         (msortInplace src3 tmp3 .||. msortInplace src4 tmp4)
         tmpA'            = A.append tmp1' tmp2'
         tmpB'            = A.append tmp3' tmp4'
-        ((srcA'', tmpA''), (srcB'', tmpB'')) 
+        ((srcA'', tmpA''), (srcB'', tmpB''))
                          = tuple2 (merge_par src1' src2') tmpA' (merge_par src3' src4') tmpB'
 --                         = merge src1' src2' tmpA' .|*|. merge src3' src4' tmpB'
         src''            = A.append srcA'' srcB''
         (tmp''', src''') = merge_par tmpA'' tmpB'' src''
-    in  (src''', tmp''') ? lem_toBag_splitMid src 
+    in  (src''', tmp''') ? lem_toBag_splitMid src
                          ? lem_toBag_splitMid tmp
                          ? lem_toBag_splitMid srcA
                          ? lem_toBag_splitMid srcB
@@ -79,9 +79,9 @@ msortInplace src tmp =
            -> { zs:(Array a) | toBag xs == toBag zs && isSorted' zs &&
                                A.size xs == A.size zs && token xs == token zs } @-}
 #ifdef MUTABLE_ARRAYS
-msort' :: (Show a, Ord a, NFData a) => 
+msort' :: (Show a, HasPrimOrd a, NFData a) =>
 #else
-msort' :: (Show a, Ord a) =>
+msort' :: (Show a, HasPrimOrd a) =>
 #endif
   A.Array a -> a -> A.Array a
 msort' src anyVal =
@@ -94,10 +94,10 @@ msort' src anyVal =
                     -> { ys:_ | toBag xs == toBag ys && isSorted' ys &&
                                 A.size xs == A.size ys && token xs == token ys  } @-}
 #ifdef MUTABLE_ARRAYS
-msort :: (Show a, Ord a, NFData a) => 
+msort :: (Show a, HasPrimOrd a, NFData a) =>
 #else
-msort :: (Show a, Ord a) =>
-#endif 
+msort :: (Show a, HasPrimOrd a) =>
+#endif
   A.Array a -> A.Array a
 msort src =
   let (len, src') = A.size2 src in

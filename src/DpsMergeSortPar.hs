@@ -41,7 +41,7 @@ import           Array.List as A
                                        left zs == left xs && right zs == right xs &&
                                        left ts == left ys && right ts == right ys }>
        / [A.size xs] @-}
-msortSwap :: (Show a, Ord a, NFData a) => A.Array a -> A.Array a -> (A.Array a, A.Array a)
+msortSwap :: (Show a, HasPrimOrd a, NFData a) => A.Array a -> A.Array a -> (A.Array a, A.Array a)
 msortSwap src tmp =
   let (len, src') = A.size2 src in
 --  if len <= 1
@@ -69,7 +69,7 @@ msortSwap src tmp =
                                        left zs == left xs && right zs == right xs &&
                                        left ts == left ys && right ts == right ys }>
        / [A.size xs] @-}
-msortInplace :: (Show a, Ord a, NFData a) => A.Array a -> A.Array a -> (A.Array a, A.Array a)
+msortInplace :: (Show a, HasPrimOrd a, NFData a) => A.Array a -> A.Array a -> (A.Array a, A.Array a)
 msortInplace src tmp =
   let (len, src') = A.size2 src in
   if len <= SEQSIZE
@@ -89,7 +89,7 @@ msortInplace src tmp =
            -> { y:a | y == A.get xs 0 }
            -> { zs:(Array a) | toBag xs == toBag zs && isSorted' zs &&
                                A.size xs == A.size zs && token xs == token zs } @-}
-msort' :: (Show a, Ord a, NFData a) => A.Array a -> a -> A.Array a
+msort' :: (Show a, HasPrimOrd a, NFData a) => A.Array a -> a -> A.Array a
 msort' src anyVal =
   let (len, src1) = A.size2 src
       -- (src2, _tmp) = msortInplace src1 (A.make len anyVal) in
@@ -102,7 +102,7 @@ msort' src anyVal =
                                 A.size xs == A.size ys && token xs == token ys  } @-}
 {-# SPECIALISE msort :: A.Array Float -> A.Array Float #-}
 {-# SPECIALISE msort :: A.Array Int -> A.Array Int #-}
-msort :: (Show a, Ord a, NFData a) => A.Array a -> A.Array a
+msort :: (Show a, HasPrimOrd a, NFData a) => A.Array a -> A.Array a
 msort src =
   let (len, src1) = A.size2 src in
       if len == 0 then src1

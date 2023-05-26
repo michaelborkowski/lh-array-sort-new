@@ -38,7 +38,7 @@ import qualified Array as A
 {-@ insert :: xs:_ -> x:_ -> n:{v:Nat | v < A.size xs}
        -> ys:{A.size ys == A.size xs} / [n] @-}
 
-insert :: Ord a => A.Array a -> a -> Int -> A.Array a
+insert :: HasPrimOrd a => A.Array a -> a -> Int -> A.Array a
 insert !xs !x 0 = A.set xs 0 x  -- first element is sorted
 insert !xs !x !n =              -- sort the nth element into the first n+1 elements
   let (!a, !xs') = A.get2 xs (n-1)
@@ -70,7 +70,7 @@ void insert(int* xs, int x, int n){
 {-@ isort :: xs:_ -> n:{v:Nat | v <= A.size xs}
       -> ys:{A.size ys == A.size xs} / [n] @-}
 -- | Sort in-place.
-isort :: Ord a => A.Array a -> Int -> A.Array a
+isort :: HasPrimOrd a => A.Array a -> Int -> A.Array a
 isort xs n
   | ( s == 0 ) = xs'
   | ( s == 1 ) = xs'
@@ -99,7 +99,7 @@ int main(void){
 
 {-@ isort_top :: xs:_ -> ys:{isSorted ys && (toBag xs == toBag ys)} @-}
 -- | Sort a copy of the input array.
-isort_top :: Ord a => A.Array a -> A.Array a
+isort_top :: HasPrimOrd a => A.Array a -> A.Array a
 isort_top xs0 =
     if s <= 1 then xs0 else
       let Ur cpy = A.alloc s hd (Unsafe.toLinear (\tmp -> Ur (A.copy xs2 0 tmp 0 s)))
@@ -117,7 +117,7 @@ isort_top xs0 =
 
 {-@ lma_insert_fix :: xs:_ -> x:_ -> n:{v:Nat | v < A.size xs} -> m:{v:Nat | v > n && v < A.size xs}
       -> {A.get (insert xs x n) m == A.get xs m} / [n] @-}
-lma_insert_fix :: Ord a => A.Array a -> a -> Int -> Int -> Proof
+lma_insert_fix :: HasPrimOrd a => A.Array a -> a -> Int -> Int -> Proof
 lma_insert_fix xs x 0 m
   = A.get (insert xs x 0) m
   -- === A.get (A.set xs 0 x) m
@@ -144,7 +144,7 @@ lma_insert_fix xs x n m
 
 {-@ lma_insert_max :: xs:_ -> x:_ -> y:_ -> n:{Nat | (n < A.size xs) && (n > 0) && (x <= y) && ((A.get xs (n-1)) <= y)}
       -> {y >= A.get (insert xs x n) n} / [n] @-}
-lma_insert_max :: Ord a => A.Array a -> a -> a -> Int -> Proof
+lma_insert_max :: HasPrimOrd a => A.Array a -> a -> a -> Int -> Proof
 lma_insert_max xs x y n
   | x < (A.get xs (n-1))
     = y
@@ -165,7 +165,7 @@ lma_insert_max xs x y n
 
 {-@ lma_insert :: xs:_ -> x:_ -> n:{ Nat | n < A.size xs && (isSortedFstN xs n)}
       -> ys:{isSortedFstN (insert xs x n) (n+1)} / [n] @-}
-lma_insert :: Ord a => A.Array a -> a -> Int -> Proof
+lma_insert :: HasPrimOrd a => A.Array a -> a -> Int -> Proof
 lma_insert _ _ 0 = ()
 lma_insert xs x n
   | x < (A.get xs (n-1)) && (n >= 2)
@@ -219,11 +219,11 @@ lma_insert xs x n
 
 {-@ lma_isort :: xs:_ -> n:{ Nat | n > 0 && n <= A.size xs && isSortedFstN xs (A.size xs - n)}
       -> {isSortedFstN (isort xs n) (A.size xs)} / [n] @-}
-lma_isort :: Ord a => A.Array a -> Int -> Proof
+lma_isort :: HasPrimOrd a => A.Array a -> Int -> Proof
 lma_isort xs n
   | (A.size xs == 0) = ()
   | (A.size xs == 1) = ()
-  | (n == 1)         
+  | (n == 1)
     = let
         s = A.size xs
         x  = (A.get xs (s-1))
@@ -256,7 +256,7 @@ lma_isort xs n
 
 {-@ lma_insert_eq :: xs:_ -> x:_ -> n:{v:Nat | v < A.size xs}
        -> ys:{(toBagLeft (insert xs x n) (n+1)) == (B.put x (toBagLeft xs n))} / [n] @-}
-lma_insert_eq :: Ord a => A.Array a -> a -> Int -> Proof
+lma_insert_eq :: HasPrimOrd a => A.Array a -> a -> Int -> Proof
 lma_insert_eq xs x 0
   = toBagLeft (insert xs x 0) 1
   -- === toBagLeft (A.set xs 0 x) 1
@@ -294,34 +294,34 @@ lma_insert_eq xs x n
 
 {-@ lma_insert_eq_all :: xs:_ -> n:{ Nat | n < A.size xs} -> m:{ Nat | n + 1 <= m && m <= A.size xs}
        -> {(toBagLeft (insert xs (A.get xs n) n) m) == (toBagLeft xs m)} / [m] @-}
-lma_insert_eq_all :: Ord a => A.Array a -> Int -> Int -> Proof
-lma_insert_eq_all xs n m 
+lma_insert_eq_all :: HasPrimOrd a => A.Array a -> Int -> Int -> Proof
+lma_insert_eq_all xs n m
   | m == n + 1  = toBagLeft (insert xs x n) m
                   ? (lma_insert_eq xs x n)
-                -- === B.put x (toBagLeft xs n) 
+                -- === B.put x (toBagLeft xs n)
                 -- === toBagLeft xs m
                 *** QED
-  | otherwise   = let 
+  | otherwise   = let
                     y = A.get (insert xs x n) (m-1) ? (lma_insert_fix xs x n (m-1))
                   in toBagLeft (insert xs x n) m
-                  -- === B.put y (toBagLeft (insert xs x n) (m-1)) 
+                  -- === B.put y (toBagLeft (insert xs x n) (m-1))
                     ? (lma_insert_eq_all xs n (m-1))
-                  === B.put y (toBagLeft xs (m-1)) 
+                  === B.put y (toBagLeft xs (m-1))
                   -- === toBagLeft xs m
                   *** QED
-    where 
+    where
       x = A.get xs n
-      
+
 
 {-@ lma_isort_eq :: xs:_ -> n:{ Nat | n <= A.size xs }
        -> { toBagEqual (isort xs n) xs } @-}
-lma_isort_eq :: Ord a => A.Array a -> Int -> Proof
+lma_isort_eq :: HasPrimOrd a => A.Array a -> Int -> Proof
 lma_isort_eq xs n
   | (A.size xs == 0) = ()
   | (A.size xs == 1) = ()
   | (n == 0)         = ()
-  | otherwise        = 
-    let 
+  | otherwise        =
+    let
       s = A.size xs
       x  = (A.get xs (s-n))
       zs = (insert xs x (s-n))
