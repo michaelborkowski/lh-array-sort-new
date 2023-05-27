@@ -220,12 +220,22 @@ generate_loop arr idx end f =
     else let arr1 = set arr idx (f idx)
          in generate_loop arr1 (idx+1) end f
 
-{-@ ignore copy2_par @-}
+{-@ copy2_par :: xs:_ -> { xi:Nat | xi <= size xs } -> ys:_
+              -> { yi:Nat | yi <= size ys }
+              -> { n:Nat  | xi + n <= size xs && yi + n <= size ys }
+              -> { zs:_   | xs == fst zs && snd zs == copy xs xi ys yi n &&
+                            size (snd zs) == size ys && token (snd zs) == token ys &&
+                            left (snd zs) == left ys && right (snd zs) == right ys } @-}
 copy2_par :: Array a -> Int -> Array a -> Int -> Int -> (Array a, Array a)
 copy2_par src0 src_offset0 dst0 dst_offset0 len0 = (src0, copy_par src0 src_offset0 dst0 dst_offset0 len0)
 
 --TODO: src_offset0 and dst_offset0 are not respected.
-{-@ ignore copy_par @-}
+{-@ copy_par :: xs:_ -> { xi:Nat | xi <= size xs } -> ys:_
+              -> { yi:Nat | yi <= size ys } 
+              -> { n:Nat  | xi + n <= size xs && yi + n <= size ys }
+              -> { zs:_   | zs == copy xs xi ys yi n &&
+                            size ys == size zs && token ys == token zs &&
+                            left ys == left zs && right ys == right zs }  @-}
 copy_par :: Array a -> Int -> Array a -> Int -> Int -> Array a
 copy_par src0 src_offset0 dst0 dst_offset0 len0 = copy_par' src0 src_offset0 dst0 dst_offset0 len0
   where

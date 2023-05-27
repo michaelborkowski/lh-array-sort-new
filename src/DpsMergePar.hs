@@ -202,7 +202,7 @@ lem_merge_func_equiv src1 src2 dst i1 i2 j
     len1 = A.size src1
     len2 = A.size src2  
 
-
+{-
 -- DPS merge -- non-parallel, non-consecutive source slices, return them unchanged
              -- unneeded:            fst (fst t) == xs1 && snd (fst t) == xs2 &&
 {-@ merge' :: xs1:(Array a) -> { xs2:(Array a) | token xs1 == token xs2 }
@@ -262,7 +262,9 @@ merge' !src1 !src2 !dst i1 i2 j =
                                             ? if j > 0 then lma_gns dst   j (j-1) v2 else ()) -}
                                  ) in
          (src_tup, dst'') -- ? lem_equal_slice_narrow dst' dst'' 0 0 j (j+1)
+-}
 
+{-
              -- unneeded:            fst (fst t) == xs1 && snd (fst t) == xs2 &&
 {-@ merge :: { xs1:(Array a) | isSorted' xs1 }
           -> { xs2:(Array a) | isSorted' xs2 && token xs1 == token xs2  }
@@ -281,11 +283,11 @@ merge' !src1 !src2 !dst i1 i2 j =
 {-# SPECIALISE merge :: A.Array Int -> A.Array Int -> A.Array Int 
                                     -> ((A.Array Int, A.Array Int), A.Array Int) #-}
 merge :: Ord a => A.Array a -> A.Array a -> A.Array a -> ((A.Array a, A.Array a), A.Array a)
-merge src1 src2 dst = merge' src1 src2 dst 0 0 0   -- the 0's are relative to the current
-                                                   --   slices, not absolute indices
+merge src1 src2 dst = merge' src1 src2 dst 0 0 0          -- the 0's are relative to the current
+                    ? lem_merge_func_sorted src1 src2 dst 0 0 0  -- slices, not absolute indices
+                    ? lem_merge_func_equiv  src1 src2 dst 0 0 0 
 
-
-
+-}
 
 goto_seqmerge :: Int
 goto_seqmerge = 4096
@@ -302,6 +304,20 @@ merge_par'' (src1, src2, dst) = merge_par' src1 src2 dst
 
 -- unlike in merge, these may not have consecutive slices of the source array
 -- input tuple is ((xs1, xs2), zs)    -- TODO: condense the post-conditions
+
+{-
+
+{-@ reflect merge_par_func @-}
+{-@ merge_par_func :: xs1:(Array a) -> { xs2:(Array a) | token xs1 == token xs2 }
+      -> {  zs:(Array a) | size xs1 + size xs2 == size zs }
+      -> { i1:Nat | i1 <= size xs1 } -> { i2:Nat | i2 <= size xs2 }
+      -> { j:Nat  | i1 + i2 == j && j <= size zs }
+      -> { zs':_  | size zs' == size zs && token zs' == token zs &&
+                    left zs' == left zs && right zs' == right zs  } / [size zs - j] @-} 
+merge_par_func :: Ord a => A.Array a -> A.Array a -> A.Array a ->
+                              A.Array a {- ((A.Array a, A.Array a), A.Array a) -}
+
+                              -}
 
 {-
 {-@ merge_par' :: { t0:_  | isSorted' (fst (fst t0)) && isSorted' (snd (fst t0)) &&
@@ -386,7 +402,8 @@ merge_par' !((src1, src2), dst) =
                                             )-}
                                       -- ? toProof (toBag src1_c === toBag dst_c')
                       in ((src1'3, src2'3), dst''')
-
+-}
+{- @ reflect binarySearch @ -} {-
 {-@ binarySearch :: { ls:_ | isSorted' ls } -> query:_
                          -> { tup:_ | 0 <= fst tup && fst tup <= size ls &&
                                       snd tup == ls &&
@@ -395,7 +412,8 @@ merge_par' !((src1, src2), dst) =
 binarySearch :: Ord a => A.Array a -> a -> (Int, A.Array a) -- must be able to return out of bounds
 binarySearch ls query = let (n, ls')  = A.size2 ls
                          in binarySearch' ls' query 0 n
-
+-}
+{- @ reflect binarySearch' @ -} {-
 {-@ binarySearch' :: { ls:_ | isSorted' ls } -> query:_  
                           -> { lo:Nat | ( lo == 0       || A.get ls (lo-1) <= query ) } 
                           -> { hi:Nat | ( hi == size ls || query < A.get ls hi ) &&
@@ -412,7 +430,8 @@ binarySearch' ls query lo hi = if lo == hi
                                      in if query < midElt
                                         then binarySearch' ls' query lo      mid
                                         else binarySearch' ls' query (mid+1) hi
-
+                                        -}
+{-
 -- unneeded: fst t == A.append xs1 xs2 &&
 {-@ merge_par :: { xs1:(Array a) | isSorted' xs1 }
               -> { xs2:(Array a) | isSorted' xs2 && token xs1 == token xs2 && right xs1 == left xs2 }
