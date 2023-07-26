@@ -86,7 +86,11 @@ alloc ::
   P.Prim a =>
 #endif
   Int -> a -> (Array a %1-> Ur b) %1-> Ur b
+#ifdef MUTABLE_ARRAYS
 alloc i a f = f (makeNoFill i a)
+#else
+alloc i a f = f (make i a)
+#endif
 
 {-@ reflect swap @-}
 {-@ swap :: xs:(Array a) -> { i:Int | 0 <= i && i < size xs }
