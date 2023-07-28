@@ -11,6 +11,10 @@
 #include <assert.h>
 #include <cilk/cilk.h>
 
+#ifndef HAVE_GLIBC_COMPAR_FN_T
+typedef int (*__compar_fn_t)(const void *, const void *);
+#endif
+
 // -----------------------------------------------------------------------------
 
 static inline double difftimespecs(struct timespec* t0, struct timespec* t1)

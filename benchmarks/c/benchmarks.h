@@ -16,7 +16,7 @@ void *quicksort_glibc(void *const pbase, size_t total_elems, size_t size, __comp
 void quicksort_glibc_inplace(void *const pbase, size_t total_elems, size_t size, __compar_fn_t cmp);
 void *quicksort(void *const pbase, size_t total_elems, size_t size, __compar_fn_t cmp);
 void quicksort_inplace(void *const pbase, size_t total_elems, size_t size, __compar_fn_t cmp);
-void *mergesort (void *const pbase, size_t total_elems, size_t size, __compar_fn_t cmp);
+void *smergesort (void *const pbase, size_t total_elems, size_t size, __compar_fn_t cmp);
 void *mergesort_par(void *const pbase, size_t total_elems, size_t size, __compar_fn_t cmp);
 void *cilksort (void *const pbase, size_t total_elems, size_t size, __compar_fn_t cmp);
 void *cilksort_par(void *const pbase, size_t total_elems, size_t size, __compar_fn_t cmp);

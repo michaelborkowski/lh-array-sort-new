@@ -129,7 +129,7 @@ int bench_main(int argc, char** argv)
         } else if (strcmp(argv[1], "sort_quick") == 0) {
             b->sort_run = quicksort;
         } else if (strcmp(argv[1], "sort_merge_seq") == 0) {
-            b->sort_run = mergesort;
+            b->sort_run = smergesort;
         } else if (strcmp(argv[1], "sort_merge_par") == 0) {
             b->sort_run = mergesort_par;
         } else if (strcmp(argv[1], "sort_cilk_seq") == 0) {
