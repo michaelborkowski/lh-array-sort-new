@@ -151,15 +151,14 @@ lem_toBag_append xs ys
 
 {-@ lem_bag_unchanged :: xs:(Array a) -> { i:Nat | i < A.size xs } 
                       -> { pf:_  | toBag (A.set xs i (A.get xs i)) == toBag xs } @-} 
-lem_bag_unchanged :: Ord a => Array a -> Int -> Proof
+lem_bag_unchanged :: HasPrimOrd a => Array a -> Int -> Proof
 lem_bag_unchanged xs i = () ? lma_gs xs i (A.get xs i)
                             ? lem_toSlice_set xs i (A.get xs i)
                             ? lem_toBagBtw_compose xs ys 0 
                                 (i         ? lem_equal_slice_bag xs ys 0     i)
                                 (A.size xs ? lem_equal_slice_bag xs ys (i+1) (A.size xs))                      
   where
-    ys = (A.set xs i (A.get xs i))                          
-         ? lem_slice_append    xs ys
+    ys = (A.set xs i (A.get xs i))  
 
 
   -- | Lemmas establishing that toBag/toBagBtw is preserved under swaps
@@ -201,7 +200,7 @@ lem_toBagBtw_swap xs i j | i == j    = () ? lma_swap xs i i
 {-@ lem_bag_swap :: xs:(Array a) -> { i:Int | 0 <= i && i < A.size xs } 
                                  -> { j:Int | 0 <= j && j < A.size xs }
                                  -> { pf:_  | toBag (swap xs i j) == toBag xs } @-}
-lem_bag_swap :: Ord a => Array a -> Int -> Int -> Proof
+lem_bag_swap :: HasPrimOrd a => Array a -> Int -> Int -> Proof
 lem_bag_swap xs i j
   | i <= j    = () ? lem_bagBtw_swap xs 0 i j (size xs) 
                    ? toProof (size (swap xs i j) === size xs)

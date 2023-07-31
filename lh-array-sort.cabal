@@ -40,6 +40,7 @@ library
       LinearMerge
       DpsMerge
       DpsMergePar
+      DpsMergeParSeqFallback
       DpsMergeSort
       DpsMergeSort4
       DpsMergeSortPar
@@ -47,7 +48,7 @@ library
 --      Microbench
       QuickSort
 --  the last not quite ready yet?
-      CilkSort
+--      CilkSort
   other-modules:
       Array.List
       Array.Mutable

@@ -264,7 +264,7 @@ generate_loop arr idx end f =
          in generate_loop arr1 (idx+1) end f
 
 {-@ ignore copy2_par @-}
-{- @ copy2_par :: xs:_ -> { xi:Nat | xi <= size xs } -> ys:_
+{-@ copy2_par :: xs:_ -> { xi:Nat | xi <= size xs } -> ys:_
               -> { yi:Nat | yi <= size ys }
               -> { n:Nat  | xi + n <= size xs && yi + n <= size ys }
               -> { zs:_   | xs == fst zs && snd zs == copy xs xi ys yi n &&
@@ -279,7 +279,7 @@ copy2_par src0 src_offset0 dst0 dst_offset0 len0 = (src0, copy_par src0 src_offs
 
 --TODO: src_offset0 and dst_offset0 are not respected.
 {-@ ignore copy_par @-}
-{- @ copy_par :: xs:_ -> { xi:Nat | xi <= size xs } -> ys:_
+{-@ copy_par :: xs:_ -> { xi:Nat | xi <= size xs } -> ys:_
               -> { yi:Nat | yi <= size ys } 
               -> { n:Nat  | xi + n <= size xs && yi + n <= size ys }
               -> { zs:_   | zs == copy xs xi ys yi n &&

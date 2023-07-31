@@ -1,0 +1,241 @@
+{-@ LIQUID "--ple" @-}
+{-@ LIQUID "--reflection"  @-}
+{-@ LIQUID "--short-names" @-}
+
+{-# LANGUAGE BangPatterns #-}
+{-# LANGUAGE CPP #-}
+
+module DpsMergeParSeqFallback where
+
+import qualified Language.Haskell.Liquid.Bag as B
+import           Language.Haskell.Liquid.ProofCombinators hiding ((?))
+import           ProofCombinators
+import           Array
+import           Equivalence
+import           Order
+
+import           Par
+
+#ifdef MUTABLE_ARRAYS
+import           Array.Mutable as A
+#else
+import           Array.List as A
+#endif
+import qualified Array as A
+
+--------------------------------------------------------------------------------
+-- | Sequential Fallback Section -- Unlike DpsMerge.hs the slices are not 
+-- |    assumed to be adjacent/consecutive (also we get to use the parallel 
+-- |    copy routine) 
+-- | Proofs for Sortedness and Equivalence
+--------------------------------------------------------------------------------
+
+{-@ reflect merge_func @-}
+{-@ merge_func :: xs1:(Array a) -> { xs2:(Array a) | token xs1 == token xs2 }
+      -> {  zs:(Array a) | size xs1 + size xs2 == size zs }
+      -> { i1:Nat | i1 <= size xs1 } -> { i2:Nat | i2 <= size xs2 }
+      -> { j:Nat  | i1 + i2 == j && j <= size zs }
+      -> { zs':_  | size zs' == size zs && token zs' == token zs &&
+                    left zs' == left zs && right zs' == right zs  } / [size zs - j] @-} 
+merge_func :: Ord a => A.Array a -> A.Array a -> A.Array a ->
+                Int -> Int -> Int -> A.Array a 
+merge_func src1 src2 dst i1 i2 j =
+    if i1 >= len1
+    then {-let dst' =-} A.copy src2 i2 dst j (len2-i2) {- in ((src1, src2), dst')-}     
+    else if i2 >= len2
+    then {-let  dst' =-} A.copy src1 i1 dst j (len1-i1) {-in ((src1, src2), dst')-}    
+    else if (A.get src1 i1) < (A.get src2 i2)
+         then {-let dst' =-} merge_func src1 src2 (A.set dst j (A.get src1 i1)) (i1+1) i2 (j+1)
+              {-in ((src1, src2), dst')-}       
+          else {-let dst' =-} merge_func src1 src2 (A.set dst j (A.get src2 i2)) i1 (i2+1) (j+1)
+               {-in ((src1, src2), dst')-}   
+  where 
+    len1 = A.size src1
+    len2 = A.size src2
+                             -- We may be able to remove this one entirely
+{-@ lem_merge_func_untouched :: xs1:(Array a) -> { xs2:(Array a) | token xs1 == token xs2 }
+      -> { zs:(Array a) | size xs1 + size xs2 == size zs }
+      -> { i1:Nat | i1 <= size xs1 } -> { i2:Nat | i2 <= size xs2 }
+      -> { j:Nat  | i1 + i2 == j && j <= size zs }
+      -> { pf:_   | toSlice zs 0 j == toSlice (merge_func xs1 xs2 zs i1 i2 j) 0 j } 
+       / [size zs - j] @-} 
+lem_merge_func_untouched :: Ord a => A.Array a -> A.Array a -> A.Array a ->
+                           Int -> Int -> Int -> Proof
+lem_merge_func_untouched src1 src2 dst i1 i2 j 
+    | i1 >= len1  = lem_copy_equal_slice  src2 i2 dst j (len2-i2)
+    | i2 >= len2  = lem_copy_equal_slice  src1 i1 dst j (len1-i1)
+    | (A.get src1 i1) < (A.get src2 i2) 
+                  = lem_merge_func_untouched src1 src2 
+                      (A.set dst j (A.get src1 i1))  (i1+1) i2 (j+1)
+                  ? lem_equal_slice_narrow (A.set dst j (A.get src1 i1))
+                      (merge_func src1 src2 (A.set dst j (A.get src1 i1)) (i1+1) i2 (j+1)) 
+                      0 0 j (j+1) 
+                  ? lem_toSlice_set       dst j (A.get src1 i1)
+    | otherwise  = lem_equal_slice_narrow (A.set dst j (A.get src2 i2)) 
+                     (merge_func src1 src2 (A.set dst j (A.get src2 i2)) i1 (i2+1) (j+1)) 
+                     0 0 j (j+1 ? lem_toSlice_set       dst j (A.get src2 i2)
+                                ? lem_merge_func_untouched src1 src2 
+                                      (A.set dst j (A.get src2 i2)) 
+                                      i1 (i2+1) (j+1)
+                           )
+  where
+    len1 = A.size src1
+    len2 = A.size src2
+
+{-@ lem_merge_func_sorted :: { xs1:(Array a) | isSorted' xs1 }
+      -> { xs2:(Array a) | isSorted' xs2 && token xs1 == token xs2 }
+      -> {  zs:(Array a) | size xs1 + size xs2 == size zs }
+      -> { i1:Nat | i1 <= size xs1 } -> { i2:Nat | i2 <= size xs2 }
+      -> { j:Nat  | i1 + i2 == j && j <= size zs &&
+                    isSortedBtw zs 0 j &&
+                   ( j == 0 || i1 == size xs1 || A.get xs1 i1 >= A.get zs (j-1) ) &&
+                   ( j == 0 || i2 == size xs2 || A.get xs2 i2 >= A.get zs (j-1) ) }
+      -> { pf:_   | isSortedBtw (merge_func xs1 xs2 zs i1 i2 j) 0 (size zs) } / [size zs - j] @-} 
+lem_merge_func_sorted :: Ord a => A.Array a -> A.Array a -> A.Array a ->
+                           Int -> Int -> Int -> Proof
+lem_merge_func_sorted src1 src2 dst i1 i2 j 
+    | i1 >= len1  = lem_isSorted_copy src2 i2 dst (i1+i2) (len2-i2) 
+    | i2 >= len2  = lem_isSorted_copy src1 i1 dst (i1+len2) (len1-i1)
+    | (A.get src1 i1) < (A.get src2 i2) 
+                  = lem_merge_func_sorted src1 src2 
+                      (A.set dst j (A.get src1 i1))  (i1+1) i2 (j+1
+                        -- WTS: isSortedBtw (A.set dst j (A.get src1 i1)) 0 (j+1)
+                        ? lem_toSlice_set       dst j (A.get src1 i1)
+                        ? lem_equal_slice_sorted dst   
+                            (A.set dst j (A.get src1 i1)) 0 0 j j
+                        ? lem_isSortedBtw_build_right 
+                            (A.set dst j (A.get src1 i1)) 0  (j
+                            ? lma_gs dst j (A.get src1 i1)
+                            ? if j > 0 then lma_gns dst j (j-1) (A.get src1 i1) else ()) 
+                        -- WTS: A.get xs1 (i1+1) >= A.get (A.set dst...) (j+1-1)  and
+                        --      A.get xs2  i2    >= A.get (A.set dst...) (j+1-1)    by hypoth
+                        ? lma_gs dst j (A.get src1 i1)
+                        ? lem_isSortedBtw_narrow src1 0 i1 len1 len1
+                      )
+    | otherwise   = lem_merge_func_sorted src1 src2 
+                      (A.set dst j (A.get src2 i2))  i1 (i2+1) (j+1
+                        -- WTS: isSortedBtw (A.set dst j (A.get src2 i2)) 0 (j+1)
+                        ? lem_toSlice_set       dst j (A.get src2 i2)
+                        ? lem_equal_slice_sorted dst   
+                            (A.set dst j (A.get src2 i2)) 0 0 j j
+                        ? lem_isSortedBtw_build_right 
+                            (A.set dst j (A.get src2 i2)) 0  (j
+                            ? lma_gs dst j (A.get src2 i2)
+                            ? if j > 0 then lma_gns dst j (j-1) (A.get src2 i2) else ()) 
+                        -- WTS: A.get xs1  i1    >= A.get (A.set dst...) (j+1-1)  and
+                        --      A.get xs2 (i2+1) >= A.get (A.set dst...) (j+1-1)    
+                        ? lma_gs dst j (A.get src2 i2)
+                        ? lem_isSortedBtw_narrow src2 0 i2 len2 len2
+                      )
+  where
+    len1 = A.size src1
+    len2 = A.size src2
+
+{-@ lem_merge_func_equiv :: xs1:(Array a) -> { xs2:(Array a) | token xs1 == token xs2 }
+      -> { zs:(Array a) | size xs1 + size xs2 == size zs }
+      -> { i1:Nat | i1 <= size xs1 } -> { i2:Nat | i2 <= size xs2 }
+      -> { j:Nat  | i1 + i2 == j && j <= size zs &&
+                    B.union (toBagBtw xs1 0 i1) (toBagBtw xs2 0 i2) == toBagBtw zs 0 j }
+      -> { pf:_   | B.union (toBag xs1) (toBag xs2) == 
+                        toBag (merge_func xs1 xs2 zs i1 i2 j) } / [size zs - j] @-} 
+lem_merge_func_equiv :: Ord a => A.Array a -> A.Array a -> A.Array a ->
+                         Int -> Int -> Int -> Proof
+lem_merge_func_equiv src1 src2 dst i1 i2 j 
+    | i1 >= len1  = let dst' = A.copy src2 i2 dst j (len2-i2) in
+                        lem_toBagBtw_compose' src1 0 i1 len1
+                      ? lem_toBagBtw_compose' src2 0 i2 len2
+                      ? lem_toBagBtw_compose' dst' 0 j  (A.size dst')
+                      ? lem_equal_slice_bag   dst  dst' 0 (j
+                            ? lem_copy_equal_slice src2 i2 dst  j (len2-i2) )
+                      ? lem_equal_slice_bag'  src2 dst' i2 len2 j (A.size dst')      
+    | i2 >= len2  = let dst' = A.copy src1 i1 dst j (len1-i1) in
+                        lem_toBagBtw_compose' src1 0 i1 len1
+                      ? lem_toBagBtw_compose' src2 0 i2 len2
+                      ? lem_toBagBtw_compose' dst' 0 j  (A.size dst')
+                      ? lem_equal_slice_bag   dst  dst' 0 (j
+                            ? lem_copy_equal_slice src1 i1 dst j (len1-i1) )
+                      ? lem_equal_slice_bag'  src1 dst' i1 len1 j (A.size dst')      
+    | (A.get src1 i1) < (A.get src2 i2) 
+                 = let dst' = A.set dst j (A.get src1 i1) in
+                      lem_merge_func_equiv src1 src2 dst' (i1+1) i2 (j+1
+                          ? lem_toBagBtw_right src1 0 (i1+1)
+                          ? lem_bag_union (A.get src1 i1) (toBagBtw src1 0 i1) 
+                                                          (toBagBtw src2 0 i2)
+                          ? lem_equal_slice_bag    dst dst'   0 (j
+                              ? lem_toSlice_set  dst     j (A.get src1 i1))
+                          ? lma_gs dst j (A.get src1 i1)
+                          ? lem_toBagBtw_right dst' 0 (j+1)
+                        )
+    | otherwise  = let dst' = A.set dst j (A.get src2 i2) in
+                      lem_merge_func_equiv src1 src2 dst' i1 (i2+1) (j+1
+                          ? lem_toBagBtw_right src2 0 (i2+1)
+                          ? lem_bag_union (A.get src2 i2) (toBagBtw src1 0 i1) 
+                                                          (toBagBtw src2 0 i2)
+                          ? lem_equal_slice_bag    dst dst'   0 (j
+                              ? lem_toSlice_set  dst     j (A.get src2 i2))
+                          ? lma_gs dst j (A.get src2 i2)
+                          ? lem_toBagBtw_right dst' 0 (j+1)
+                        )
+  where
+    len1 = A.size src1
+    len2 = A.size src2  
+
+--------------------------------------------------------------------------------
+-- | Sequential Fallback: Implementation
+--------------------------------------------------------------------------------    
+             -- unneeded:            fst (fst t) == xs1 && snd (fst t) == xs2 &&
+{-@ merge' :: xs1:(Array a) -> { xs2:(Array a) | token xs1 == token xs2 }
+           -> { zs:(Array a) | size xs1 + size xs2 == size zs }
+           -> { i1:Nat | i1 <= size xs1 } -> { i2:Nat | i2 <= size xs2 }
+           -> { j:Nat  | i1 + i2 == j && j <= size zs }
+           -> { t:_    | t == ((xs1, xs2), merge_func xs1 xs2 zs i1 i2 j) &&
+                         token (fst (fst t)) == token xs1 && token (snd (fst t)) == token xs2 &&
+                         left (fst (fst t)) == left xs1 && right (fst (fst t)) == right xs1 &&
+                         left (snd (fst t)) == left xs2 && right (snd (fst t)) == right xs2 &&
+                         size (snd t) == size zs && token (snd t) == token zs &&
+                         left (snd t) == left zs && right (snd t) == right zs  } / [size zs - j] @-}
+merge' :: HasPrimOrd a =>
+  A.Array a -> A.Array a -> A.Array a ->
+  Int -> Int -> Int ->
+  ((A.Array a, A.Array a), A.Array a)
+merge' !src1 !src2 !dst i1 i2 j =
+  let !(len1, src1') = A.size2 src1
+      !(len2, src2') = A.size2 src2 in
+  if i1 >= len1
+  then
+    let !(src2'1, dst') = A.copy2_par src2' i2 dst j (len2-i2) in ((src1', src2'1), dst')
+  else if i2 >= len2
+  then
+    let !(src1'1, dst') = A.copy2_par src1' i1 dst j (len1-i1) in ((src1'1, src2'), dst')
+  else
+    let !(v1, src1'1) = A.get2 src1' i1
+        !(v2, src2'1) = A.get2 src2' i2 in
+    if v1 < v2
+    then let dst' = A.set dst j v1
+             !(src_tup, dst'') =  merge' src1'1 src2'1 dst' (i1 + 1) i2 (j + 1) in
+         (src_tup, dst'') 
+    else let dst' = A.set dst j v2
+             !(src_tup, dst'') =  merge' src1'1 src2'1 dst' i1 (i2 + 1) (j + 1) in
+         (src_tup, dst'') 
+
+             -- unneeded:            fst (fst t) == xs1 && snd (fst t) == xs2 &&
+{-@ merge :: { xs1:(Array a) | isSorted' xs1 }
+          -> { xs2:(Array a) | isSorted' xs2 && token xs1 == token xs2  }
+          -> {  zs:(Array a) | size xs1 + size xs2 == size zs }
+          -> { t:_           | B.union (toBag xs1) (toBag xs2) == toBag (snd t) &&
+                               isSorted' (snd t) &&
+                               token (fst (fst t)) == token xs1 && token (snd (fst t)) == token xs2 &&
+                               token zs  == token (snd t) &&
+                               left (fst (fst t)) == left xs1 && right (fst (fst t)) == right xs1 &&
+                               left (snd (fst t)) == left xs2 && right (snd (fst t)) == right xs2 &&
+                               left (snd t) == left zs  && right (snd t) == right zs  &&
+                               size (snd t) == size zs } @-}
+{-# INLINE merge #-}
+{-# SPECIALISE merge :: A.Array Float -> A.Array Float -> A.Array Float
+                                      -> ((A.Array Float, A.Array Float), A.Array Float) #-}
+{-# SPECIALISE merge :: A.Array Int -> A.Array Int -> A.Array Int
+                                    -> ((A.Array Int, A.Array Int), A.Array Int) #-}
+merge :: HasPrimOrd a => A.Array a -> A.Array a -> A.Array a -> ((A.Array a, A.Array a), A.Array a)
+merge src1 src2 dst = merge' src1 src2 dst 0 0 0   -- the 0's are relative to the current
+                    ? lem_merge_func_sorted src1 src2 dst 0 0 0  -- slices, not absolute indices
+                    ? lem_merge_func_equiv  src1 src2 dst 0 0 0 
