@@ -202,6 +202,20 @@ lem_merge_func_equiv src1 src2 dst i1 i2 j
     len1 = A.size src1
     len2 = A.size src2  
 
+{- merge' signature on the main branch was
+           -> { j:Nat  | i1 + i2 == j && j <= size zs &&
+                         isSortedBtw zs 0 j &&
+                         B.union (toBagBtw xs1 0 i1) (toBagBtw xs2 0 i2) == toBagBtw zs 0 j &&
+                         ( j == 0 || i1 == size xs1 || A.get xs1 i1 >= A.get zs (j-1) ) &&
+                         ( j == 0 || i2 == size xs2 || A.get xs2 i2 >= A.get zs (j-1) ) }
+           -> { t:_    | B.union (toBag xs1) (toBag xs2) == toBag (snd t)  &&
+                         toSlice zs 0 j == toSlice (snd t) 0 j &&
+                         isSorted' (snd t) &&
+                         token (fst (fst t)) == token xs1 && token (snd (fst t)) == token xs2 &&
+                         left (fst (fst t)) == left xs1 && right (fst (fst t)) == right xs1 &&
+                         left (snd (fst t)) == left xs2 && right (snd (fst t)) == right xs2 &&
+                         size (snd t) == size zs && token (snd t) == token zs &&
+                         left (snd t) == left zs && right (snd t) == right zs  } / [size zs - j] @-}
 {-
 -- DPS merge -- non-parallel, non-consecutive source slices, return them unchanged
              -- unneeded:            fst (fst t) == xs1 && snd (fst t) == xs2 &&
@@ -214,8 +228,8 @@ lem_merge_func_equiv src1 src2 dst i1 i2 j
                          left (fst (fst t)) == left xs1 && right (fst (fst t)) == right xs1 &&
                          left (snd (fst t)) == left xs2 && right (snd (fst t)) == right xs2 &&
                          size (snd t) == size zs && token (snd t) == token zs &&
-                         left (snd t) == left zs && right (snd t) == right zs  } / [size zs - j] @-} 
-merge' :: Ord a =>
+                         left (snd t) == left zs && right (snd t) == right zs  } / [size zs - j] @ -}
+merge' :: HasPrimOrd a =>
   A.Array a -> A.Array a -> A.Array a ->
   Int -> Int -> Int ->
   ((A.Array a, A.Array a), A.Array a)
@@ -278,14 +292,19 @@ merge' !src1 !src2 !dst i1 i2 j =
                                left (snd t) == left zs  && right (snd t) == right zs  &&
                                size (snd t) == size zs } @-}
 {-# INLINE merge #-}
-{-# SPECIALISE merge :: A.Array Float -> A.Array Float -> A.Array Float 
+{-# SPECIALISE merge :: A.Array Float -> A.Array Float -> A.Array Float
                                       -> ((A.Array Float, A.Array Float), A.Array Float) #-}
-{-# SPECIALISE merge :: A.Array Int -> A.Array Int -> A.Array Int 
+{-# SPECIALISE merge :: A.Array Int -> A.Array Int -> A.Array Int
                                     -> ((A.Array Int, A.Array Int), A.Array Int) #-}
-merge :: Ord a => A.Array a -> A.Array a -> A.Array a -> ((A.Array a, A.Array a), A.Array a)
-merge src1 src2 dst = merge' src1 src2 dst 0 0 0          -- the 0's are relative to the current
+merge :: HasPrimOrd a => A.Array a -> A.Array a -> A.Array a -> ((A.Array a, A.Array a), A.Array a)
+merge src1 src2 dst = merge' src1 src2 dst 0 0 0   -- the 0's are relative to the current
+                                                   --   slices, not absolute indices
+
+
+{- on the branch (also Ord a => instead)
                     ? lem_merge_func_sorted src1 src2 dst 0 0 0  -- slices, not absolute indices
                     ? lem_merge_func_equiv  src1 src2 dst 0 0 0 
+-}
 
 -}
 
@@ -294,12 +313,8 @@ goto_seqmerge = 4096
 
 {- 
 {-# INLINE merge_par'' #-}
-merge_par'' :: (Show a, Ord a) => (A.Array a, A.Array a, A.Array a) -> ((A.Array a, A.Array a), A.Array a)
+merge_par'' :: (Show a, HasPrimOrd a) => (A.Array a, A.Array a, A.Array a) -> ((A.Array a, A.Array a), A.Array a)
 merge_par'' (src1, src2, dst) = merge_par' src1 src2 dst
-
-                  { xs1:(Array a) | isSorted' xs1 }
-               -> { xs2:(Array a) | isSorted' xs2 && token xs1 == token xs2 }
-               -> {  zs:(Array a) | size xs1 + size xs2 == size zs }
 -}
 
 -- unlike in merge, these may not have consecutive slices of the source array
@@ -319,6 +334,19 @@ merge_par_func :: Ord a => A.Array a -> A.Array a -> A.Array a ->
 
                               -}
 
+{- merge_par' on the main branch:
+    merge_par' :: { xs1:(Array a) | isSorted' xs1 }
+               -> { xs2:(Array a) | isSorted' xs2 && token xs1 == token xs2 }
+               -> {  zs:(Array a) | size xs1 + size xs2 == size zs }
+
+               -> { t:_           | B.union (toBag xs1) (toBag xs2) == toBag (snd t) &&
+                                    token (fst (fst t)) == token xs1 && token (snd (fst t)) == token xs2 &&
+                                    token zs  == token (snd t) &&
+                                    left (fst (fst t)) == left xs1 && right (fst (fst t)) == right xs1 &&
+                                    left (snd (fst t)) == left xs2 && right (snd (fst t)) == right xs2 &&
+                                    left (snd t) == left zs  && right (snd t) == right zs  &&
+                                    size (snd t) == size zs } / [size xs1] @-} {-
+                                    isSorted' (snd t) && -}
 {-
 {-@ merge_par' :: { t0:_  | isSorted' (fst (fst t0)) && isSorted' (snd (fst t0)) &&
                             token (fst (fst t0)) == token (snd (fst t0)) &&
@@ -334,7 +362,7 @@ merge_par_func :: Ord a => A.Array a -> A.Array a -> A.Array a ->
                             right (snd (fst t)) == right (snd (fst t0)) &&
                             left (snd t) == left (snd t0)  && right (snd t) == right (snd t0)  &&
                             size (snd t) == size (snd t0) } / [size (fst (fst t0))] @-} 
-merge_par' :: (Show a, Ord a) => ((A.Array a, A.Array a), A.Array a) -> ((A.Array a, A.Array a), A.Array a)
+merge_par' :: (Show a, HasPrimOrd a) => ((A.Array a, A.Array a), A.Array a) -> ((A.Array a, A.Array a), A.Array a)
 merge_par' !((src1, src2), dst) =
   if A.size dst < goto_seqmerge
   then merge src1 src2 dst
@@ -409,20 +437,21 @@ merge_par' !((src1, src2), dst) =
                                       snd tup == ls &&
                                       ( fst tup == 0 || A.get ls ((fst tup)-1) <= query ) &&
                                       ( fst tup == size ls || query < A.get ls (fst tup) ) } @-}
-binarySearch :: Ord a => A.Array a -> a -> (Int, A.Array a) -- must be able to return out of bounds
+binarySearch :: HasPrimOrd a => A.Array a -> a -> (Int, A.Array a) -- must be able to return out of bounds
 binarySearch ls query = let (n, ls')  = A.size2 ls
                          in binarySearch' ls' query 0 n
 -}
+
 {- @ reflect binarySearch' @ -} {-
 {-@ binarySearch' :: { ls:_ | isSorted' ls } -> query:_  
                           -> { lo:Nat | ( lo == 0       || A.get ls (lo-1) <= query ) } 
                           -> { hi:Nat | ( hi == size ls || query < A.get ls hi ) &&
                                         lo <= hi && hi <= size ls }
-                          -> { tup:_ | 0 <= fst tup && fst tup <= size ls && 
+                          -> { tup:_ | 0 <= fst tup && fst tup <= size ls &&
                                        snd tup == ls &&
                                        ( fst tup == 0 || A.get ls ((fst tup)-1) <= query ) &&
                                        ( fst tup == size ls || query < A.get ls (fst tup) ) } / [hi-lo] @-}
-binarySearch' :: Ord a => A.Array a -> a -> Int -> Int -> (Int, A.Array a)
+binarySearch' :: HasPrimOrd a => A.Array a -> a -> Int -> Int -> (Int, A.Array a)
 binarySearch' ls query lo hi = if lo == hi
                                then (lo, ls)
                                else let mid          = lo + (hi - lo) `div` 2
@@ -437,7 +466,7 @@ binarySearch' ls query lo hi = if lo == hi
               -> { xs2:(Array a) | isSorted' xs2 && token xs1 == token xs2 && right xs1 == left xs2 }
               -> {  zs:(Array a) | size xs1 + size xs2 == size zs }
               -> { t:_           | B.union (toBag xs1) (toBag xs2) == toBag (snd t) &&
-                                   token (fst t) == token xs1 && 
+                                   token (fst t) == token xs1 &&
                                    token zs  == token (snd t) &&
                                    left (fst t) == left xs1 && right (fst t) == right xs2 &&
                                    left (snd t) == left zs  && right (snd t) == right zs  &&
@@ -446,7 +475,7 @@ binarySearch' ls query lo hi = if lo == hi
 {-# INLINE merge_par #-}
 {-# SPECIALISE merge_par :: A.Array Float -> A.Array Float -> A.Array Float -> (A.Array Float, A.Array Float) #-}
 {-# SPECIALISE merge_par :: A.Array Int -> A.Array Int -> A.Array Int -> (A.Array Int, A.Array Int) #-}
-merge_par :: (Show a, Ord a) => A.Array a -> A.Array a -> A.Array a -> (A.Array a, A.Array a)
+merge_par :: (Show a, HasPrimOrd a) => A.Array a -> A.Array a -> A.Array a -> (A.Array a, A.Array a)
 merge_par !src1 !src2 !dst =
   let !((src1', src2'), dst') = merge_par' ((src1,  src2),  dst)
       src'                    = A.append   src1' src2'

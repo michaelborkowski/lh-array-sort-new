@@ -36,7 +36,7 @@ import           Array.List as A
                          token xs1 == token (fst t) &&
                          size (snd t) == size zs && token (snd t) == token zs &&
                          left (snd t) == left zs && right (snd t) == right zs  } / [size zs - j] @-}
-merge' :: Ord a =>
+merge' :: HasPrimOrd a =>
   A.Array a -> A.Array a -> A.Array a ->
   Int -> Int -> Int ->
   (A.Array a, A.Array a)
@@ -109,7 +109,7 @@ merge' !src1 !src2 !dst i1 i2 j =
 {-# INLINE merge #-}
 {-# SPECIALISE merge :: A.Array Float -> A.Array Float -> A.Array Float -> (A.Array Float, A.Array Float) #-}
 {-# SPECIALISE merge :: A.Array Int -> A.Array Int -> A.Array Int -> (A.Array Int, A.Array Int) #-}
-merge :: Ord a => A.Array a -> A.Array a -> A.Array a -> (A.Array a, A.Array a)
+merge :: HasPrimOrd a => A.Array a -> A.Array a -> A.Array a -> (A.Array a, A.Array a)
 merge src1 src2 dst = merge' src1 src2 dst 0 0 0   -- the 0's are relative to the current
                                                    --   slices, not absolute indices
 

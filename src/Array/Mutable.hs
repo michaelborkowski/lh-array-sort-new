@@ -59,7 +59,25 @@ make ::
 #endif
   Int -> a -> Array a
 make 0 _ = Array 0 0 undefined
-make (GHC.I# s) x = Array 0 (GHC.I# s) (make# s x)
+make s0@(GHC.I# s) x = Array 0 s0 (make# s x)
+
+
+{-# INLINE makeNoFill #-}
+
+makeNoFill ::
+#ifdef PRIM_MUTABLE_ARRAYS
+  P.Prim a =>
+#endif
+  Int -> a -> Array a
+makeNoFill s0@(GHC.I# s) x =
+  Array 0 s0
+#ifdef PRIM_MUTABLE_ARRAYS
+  (makeNoFill# s x)
+#else
+  (make# s x)
+#endif
+
+
 
 {-# INLINE size #-}
 size :: Array a -> Int

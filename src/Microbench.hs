@@ -1,4 +1,6 @@
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE BangPatterns #-}
+{-# LANGUAGE ConstraintKinds #-}
 
 {-@ LIQUID "--exact-data-cons" @-}
 {-@ LIQUID "--higherorder" @-}
@@ -12,9 +14,19 @@ import qualified Array as A
 import           Par
 import           Control.Monad.Par as P
 
+import qualified Data.Primitive.Types as P
+
+
 --------------------------------------------------------------------------------
 
-sumArray :: Num a => A.Array a -> a
+type HasPrimNum a =
+#ifdef PRIM_MUTABLE_ARRAYS
+  (P.Prim a, Num a)
+#else
+  (Num a)
+#endif
+
+sumArray :: HasPrimNum a => A.Array a -> a
 sumArray arr = go 0 0 (A.size arr)
   where
     go !acc !idx !n =
@@ -22,7 +34,7 @@ sumArray arr = go 0 0 (A.size arr)
       then acc
       else go (acc + A.get arr idx) (idx+1) n
 
-sumArray_par :: Num a => Int -> A.Array a -> a
+sumArray_par :: HasPrimNum a => Int -> A.Array a -> a
 sumArray_par cutoff = go
   where
     go arr =
@@ -35,7 +47,11 @@ sumArray_par cutoff = go
                  y = go right
              in x `par` y `pseq` x+y
 
-fillArray :: (Int, a) -> A.Array a
+fillArray ::
+#ifdef PRIM_MUTABLE_ARRAYS
+  (P.Prim a) =>
+#endif
+  (Int, a) -> A.Array a
 fillArray (sz, val) = A.make sz val
 
 {-# NOINLINE seqfib #-}

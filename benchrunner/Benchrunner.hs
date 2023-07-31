@@ -9,7 +9,7 @@ import           Control.DeepSeq    ( NFData, force)
 import           Data.List.Split    ( splitOn )
 import           System.Environment ( getArgs, withArgs )
 import           Control.Monad      ( unless )
-
+import qualified Data.Primitive.Types as P
 
 import qualified Measure as M
 import qualified Insertion as I
@@ -62,7 +62,7 @@ getInput bench mb_size = case bench of
       Nothing -> x
       Just y  -> y
 
-randArray :: forall a. (Random a, NFData a) => Proxy a -> Int -> IO (A.Array a)
+randArray :: forall a. (Random a, NFData a, P.Prim a) => Proxy a -> Int -> IO (A.Array a)
 randArray _ty size = do
   rng <- newStdGen
   let ls :: [a]
@@ -70,7 +70,7 @@ randArray _ty size = do
       !arr = force (A.fromList ls)
   pure arr
 
-sortFn :: (Show a, Ord a, NFData a) => Benchmark -> ParOrSeq -> (A.Array a -> A.Array a)
+sortFn :: (Show a, A.HasPrimOrd a, NFData a) => Benchmark -> ParOrSeq -> (A.Array a -> A.Array a)
 sortFn bench parorseq = case (bench,parorseq) of
   (Insertionsort, Seq) -> I.isort_top
   (Quicksort, Seq)     -> Q.quickSort

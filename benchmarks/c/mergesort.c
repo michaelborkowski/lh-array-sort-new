@@ -52,7 +52,7 @@ void *cilksort_par(void *const pbase, size_t total_elems, size_t size, __compar_
 }
 
 // Sequential mergesort.
-void *mergesort(void *const pbase, size_t total_elems, size_t size, __compar_fn_t cmp)
+void *smergesort(void *const pbase, size_t total_elems, size_t size, __compar_fn_t cmp)
 {
     // Copy into a fresh array.
     char *cpy = malloc(total_elems * size);

@@ -2,6 +2,7 @@
 {-# LANGUAGE BangPatterns  #-}
 {-# LANGUAGE DeriveFunctor #-}
 {-# LANGUAGE LinearTypes   #-}
+{-# LANGUAGE ConstraintKinds #-}
 -- {-# LANGUAGE Strict        #-}
 
 {-@ LIQUID "--reflection"  @-}
@@ -29,6 +30,8 @@ module Array
   , fromList, toList
 
   , Ur(..), unur
+
+  , HasPrimOrd(..)
 
     -- * LiqidHaskell lemmas
   , lma_gs, lma_gns, lma_swap, lma_swap_eql, lem_swap_order
@@ -63,6 +66,7 @@ import           Array.List
 import           Control.DeepSeq ( NFData(..) )
 import           Language.Haskell.Liquid.ProofCombinators hiding ((?))
 import           ProofCombinators
+import qualified Data.Primitive.Types as P
 
 {-@ measure unur @-}
 unur :: Ur a %1-> a
@@ -72,12 +76,27 @@ unur (Ur a) = a
 -- Advanced operations
 --------------------------------------------------------------------------------
 
+type HasPrimOrd a =
+#ifdef PRIM_MUTABLE_ARRAYS
+  (P.Prim a, Ord a)
+#else
+  (Ord a)
+#endif
+
+
 {-# INLINE alloc #-}
 {-@ alloc :: forall <p :: Ur b -> Bool>. n:Nat -> x:_ 
                 -> f:({ys:(Array a) | size ys == n} -> Ur<p> b) -> ret:Ur<p> b @-}
-alloc :: Int -> a -> (Array a %1-> Ur b) %1-> Ur b
---alloc :: Int -> a -> (Array a -> Ur b) %1-> Ur b
+alloc ::
+#ifdef PRIM_MUTABLE_ARRAYS
+  P.Prim a =>
+#endif
+  Int -> a -> (Array a %1-> Ur b) %1-> Ur b
+#ifdef MUTABLE_ARRAYS
+alloc i a f = f (makeNoFill i a)
+#else
 alloc i a f = f (make i a)
+#endif
 
 -- with a concrete `b` type
 {- @ alloc1 :: forall <p :: Ur (Array a) -> Bool>. n:Nat -> x:_ 
@@ -90,7 +109,11 @@ alloc i a f = f (make i a)
                          -> { j:Int | 0 <= j && j < size xs }
                          -> { ys:(Array a) | size xs == size ys && token xs == token ys &&
                                              left xs == left ys && right xs == right ys } @-}
-swap :: Array a -> Int -> Int -> Array a
+swap ::
+#ifdef PRIM_MUTABLE_ARRAYS
+  P.Prim a =>
+#endif
+  Array a -> Int -> Int -> Array a
 swap xs i j = let !xi   = get xs i
                   !xj   = get xs j
                   xs'   = set xs i xj
@@ -106,7 +129,11 @@ swap xs i j = let !xi   = get xs i
                           -> { ys:(Array a) | size xs == size ys && token xs == token ys &&
                                               left xs == left ys && right xs == right ys &&
                                               ys == swap xs i j } @-}
-swap2 :: Array a -> Int -> Int -> Array a
+swap2 ::
+#ifdef PRIM_MUTABLE_ARRAYS
+  P.Prim a =>
+#endif
+  Array a -> Int -> Int -> Array a
 swap2 xs i j  = {-Unsafe.toLinear3-} go xs i j
   where
     {-@ go :: xs:(Array a) -> { i:Int | 0 <= i && i < size xs }
@@ -162,7 +189,11 @@ defaultGrainSize n =
     in min 2048 grain
 
 {-@ ignore generate_par @-}
-generate_par :: Int -> (Int -> a) -> Array a
+generate_par ::
+#ifdef PRIM_MUTABLE_ARRAYS
+  P.Prim a =>
+#endif
+  Int -> (Int -> a) -> Array a
 {-# INLINE generate_par #-}
 generate_par n f =
     let n'  = n `max` 0
@@ -183,7 +214,11 @@ generate_par n f =
           in arr1 `par` arr2 `pseq` append arr1 arr2
 
 {-@ ignore generate_par_m @-}
-generate_par_m :: Int -> (Int -> a) -> P.Par (Array a)
+generate_par_m ::
+#ifdef PRIM_MUTABLE_ARRAYS
+  P.Prim a =>
+#endif
+  Int -> (Int -> a) -> P.Par (Array a)
 {-# INLINE generate_par_m #-}
 generate_par_m n f =
     let n'  = n `max` 0
@@ -205,7 +240,11 @@ generate_par_m n f =
           pure $ append left right
 
 {-@ ignore generate @-}
-generate :: Int -> (Int -> a) -> Array a
+generate ::
+#ifdef PRIM_MUTABLE_ARRAYS
+  P.Prim a =>
+#endif
+  Int -> (Int -> a) -> Array a
 {-# INLINE generate #-}
 generate n f =
     let n'  = n `max` 0
@@ -213,30 +252,44 @@ generate n f =
     in generate_loop arr 0 n' f
 
 {-@ ignore generate_loop @-}
-generate_loop :: Array a -> Int -> Int -> (Int -> a) -> Array a
+generate_loop ::
+#ifdef PRIM_MUTABLE_ARRAYS
+  P.Prim a =>
+#endif
+  Array a -> Int -> Int -> (Int -> a) -> Array a
 generate_loop arr idx end f =
     if idx == end
     then arr
     else let arr1 = set arr idx (f idx)
          in generate_loop arr1 (idx+1) end f
 
-{-@ copy2_par :: xs:_ -> { xi:Nat | xi <= size xs } -> ys:_
+{-@ ignore copy2_par @-}
+{- @ copy2_par :: xs:_ -> { xi:Nat | xi <= size xs } -> ys:_
               -> { yi:Nat | yi <= size ys }
               -> { n:Nat  | xi + n <= size xs && yi + n <= size ys }
               -> { zs:_   | xs == fst zs && snd zs == copy xs xi ys yi n &&
                             size (snd zs) == size ys && token (snd zs) == token ys &&
                             left (snd zs) == left ys && right (snd zs) == right ys } @-}
-copy2_par :: Array a -> Int -> Array a -> Int -> Int -> (Array a, Array a)
+copy2_par ::
+#ifdef PRIM_MUTABLE_ARRAYS
+  P.Prim a =>
+#endif
+  Array a -> Int -> Array a -> Int -> Int -> (Array a, Array a)
 copy2_par src0 src_offset0 dst0 dst_offset0 len0 = (src0, copy_par src0 src_offset0 dst0 dst_offset0 len0)
 
 --TODO: src_offset0 and dst_offset0 are not respected.
-{-@ copy_par :: xs:_ -> { xi:Nat | xi <= size xs } -> ys:_
+{-@ ignore copy_par @-}
+{- @ copy_par :: xs:_ -> { xi:Nat | xi <= size xs } -> ys:_
               -> { yi:Nat | yi <= size ys } 
               -> { n:Nat  | xi + n <= size xs && yi + n <= size ys }
               -> { zs:_   | zs == copy xs xi ys yi n &&
                             size ys == size zs && token ys == token zs &&
                             left ys == left zs && right ys == right zs }  @-}
-copy_par :: Array a -> Int -> Array a -> Int -> Int -> Array a
+copy_par ::
+#ifdef PRIM_MUTABLE_ARRAYS
+  P.Prim a =>
+#endif
+  Array a -> Int -> Array a -> Int -> Int -> Array a
 copy_par src0 src_offset0 dst0 dst_offset0 len0 = copy_par' src0 src_offset0 dst0 dst_offset0 len0
   where
     cutoff = defaultGrainSize len0
@@ -252,7 +305,11 @@ copy_par src0 src_offset0 dst0 dst_offset0 len0 = copy_par' src0 src_offset0 dst
 
 --TODO: src_offset0 and dst_offset0 are not respected.
 {-@ ignore copy_par_m @-}
-copy_par_m :: Array a -> Int -> Array a -> Int -> Int -> P.Par (Array a)
+copy_par_m ::
+#ifdef PRIM_MUTABLE_ARRAYS
+  P.Prim a =>
+#endif
+  Array a -> Int -> Array a -> Int -> Int -> P.Par (Array a)
 copy_par_m !src0 src_offset0 !dst0 dst_offset0 !len0 = copy_par_m' src0 src_offset0 dst0 dst_offset0 len0
   where
     cutoff = defaultGrainSize len0
@@ -314,7 +371,11 @@ lem_get_slice = _todo
 
 {-@ lma_gs :: xs:_ -> n:{v:Nat | v < size xs } -> x:_
       -> {pf:_ | get (set xs n x) n = x} @-}
-lma_gs :: Array a -> Int -> a -> Proof
+lma_gs ::
+#ifdef PRIM_MUTABLE_ARRAYS
+  P.Prim a =>
+#endif
+  Array a -> Int -> a -> Proof
 lma_gs arr n x = lma_gs_list (toList arr) n x
 
 --{-@ lma_gs2 :: xs:_ -> n:{v:Nat | v < size xs } -> x:_
@@ -325,7 +386,11 @@ lma_gs arr n x = lma_gs_list (toList arr) n x
 {-@ lma_gns :: xs:_ -> n:{v:Nat | v < size xs }
           -> m:{v:Nat | v /= n && v < size xs } -> x:_
           -> { pf:_ | get (set xs n x) m = get xs m} @-}
-lma_gns :: Array a -> Int -> Int -> a -> Proof
+lma_gns ::
+#ifdef PRIM_MUTABLE_ARRAYS
+  P.Prim a =>
+#endif
+  Array a -> Int -> Int -> a -> Proof
 lma_gns arr n m x = lma_gns_list (toList arr) n m x
 
 --{-@ lma_gns2 :: xs:_ -> n:{v:Nat | v < size xs }
@@ -339,7 +404,11 @@ lma_gns arr n m x = lma_gns_list (toList arr) n m x
                              -> { j:Int | 0 <= j && j < size xs }
                              -> { pf:_  | get (swap xs i j) i == get xs j &&
                                           get (swap xs i j) j == get xs i } @-}
-lma_swap :: Array a -> Int -> Int -> Proof
+lma_swap ::
+#ifdef PRIM_MUTABLE_ARRAYS
+  P.Prim a =>
+#endif
+  Array a -> Int -> Int -> Proof
 lma_swap xs i j
    | i == j     = () ? lma_gs  xs' j xi
    | i /= j     = () ? lma_gns xs' j i xi        --
@@ -353,7 +422,11 @@ lma_swap xs i j
                                  -> { j:Int | 0 <= j && j < size xs }
                                  -> { k:Int | 0 <= k && k < size xs && k /= i && k /= j }
                                  -> { pf:_  | get (swap xs i j) k == get xs k } @-}
-lma_swap_eql :: Array a -> Int -> Int -> Int -> Proof
+lma_swap_eql ::
+#ifdef PRIM_MUTABLE_ARRAYS
+  P.Prim a =>
+#endif
+  Array a -> Int -> Int -> Int -> Proof
 lma_swap_eql xs i j k = () ? lma_gns xs' j k xi
                            ? lma_gns xs  i k (get xs j)
   where

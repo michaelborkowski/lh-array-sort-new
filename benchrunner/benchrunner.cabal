@@ -17,6 +17,7 @@ executable benchrunner
                       , split
                       , monad-par
                       , time
+                      , primitive
     default-language:   Haskell2010
     default-extensions: TupleSections
                         BangPatterns

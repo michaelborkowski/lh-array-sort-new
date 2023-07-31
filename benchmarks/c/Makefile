@@ -2,7 +2,7 @@ CFILES   = $(wildcard *.c)
 OBJFILES = $(CFILES:.c=.o)
 OUT      = cbench.exe
 
-CLANG       := /scratch/ckoparka/opencilk/bin/clang
+CLANG       := clang-14
 CLANG_FLAGS := -std=gnu11 -fopencilk
 GCC         := gcc-7
 GCC_FLAGS   := -std=gnu11 -lm -fcilkplus
