@@ -5,4 +5,5 @@ Util.sml
 BenchModified.sml
 Insertion.sml
 MergeSortSeq.sml
+(* QuickSort.sml *)
 Entry.sml
