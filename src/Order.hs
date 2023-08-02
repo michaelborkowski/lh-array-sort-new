@@ -92,11 +92,28 @@ lem_isSortedBtw_narrow xs i i' j' j
                                                          isSortedBtw xs i j && isSortedBtw xs j k &&
                                                        ( i == j || get xs (j-1) <= get xs j ) }
                                             -> { pf:_ | isSortedBtw xs i k } / [j - i] @-}
-lem_isSortedBtw_compose :: Ord a => Array a -> Int -> Int -> Int -> Proof
+lem_isSortedBtw_compose :: HasPrimOrd a => Array a -> Int -> Int -> Int -> Proof
 lem_isSortedBtw_compose xs i j k | i == j      = ()
                                  | i + 1 == j  = ()
                                  | otherwise   = () ? lem_isSortedBtw_right   xs i j
                                                     ? lem_isSortedBtw_compose xs i (j-1) k
+
+{-@ lem_isSorted_append :: { xs:Array a | isSorted' xs }
+        -> { ys:Array a | isSorted' ys && 
+                          token xs == token ys && right xs == left ys &&
+                          ( size xs == 0 || size ys == 0 || get xs ((size xs)-1) <= get ys 0) }
+        -> { pf:_ | isSorted' (append xs ys) } @-}
+lem_isSorted_append :: HasPrimOrd a => Array a -> Array a -> Proof
+lem_isSorted_append xs ys 
+  = if size ys == 0 
+    then lem_slice_append xs ys
+        ? lem_isSortedBtw_from_slice (append xs ys) 0         (size xs) 
+    else lem_isSortedBtw_compose (append xs ys) 0 (size xs) (size xs + size ys
+        ? lem_slice_append xs ys
+        ? lem_isSortedBtw_from_slice (append xs ys) 0         (size xs) 
+        ? lem_isSortedBtw_from_slice (append xs ys) (size xs) (size xs + size ys)
+        ? (if size ys > 0 then lem_get_append_right xs ys (size xs) else ())
+        ? (if size xs > 0 then lem_get_append_left  xs ys (size xs - 1) else ()) )
 
 {-@ lem_isSorted_copy :: { xs:_ | isSorted' xs } -> { xi:Nat | xi <= size xs } -> ys:_
         -> { yi:Nat | yi <= size ys && isSortedBtw ys 0 yi }
@@ -133,6 +150,25 @@ lem_isSortedBtw_slice' xs i j i' j'
                                     -> { pf:_  | isSorted' (slice xs i j) } @-}
 lem_isSortedBtw_slice :: Ord a => Array a -> Int -> Int -> Proof
 lem_isSortedBtw_slice xs i j = lem_isSortedBtw_slice' xs i j 0 (j-i)
+
+{-@ lem_isSortedBtw_from_slice' :: xs:(Array a) -> { i:Int | 0 <= i }
+                                    -> { j:Int | i <= j && j <= size xs && isSorted' (slice xs i j) }
+                                    -> { i':Int | i <= i' } -> { j':Int | i' <= j' && j' <= j }
+                                    -> { pf:_  | isSortedBtw xs i' j' } / [ j'- i' ] @-}
+lem_isSortedBtw_from_slice' :: Ord a => Array a -> Int -> Int -> Int -> Int -> Proof
+lem_isSortedBtw_from_slice' xs i j i' j'
+    | i' + 1 >= j'  = ()
+    | otherwise     = () ? lem_isSortedBtw_from_slice' xs i j (i'+1) j'
+                         ? lem_get_slice xs i j i'
+                         ? lem_get_slice xs i j (i'+1)
+                         ? lem_isSortedBtw_narrow (slice xs i j) 0 (i'-i) (j'-i) (j-i)
+
+{-@ lem_isSortedBtw_from_slice :: xs:(Array a)  -> { i:Int | 0 <= i }
+                                    -> { j:Int | i <= j && j <= size xs && isSorted' (slice xs i j)}
+                                    -> { pf:_  |  isSortedBtw xs i j } @-}
+lem_isSortedBtw_from_slice :: HasPrimOrd a => Array a -> Int -> Int -> Proof
+lem_isSortedBtw_from_slice xs i j = lem_isSortedBtw_from_slice' xs i j i j
+ 
 
 -- lemma showing set preserves sortedness of indices before n, and if the new
 -- element is greater than the previous, xs is sorted up to n+1

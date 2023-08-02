@@ -253,6 +253,35 @@ append (Arr arr1 l1 _r1 t) (Arr arr2 _l2 r2 _t) = Arr (conc arr1 arr2) l1 r2 t
 -- | Proofs
 --------------------------------------------------------------------------------
 
+{-@ lem_getList_conc_left :: xs:_ -> ys:_  -> { i:Nat | i < len xs }
+        -> { pf:_ | getList (conc xs ys) i == getList xs i } @-}
+lem_getList_conc_left :: [a] -> [a] -> Int -> Proof
+lem_getList_conc_left (x:xs) ys 0 = ()
+lem_getList_conc_left (x:xs) ys i = lem_getList_conc_left xs ys (i-1)
+
+{-@ lem_getList_conc_right :: xs:_ -> ys:_  
+        -> { i:Nat | len xs <= i && i < len xs + len ys }
+        -> { pf:_ | getList (conc xs ys) i == getList ys (i - len xs) } @-}
+lem_getList_conc_right :: [a] -> [a] -> Int -> Proof
+lem_getList_conc_right []     ys i = ()
+lem_getList_conc_right (x:xs) ys i = lem_getList_conc_right xs ys (i-1)
+
+{-@ lem_get_append_left :: xs:Array a
+        -> { ys:Array a | token xs == token ys && right xs == left ys }
+        -> { i:Nat | i < size xs }
+        -> { pf:_  | get (append xs ys) i == get xs i } @-}
+lem_get_append_left :: Array a -> Array a -> Int -> Proof
+lem_get_append_left (Arr xls _ _ _) (Arr yls _ _ _) i 
+    = lem_getList_conc_left xls yls i
+
+{-@ lem_get_append_right :: xs:Array a
+        -> { ys:Array a | token xs == token ys && right xs == left ys }
+        -> { i:Nat | size xs <= i && i < size xs + size ys }
+        -> { pf:_  | get (append xs ys) i == get ys (i - size xs) } @-}
+lem_get_append_right :: Array a -> Array a -> Int -> Proof
+lem_get_append_right (Arr xls _ _ _) (Arr yls _ _ _) i
+    = lem_getList_conc_right xls yls i
+
 -- lemma showing that get n from set n xs x is x
 {-@ lma_gs_list :: xs:_ -> n:{v:Nat | v < len xs } -> x:_
       -> {pf:_ | getList (setList xs n x) n = x} @-}
@@ -269,8 +298,6 @@ lma_gs_list (x:xs) n x'
     ? lma_gs_list xs (n-1) x'
   === x'
   *** QED
-
-
 
 -- lemma showing that get n from set m xs x is
 {-@ lma_gns_list :: xs:_ -> n:{v:Nat | v < len xs } -> m:{v:Nat | v /= n && v < len xs} -> x:_
