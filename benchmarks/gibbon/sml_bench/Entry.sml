@@ -18,5 +18,7 @@ fun mk_rand_slice () =
 
 val _ = print "Insertion Sort:\n"
 val _ = print_bench iters arrsize (isort1 compare_int) mk_rand_slice
-val _ = print "\nMerge Sort:\n"
+val _ = print "\nMergesort:\n"
 val _ = print_bench iters arrsize (mergeSort_seq compare_int) mk_rand_slice
+val _ = print "\nInternal Quicksort"
+val _ = print_bench iters arrsize (fn arr => qsortInternal arr compare_int) mk_rand_slice
