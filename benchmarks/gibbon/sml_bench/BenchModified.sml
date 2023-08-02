@@ -1,3 +1,13 @@
+fun isSorted arr = 
+  let
+    fun aux i = 
+      ArraySlice.length arr <= i + 1 orelse
+        ArraySlice.sub(arr, i) <= ArraySlice.sub(arr, i + 1)
+        andalso aux (i + 1)
+  in
+    aux 0
+  end
+
 fun merge cmp ([], ys) = ys
   | merge cmp (xs, []) = xs
   | merge cmp (xs as x::xs', ys as y::ys') =
@@ -32,6 +42,10 @@ fun dotrial f arg =
       val t1 = Time.now()
       val diff = Time.- (t1, t0)
       val _ = print("iter time: " ^ Time.fmt 8 diff ^ "\n")
+
+      val _ =
+        if isSorted result then ()
+        else raise Fail "Incorrectly sorted!"
     in
       (result, diff)
     end

@@ -10,7 +10,7 @@ fun qsortInternal arr cmp =
             while cmp (!j) (hi - 1) < 1 do
               let
                 val _ = 
-                  if ArraySlice.sub(arr, !j) < pivot then
+                  if cmp (ArraySlice.sub(arr, !j)) pivot < 0 then
                     let
                       val _ = i := !i + 1
                       val tmp = ArraySlice.sub(arr, !i)
