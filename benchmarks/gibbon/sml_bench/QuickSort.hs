@@ -4,9 +4,8 @@ import Gibbon.Vector
 
 quickSort :: Vector Int -> Vector Int
 quickSort xs cmp =
-  let (len, xs1) = size2 xs
-      (hd, xs2) = get2 xs1 0
-      cpy = alloc len hd (\tmp -> copy xs2 0 tmp 0 len)
+  let len = size xs
+      cpy = alloc len
   in quickSortBtw cpy 0 len
 
 quickSortBtw :: Vector Int -> Int -> Int -> Vector Int

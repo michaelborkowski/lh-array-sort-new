@@ -37,43 +37,19 @@ fun qsortInternal arr cmp =
   in
     arr  end
 
-fun alloc vec = ((fn internal__ => ArraySlice.full(Array.array(internal__, 0))) vec)
-and shuffleBtw xs i j = 
-  let val tup_34 = (get2 xs (j - 1)) in 
-  let val piv = (case tup_34 of (x__, _) => x__) in 
-  let val xs1 = (case tup_34 of (_, x__) => x__) in 
-  let fun goShuffle zs jl jr = 
-  (if (jl > jr) then (zs ,  jl) 
-   else 
-  let val tup_30 = (get2 zs jl) in 
-  let val vl = (case tup_30 of (x__, _) => x__) in 
-  let val zs' = (case tup_30 of (_, x__) => x__) in 
-  (if (vl <= piv) then (goShuffle zs' (jl + 1) jr) 
-   else 
-  let val tup_26 = (get2 zs' jr) in 
-  let val vr = (case tup_26 of (x__, _) => x__) in 
-  let val zs'' = (case tup_26 of (_, x__) => x__) in 
-  (if (vr > piv) then (goShuffle zs'' jl (jr - 1)) 
-   else 
-  let val zs''' = (swap zs'' jl jr) in (goShuffle zs''' jl (jr - 1)) end) end end end) end end end) in 
-  let val tup_17 = (goShuffle xs1 i (j - 2)) in 
-  let val xs' = (case tup_17 of (x__, _) => x__) in 
-  let val ip = (case tup_17 of (_, x__) => x__) in 
-  let val xs'' = 
-  (if (ip < (j - 1)) then (swap xs' ip (j - 1)) 
-   else xs') in (xs'' ,  ip) end end end end end end end end
-and quickSortBtw xs i j = 
-  (if ((j - i) < 2) then xs 
-   else 
-  let val tup_9 = (shuffleBtw xs i j) in 
-  let val xs' = (case tup_9 of (x__, _) => x__) in 
-  let val i_piv = (case tup_9 of (_, x__) => x__) in 
-  let val xs'' = (quickSortBtw xs' i i_piv) in 
-  let val xs''' = (quickSortBtw xs'' (i_piv + 1) j) in xs''' end end end end end)
-and quickSort xs cmp = 
-  let val len = (size xs) in 
-  let val cpy = (alloc len) in (quickSortBtw cpy 0 len) end end
-and nth vec i = (ArraySlice.sub(vec , i))
+fun nth vec i = (ArraySlice.sub(vec , i))
+and get v i = (nth v i)
+and inplaceUpdate i val_ vec = let val _ = (ArraySlice.update(vec , i, val_)) in vec end
+and set v i a = (inplaceUpdate i a v)
+and swap xs i j = 
+  let val xi = (get xs i) in 
+  let val xs' = (set xs i (get xs j)) in 
+  let val xs'' = (set xs' j xi) in xs'' end end end
+and get2 ar i = ((get ar i) ,  ar)
+and length vec = (ArraySlice.length vec)
+and size v = (length v)
+and size2 ar = ((size ar) ,  ar)
+and alloc vec = ((fn internal__ => ArraySlice.full(Array.array(internal__, 0))) vec)
 and filter_loop idxs write_at start end_ from to = 
   (if (start = end_) then to 
    else 
@@ -149,7 +125,6 @@ and lscanl f acc vec =
   let val x = vec in (scanl f acc x) end
 and lfoldl f acc vec = 
   let val x = vec in (foldl f acc x) end
-and length vec = (ArraySlice.length vec)
 and update vec i x = (generate (length vec) (fn j => 
   (if (i = j) then x 
    else (ArraySlice.sub(vec , j)))))
@@ -184,7 +159,6 @@ and singleton x =
   let val vec = ((fn internal__ => ArraySlice.full(Array.array(internal__, 0))) 1) in 
   let val vec2 = let val _ = (ArraySlice.update(vec , 0, x)) in vec end in vec2 end end
 and isEmpty vec = ((ArraySlice.length vec) = 0)
-and inplaceUpdate i val_ vec = let val _ = (ArraySlice.update(vec , i, val_)) in vec end
 and inplaceSort cmp vec = (qsortInternal vec cmp)
 and flatten ls = raise (Fail "VConcatP")
 and sort cmp vec = raise (Fail "VSortP")
