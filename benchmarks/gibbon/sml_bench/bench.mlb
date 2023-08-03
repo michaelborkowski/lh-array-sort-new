@@ -3,8 +3,8 @@ $(SML_LIB)/basis/mlton.mlb
 
 Util.sml
 BenchModified.sml
-Insertion.sml
-MergeSortSeq.sml
 QSortShims.sml
 QuickSort.sml
+Insertion.sml
+MergeSortSeq.sml
 Entry.sml

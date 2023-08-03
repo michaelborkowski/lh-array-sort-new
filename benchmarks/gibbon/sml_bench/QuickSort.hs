@@ -2,7 +2,7 @@ module QuickSort where
 
 import Gibbon.Vector
 
-quickSort :: Vector Int -> Vector Int
+quickSort :: Vector Int -> (Int -> Int -> Int) -> Vector Int
 quickSort xs cmp =
   let len = size xs
       cpy = alloc len
