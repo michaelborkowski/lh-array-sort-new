@@ -30,11 +30,12 @@ import qualified Array as A
 
 {-@ reflect goto_seqmerge @-}
 goto_seqmerge :: Int
+#ifdef MUTABLE_ARRAYS
 goto_seqmerge = 4096
+#else 
+goto_seqmerge = 2 
+#endif
 
---      -> { i1:Nat | i1 <= size xs1 } -> { i2:Nat | i2 <= size xs2 }
---      -> { j:Nat  | i1 + i2 == j && j <= size zs }
- 
 -- unlike in merge, these may not have consecutive slices of the source array
 -- input tuple is ((xs1, xs2), zs)    -- TODO: condense the post-conditions
 
@@ -46,9 +47,9 @@ goto_seqmerge = 4096
                     left zs' == left zs && right zs' == right zs  } / [size xs1] @-} 
 merge_par_func :: HasPrimOrd a => A.Array a -> A.Array a -> A.Array a -> A.Array a 
 merge_par_func src1 src2 dst {-!((src1, src2), dst)-} =
-    {-if A.size dst < goto_seqmerge
+    if A.size dst < goto_seqmerge -- unfold this guard?
     then merge_func src1 src2 dst 0 0 0 -- merge src1 src2 dst
-    else-} if n1 == 0
+    else if n1 == 0
          then A.copy src2 0 dst 0 n2 {-
                 let !(src2'1, dst'') = A.copy2_par src2' 0 dst' 0 n2
                  in ((src1', src2'1), dst'') -}  {-? lem_equal_slice_bag  src2'   dst'' 0 (n2
@@ -69,14 +70,9 @@ merge_par_func src1 src2 dst {-!((src1, src2), dst)-} =
                        (dst_l, dst_cr)   = A.splitAt (mid1+mid2) dst
                        (dst_c, dst_r)    = A.splitAt 1           dst_cr
 
-                       dst_l'            = merge_par_func (src1_l {-? lem_isSortedBtw_slice src1 0 mid1-})
-                                                          (src2_l {-? lem_isSortedBtw_slice src2 0 mid2-})
-                                                          dst_l
+                       dst_l'            = merge_par_func src1_l src2_l dst_l
                        dst_c'            = A.set dst_c 0 pivot
-                       dst_r'            = merge_par_func (src1_r {-? lem_isSortedBtw_slice src1 mid1 n1
-                                                                  ? lem_isSortedBtw_slice src1_cr 1 (n1-mid1)-})
-                                                          (src2_r {-? lem_isSortedBtw_slice src2 mid2 n2-})
-                                                          dst_r
+                       dst_r'            = merge_par_func src1_r src2_r dst_r
 
                                       {-
                                       ? lem_toBag_splitAt mid1 src1
@@ -146,11 +142,15 @@ lem_binarySearch_func'_correct ls query lo hi =
     mid    = lo + (hi - lo) `div` 2
     midElt = A.get ls mid  
 
-{- @ lem_merge_par_func_inv_left  :: { xs1:(Array a) | isSorted' xs1 && size xs1 > 0 }
-      -> { xs2:(Array a) | isSorted' xs2 && token xs1 == token xs2 && size xs2 > 0 }
+{-@ lem_merge_par_func_inv_left  :: { xs1:(Array a) | isSorted' xs1 }
+      -> { xs2:(Array a) | isSorted' xs2 && token xs1 == token xs2 }
       -> {  zs:(Array a) | size xs1 + size xs2 == size zs }
-      -> { pf:_   | get (merge_par_func xs1 xs2 zs) 0 == min (get xs1 0) (get xs2 0) }
-@-}
+      -> { piv:_  | (size xs1 == 0 || piv <= get xs1 0 ) &&
+                    (size xs2 == 0 || piv <= get xs2 0 ) }
+      -> { pf:_   | size zs == 0 || piv <= get (merge_par_func xs1 xs2 zs) 0 } @-}
+lem_merge_par_func_inv_left :: HasPrimOrd a => A.Array a -> A.Array a -> A.Array a -> a -> Proof
+lem_merge_par_func_inv_left src1 src2 dst piv = undefined
+
 {-@ lem_merge_par_func_inv_right  :: { xs1:(Array a) | isSorted' xs1 }
       -> { xs2:(Array a) | isSorted' xs2 && token xs1 == token xs2 }
       -> {  zs:(Array a) | size xs1 + size xs2 == size zs }
@@ -159,9 +159,9 @@ lem_binarySearch_func'_correct ls query lo hi =
       -> { pf:_   | size zs == 0 || get (merge_par_func xs1 xs2 zs) (size zs - 1) <= piv } @-}
 lem_merge_par_func_inv_right :: HasPrimOrd a => A.Array a -> A.Array a -> A.Array a -> a -> Proof
 lem_merge_par_func_inv_right src1 src2 dst piv =    
-    {-if A.size dst < goto_seqmerge
-    then ???
-    else-} if n1 == 0
+    if A.size dst < goto_seqmerge
+    then undefined
+    else if n1 == 0
          then undefined -- lem_isSorted_copy src2 0 dst 0 n2
          else if n2 == 0
               then undefined -- lem_isSorted_copy src1 0 dst 0 n1
@@ -200,9 +200,9 @@ lem_merge_par_func_inv_right src1 src2 dst piv =
       -> { pf:_   | isSortedBtw (merge_par_func xs1 xs2 zs) 0 (size zs) } / [size xs1] @-} 
 lem_merge_par_func_sorted :: HasPrimOrd a => A.Array a -> A.Array a -> A.Array a -> Proof
 lem_merge_par_func_sorted src1 src2 dst =
-    {-if A.size dst < goto_seqmerge
-    then lem_merge_func_sorted src1 src2 dst 0 0 0 -- merge src1 src2 dst
-    else-} if n1 == 0
+    if n3 < goto_seqmerge 
+    then lem_merge_func_sorted src1 src2 dst 0 0 0 
+    else if n1 == 0
          then lem_isSorted_copy src2 0 dst 0 n2
          else if n2 == 0
               then lem_isSorted_copy src1 0 dst 0 n1
@@ -228,42 +228,36 @@ lem_merge_par_func_sorted src1 src2 dst =
                                             dst_l )
                                 dst_c'  ? lem_isSorted_append dst_l' (dst_c'
                                         ? lem_merge_par_func_inv_right src1_l src2_l dst_l (pivot
-                                            -- ? toProof (size src1_l === mid1 )
-                                            ? lem_isSortedBtw_narrow src1 0 (max (mid1-1) 0) n1 n1
-    {- src1_l[mid1-1] <= pivot -}           {-? (if (size src1_l == 0) then ()
-                                               else lem_isSortedBtw_narrow src1 0 (mid1-1) n1 n1)-}
+    {- src1_l[mid1-1] <= pivot -}           ? lem_isSortedBtw_narrow src1 0 (max (mid1-1) 0) n1 n1
                                             ? (if (size src1_l == 0) then ()
                                                else lem_get_slice src1    0    mid1 (mid1-1) )  
                                             ? lem_get_slice src1    mid1 n1   mid1
                                             ? lem_get_slice src1_cr 0    1    0  
-                                     {-}         else 
-                                                  lem_isSortedBtw_narrow src1 0 0 n1 n1
-                                                ? lem_get_slice src1    0    n1   0
-                                                ? lem_get_slice src1_cr 0    1    0  -}
                                             ? (if mid2>0 then lem_get_slice src2 0 mid2 (mid2-1) else ())
                                             ? lem_binarySearch_func_correct src2 pivot
                                             ? lma_gs dst_c 0 pivot)))
-                            (dst_r' {-? lem_get_append_right dst_l' dst_c' (mid1 + mid2)
-    {- WTS: pivot < dst_r'[0] -}    ? lem_binarySearch_func_correct src2 pivot
-                                    ? lma_gs dst_c 0 pivot
-{-pivot < src1_r[0] -}              ? lem_isSortedBtw_narrow src1 0 mid1 n1 n1
-                                    ? lem_get_slice src1    mid1 n1 mid1
-                                    ? lem_get_slice src1_cr 0    1  0 
-                                    ? lem_get_slice src1    mid1 n1 (mid1+1)
-                                    ? lem_get_slice src1_cr 1    (n1-mid1) 1 
-{-pivot < src2[mid2] = src2_r[0]-}  ? lem_get_slice src2 mid2 n2 mid2
+                            (dst_r' ? lem_get_append_right dst_l' dst_c' (mid1 + mid2)
                                     ? lem_merge_par_func_sorted 
-                                            (src1_r ? lem_isSortedBtw_slice src1 mid1 n1
-                                                    ? lem_isSortedBtw_slice src1_cr 1 (n1-mid1))
-                                            (src2_r ? lem_isSortedBtw_slice src2 mid2 n2)
-                                            dst_r -})
-                          {-  ? lem_isSortedBtw_build_right 
-                                (A.append dst_l dst_c) 0  (mid1
-                                ? lma_gs dst_c mid1 pivot) -}
+                                          (src1_r ? lem_isSortedBtw_slice src1 mid1 n1
+                                                  ? lem_isSortedBtw_slice src1_cr 1 (n1-mid1))
+                                          (src2_r ? lem_isSortedBtw_slice src2 mid2 n2)
+                                          dst_r
+                                    ? lem_merge_par_func_inv_left src1_r src2_r dst_r (pivot
+    {- WTS: pivot < dst_r'[0] -}          ? lem_binarySearch_func_correct src2 pivot
+                                          ? lma_gs dst_c 0 pivot      
+    {-pivot < src1_r[0] -}                ? lem_isSortedBtw_narrow src1 0 mid1 n1 n1
+                                          ? lem_get_slice src1    mid1 n1 mid1
+                                          ? lem_get_slice src1_cr 0    1  0 
+                                          ? (if mid1 + 1 < n1 then lem_get_slice src1    mid1 n1 (mid1+1) else ())
+                                          ? (if mid1 + 1 < n1 then lem_get_slice src1_cr 1    (n1-mid1) 1 else ())
+    {-pivot < src2[mid2] = src2_r[0]-}    ? (if mid2 < n2 then lem_get_slice src2 mid2 n2 mid2 else ())
+                                    )
+                            )
   where
     n1 = A.size src1
     n2 = A.size src2
     n3 = A.size dst
+
 
 
 {- merge_par' on the main branch:
