@@ -34,11 +34,12 @@ fun median ls =
       List.nth (ls2, idx)
     end
 
-fun dotrial f arg =
+fun dotrial f mk_arg =
     let
       val _  = MLton.GC.collect ()
+      val arg = mk_arg()
       val t0 = Time.now()
-      val result = f (arg())
+      val result = f arg
       val t1 = Time.now()
       val diff = Time.- (t1, t0)
       val _ = print("iter time: " ^ Time.fmt 8 diff ^ "\n")
