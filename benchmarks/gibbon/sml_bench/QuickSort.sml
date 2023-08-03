@@ -1,40 +1,39 @@
 
-fun alloc vec = ((fn internal__ => ArraySlice.full(Array.array(internal__, 0))) vec)
-and shuffleBtw xs cmp i j = 
-  let val tup_36 = (get2 xs (j - 1)) in 
-  let val piv = (case tup_36 of (x__, _) => x__) in 
-  let val xs1 = (case tup_36 of (_, x__) => x__) in 
+fun shuffleBtw xs cmp i j = 
+  let val tup_35 = (get2 xs (j - 1)) in 
+  let val piv = (case tup_35 of (x__, _) => x__) in 
+  let val xs1 = (case tup_35 of (_, x__) => x__) in 
   let fun goShuffle zs jl jr = 
   (if (jl > jr) then (zs ,  jl) 
    else 
-  let val tup_32 = (get2 zs jl) in 
-  let val vl = (case tup_32 of (x__, _) => x__) in 
-  let val zs' = (case tup_32 of (_, x__) => x__) in 
+  let val tup_31 = (get2 zs jl) in 
+  let val vl = (case tup_31 of (x__, _) => x__) in 
+  let val zs' = (case tup_31 of (_, x__) => x__) in 
   (if ((cmp vl piv) < 1) then (goShuffle zs' (jl + 1) jr) 
    else 
-  let val tup_28 = (get2 zs' jr) in 
-  let val vr = (case tup_28 of (x__, _) => x__) in 
-  let val zs'' = (case tup_28 of (_, x__) => x__) in 
+  let val tup_27 = (get2 zs' jr) in 
+  let val vr = (case tup_27 of (x__, _) => x__) in 
+  let val zs'' = (case tup_27 of (_, x__) => x__) in 
   (if ((cmp vr piv) > 0) then (goShuffle zs'' jl (jr - 1)) 
    else 
   let val zs''' = (swap zs'' jl jr) in (goShuffle zs''' jl (jr - 1)) end) end end end) end end end) in 
-  let val tup_19 = (goShuffle xs1 i (j - 2)) in 
-  let val xs' = (case tup_19 of (x__, _) => x__) in 
-  let val ip = (case tup_19 of (_, x__) => x__) in 
+  let val tup_18 = (goShuffle xs1 i (j - 2)) in 
+  let val xs' = (case tup_18 of (x__, _) => x__) in 
+  let val ip = (case tup_18 of (_, x__) => x__) in 
   let val xs'' = 
   (if (ip < (j - 1)) then (swap xs' ip (j - 1)) 
    else xs') in (xs'' ,  ip) end end end end end end end end
 and quickSortBtw xs cmp i j = 
   (if ((j - i) < 2) then xs 
    else 
-  let val tup_10 = (shuffleBtw xs cmp i j) in 
-  let val xs' = (case tup_10 of (x__, _) => x__) in 
-  let val i_piv = (case tup_10 of (_, x__) => x__) in 
+  let val tup_9 = (shuffleBtw xs cmp i j) in 
+  let val xs' = (case tup_9 of (x__, _) => x__) in 
+  let val i_piv = (case tup_9 of (_, x__) => x__) in 
   let val xs'' = (quickSortBtw xs' cmp i i_piv) in 
   let val xs''' = (quickSortBtw xs'' cmp (i_piv + 1) j) in xs''' end end end end end)
 and quickSort xs cmp = 
-  let val len = (size xs) in 
-  let val cpy = (alloc len) in (quickSortBtw cpy cmp 0 len) end end
+  let val len = (size xs) in (quickSortBtw xs cmp 0 len) end
+and alloc vec = ((fn internal__ => ArraySlice.full(Array.array(internal__, 0))) vec)
 and nth vec i = (ArraySlice.sub(vec , i))
 and filter_loop idxs write_at start end_ from to = 
   (if (start = end_) then to 
