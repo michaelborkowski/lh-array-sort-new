@@ -5,7 +5,7 @@ import Gibbon.Vector
 quickSort :: Vector Int -> (Int -> Int -> Int) -> Vector Int
 quickSort xs cmp =
   let len = size xs
-  in quickSortBtw xs cmp 0 len
+  in quickSortBtw (copy xs) cmp 0 len
 
 quickSortBtw :: Vector Int -> (Int -> Int -> Int) -> Int -> Int -> Vector Int
 quickSortBtw xs cmp i j  =

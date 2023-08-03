@@ -1,5 +1,18 @@
 
-fun shuffleBtw xs cmp i j = 
+fun generate_loop vec idx end_ f = 
+  (if (idx = end_) then vec 
+   else 
+  let val vec1 = let val _ = (ArraySlice.update(vec , idx, (f idx))) in vec end in (generate_loop vec1 (idx + 1) end_ f) end)
+and maxInt a b = 
+  (if (a > b) then a 
+   else b)
+and generate n f = 
+  let val n' = (maxInt n 0) in 
+  let val vec = ((fn internal__ => ArraySlice.full(Array.array(internal__, 0))) n') in 
+  let val vec1 = (generate_loop vec 0 n' f) in vec1 end end end
+and nth vec i = (ArraySlice.sub(vec , i))
+and copy vec = (generate (ArraySlice.length vec) (fn i => (nth vec i)))
+and shuffleBtw xs cmp i j = 
   let val tup_35 = (get2 xs (j - 1)) in 
   let val piv = (case tup_35 of (x__, _) => x__) in 
   let val xs1 = (case tup_35 of (_, x__) => x__) in 
@@ -32,9 +45,8 @@ and quickSortBtw xs cmp i j =
   let val xs'' = (quickSortBtw xs' cmp i i_piv) in 
   let val xs''' = (quickSortBtw xs'' cmp (i_piv + 1) j) in xs''' end end end end end)
 and quickSort xs cmp = 
-  let val len = (size xs) in (quickSortBtw xs cmp 0 len) end
+  let val len = (size xs) in (quickSortBtw (copy xs) cmp 0 len) end
 and alloc vec = ((fn internal__ => ArraySlice.full(Array.array(internal__, 0))) vec)
-and nth vec i = (ArraySlice.sub(vec , i))
 and filter_loop idxs write_at start end_ from to = 
   (if (start = end_) then to 
    else 
@@ -48,17 +60,6 @@ and foldl_loop idx end_ f acc vec =
    else 
   let val acc1 = (f acc (ArraySlice.sub(vec , idx))) in (foldl_loop (idx + 1) end_ f acc1 vec) end)
 and foldl f acc vec = (foldl_loop 0 (ArraySlice.length vec) f acc vec)
-and generate_loop vec idx end_ f = 
-  (if (idx = end_) then vec 
-   else 
-  let val vec1 = let val _ = (ArraySlice.update(vec , idx, (f idx))) in vec end in (generate_loop vec1 (idx + 1) end_ f) end)
-and maxInt a b = 
-  (if (a > b) then a 
-   else b)
-and generate n f = 
-  let val n' = (maxInt n 0) in 
-  let val vec = ((fn internal__ => ArraySlice.full(Array.array(internal__, 0))) n') in 
-  let val vec1 = (generate_loop vec 0 n' f) in vec1 end end end
 and filter f vec = 
   let val idxs = (generate (ArraySlice.length vec) (fn i => 
   (if (f (nth vec i)) then i 
@@ -122,7 +123,6 @@ and select v1 v2 i =
   (if (i < len) then (ArraySlice.sub(v1 , i)) 
    else (ArraySlice.sub(v2 , (i - len)))) end
 and append v1 v2 = (generate ((ArraySlice.length v1) + (ArraySlice.length v2)) (fn i => (select v1 v2 i)))
-and copy vec = (generate (ArraySlice.length vec) (fn i => (nth vec i)))
 and lcopy vec = (copy vec)
 and slice i n vec = ArraySlice.subslice(vec , i, (SOME n))
 and tail vec = (slice 1 ((ArraySlice.length vec) - 1) vec)
