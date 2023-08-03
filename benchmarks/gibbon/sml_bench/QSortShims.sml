@@ -121,7 +121,7 @@ and singleton x =
   let val vec = ((fn internal__ => ArraySlice.full(Array.array(internal__, 0))) 1) in 
   let val vec2 = let val _ = (ArraySlice.update(vec , 0, x)) in vec end in vec2 end end
 and isEmpty vec = ((ArraySlice.length vec) = 0)
-and inplaceSort cmp vec = (quickSort vec cmp)
+(* and inplaceSort cmp vec = (quickSort vec cmp) *)
 and flatten ls = raise (Fail "VConcatP")
 and sort cmp vec = raise (Fail "VSortP")
 and merge vec1 vec2 = raise (Fail "VMergeP")
