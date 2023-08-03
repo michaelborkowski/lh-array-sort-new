@@ -26,8 +26,7 @@ and generate n f =
   let val n' = (maxInt n 0) in 
   let val vec = ((fn internal__ => ArraySlice.full(Array.array(internal__, 0))) n') in 
   let val vec1 = (generate_loop vec 0 n' f) in vec1 end end end
-and copy vec = (generate (ArraySlice.length vec) (fn i => (nth vec i)))
-and alloc vec = ((fn internal__ => ArraySlice.full(Array.array(internal__, 0))) vec);
+and copy vec = (generate (ArraySlice.length vec) (fn i => (nth vec i)));
 val gotoQuickSort = 8192;
 fun inplaceSort cmp vec = (quickSort vec cmp)
 and minInt a b = 
@@ -90,7 +89,7 @@ and writeSort1_seq cmp src tmp =
   let val tmp_r1 = (writeSort2_seq cmp src_r tmp_r) in 
   let val res = (writeMerge_seq cmp tmp_l1 tmp_r1 src) in res end end end end end end end end end end) end
 and mergeSort'_seq cmp src = 
-  let val tmp = (alloc (length src)) in 
+  let val tmp = (copy src) in 
   let val tmp2 = (writeSort1_seq cmp src tmp) in src end end
 and mergeSort_seq cmp vec = 
   let val vec2 = (copy vec) in 
@@ -140,6 +139,7 @@ and minFloat a b =
 and maxFloat a b = 
   (if (a > b) then a 
    else b)
+and alloc vec = ((fn internal__ => ArraySlice.full(Array.array(internal__, 0))) vec)
 and filter_loop idxs write_at start end_ from to = 
   (if (start = end_) then to 
    else 

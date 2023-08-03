@@ -144,7 +144,7 @@ mergeSort'_seq :: (a -> a -> Int) -> Vector a -> Vector a
 {-# INLINE mergeSort'_seq #-}
 mergeSort'_seq cmp src =
     let tmp :: Vector a
-        tmp = alloc (length src)
+        tmp = copy src
         tmp2 = writeSort1_seq cmp src tmp
     in src
 
