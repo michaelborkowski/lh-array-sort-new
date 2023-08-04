@@ -240,6 +240,18 @@ lem_get_toSlice :: Eq a => Array a -> Array a -> Int -> Int -> Int -> Proof
 lem_get_toSlice xs ys l i r | l == i     = ()
                             | otherwise  = () ? lem_get_toSlice xs ys (l+1) i r
 
+{-@ lem_get_toSlice' :: xs:_ ->  ys:(Array a)
+          -> l:Nat  -> { i:Nat  | l  <= i } -> { r:Nat  | i  < r  && r  <= A.size xs }
+          -> l':Nat -> { i':Nat | l' <= i'} -> { r':Nat | i' < r' && r' <= A.size ys &&
+                                                    r - l == r' - l' && i - l == i' - l' && 
+                                                    toSlice xs l r == toSlice ys l' r' }
+                            -> { pf:_ | A.get xs i == A.get ys i' } / [r - l] @-}
+lem_get_toSlice' :: Eq a => Array a -> Array a 
+                            -> Int -> Int -> Int -> Int -> Int -> Int -> Proof
+lem_get_toSlice' xs ys l i r l' i' r'
+    | l == i     = ()
+    | otherwise  = () ? lem_get_toSlice' xs ys (l+1) i r (l'+1) i' r'
+
 {-@ lem_toSlice_set_left :: xs:_ -> { i:Nat | i < A.size xs } -> v:a
                                  -> l:Nat -> { r:Nat | l <= r && r <= i }
                                  -> { pf:_  | toSlice (A.set xs i v) l r == toSlice xs l r } / [r-l] @-}

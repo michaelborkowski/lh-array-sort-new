@@ -41,18 +41,16 @@ merge_func :: Ord a => A.Array a -> A.Array a -> A.Array a ->
                 Int -> Int -> Int -> A.Array a 
 merge_func src1 src2 dst i1 i2 j =
     if i1 >= len1
-    then {-let dst' =-} A.copy src2 i2 dst j (len2-i2) {- in ((src1, src2), dst')-}     
+    then A.copy src2 i2 dst j (len2-i2) 
     else if i2 >= len2
-    then {-let  dst' =-} A.copy src1 i1 dst j (len1-i1) {-in ((src1, src2), dst')-}    
+    then A.copy src1 i1 dst j (len1-i1) 
     else if (A.get src1 i1) < (A.get src2 i2)
-         then {-let dst' =-} merge_func src1 src2 (A.set dst j (A.get src1 i1)) (i1+1) i2 (j+1)
-              {-in ((src1, src2), dst')-}       
-          else {-let dst' =-} merge_func src1 src2 (A.set dst j (A.get src2 i2)) i1 (i2+1) (j+1)
-               {-in ((src1, src2), dst')-}   
+         then merge_func src1 src2 (A.set dst j (A.get src1 i1)) (i1+1) i2 (j+1)
+         else merge_func src1 src2 (A.set dst j (A.get src2 i2)) i1 (i2+1) (j+1)
   where 
     len1 = A.size src1
     len2 = A.size src2
-                             -- We may be able to remove this one entirely
+
 {-@ lem_merge_func_untouched :: xs1:(Array a) -> { xs2:(Array a) | token xs1 == token xs2 }
       -> { zs:(Array a) | size xs1 + size xs2 == size zs }
       -> { i1:Nat | i1 <= size xs1 } -> { i2:Nat | i2 <= size xs2 }
@@ -180,6 +178,59 @@ lem_merge_func_equiv src1 src2 dst i1 i2 j
     len1 = A.size src1
     len2 = A.size src2  
 
+-- these invariant facts are needed to establish invariants of
+--    the parallel merge algorithm    
+{-@ lem_merge_func_inv_left  :: { xs1:(Array a) | isSorted' xs1 }
+      -> { xs2:(Array a) | isSorted' xs2 && token xs1 == token xs2 }
+      -> {  zs:(Array a) | size xs1 + size xs2 == size zs }
+      -> { piv:_  | (size xs1 == 0 || piv <= get xs1 0 ) &&
+                    (size xs2 == 0 || piv <= get xs2 0 ) }
+      -> { pf:_   | size zs == 0 || piv <= get (merge_func xs1 xs2 zs 0 0 0) 0 } @-}
+lem_merge_func_inv_left :: HasPrimOrd a => A.Array a -> A.Array a -> A.Array a -> a -> Proof
+lem_merge_func_inv_left src1 src2 dst piv = 
+    if 0 >= len1 && 0 >= len2 then ()
+    else if 0 >= len1
+    then lem_copy_equal_slice src2 0 dst 0 len2 
+    else if 0 >= len2
+    then lem_copy_equal_slice src1 0 dst 0 len1 
+    else if (A.get src1 0) < (A.get src2 0)
+         then lma_gs dst 0 (A.get src1 0)
+            ? lem_merge_func_untouched src1 src2 (A.set dst 0 (A.get src1 0)) 1 0 1
+         else lma_gs dst 0 (A.get src2 0) 
+            ? lem_merge_func_untouched src1 src2 (A.set dst 0 (A.get src2 0)) 0 1 1
+  where 
+    len1 = A.size src1
+    len2 = A.size src2
+
+{-@ lem_merge_func_inv_right  :: { xs1:(Array a) | isSorted' xs1 }
+      -> { xs2:(Array a) | isSorted' xs2 && token xs1 == token xs2 }
+      -> {  zs:(Array a) | size xs1 + size xs2 == size zs }
+      -> { piv:_  | (size xs1 == 0 || get xs1 (size xs1 - 1) <= piv ) &&
+                    (size xs2 == 0 || get xs2 (size xs2 - 1) <= piv ) }
+      -> { i1:Nat | i1 <= size xs1 } -> { i2:Nat | i2 <= size xs2 }
+      -> { j:Nat  | i1 + i2 == j && (size zs == 0 || j < size zs) }
+      -> { pf:_   | size zs == 0 || get (merge_func xs1 xs2 zs i1 i2 j) (size zs - 1) <= piv } 
+       / [size zs - j] @-}
+lem_merge_func_inv_right :: HasPrimOrd a => A.Array a -> A.Array a -> A.Array a 
+                              -> a -> Int -> Int -> Int -> Proof
+lem_merge_func_inv_right src1 src2 dst piv i1 i2 j =    
+    if len3 == 0 then ()
+    else if i1 >= len1
+    then lem_get_toSlice' src2 (A.copy src2 i2 dst j (len2-i2)) 
+              i2 (len2-1) len2 j (len3-1) (len3
+                  ? lem_copy_equal_slice src2 i2 dst  j (len2-i2))
+    else if i2 >= len2
+    then lem_get_toSlice' src1 (A.copy src1 i1 dst j (len1-i1)) 
+              i1 (len1-1) len1 j (len3-1) (len3
+                  ? lem_copy_equal_slice src1 i1 dst j (len1-i1)) 
+    else if (A.get src1 i1) < (A.get src2 i2)
+         then lem_merge_func_inv_right src1 src2 (A.set dst j (A.get src1 i1)) piv (i1+1) i2 (j+1)
+         else lem_merge_func_inv_right src1 src2 (A.set dst j (A.get src2 i2)) piv i1 (i2+1) (j+1)
+  where 
+    len1 = A.size src1
+    len2 = A.size src2
+    len3 = A.size dst
+    
 --------------------------------------------------------------------------------
 -- | Sequential Fallback: Implementation
 --------------------------------------------------------------------------------    
@@ -218,7 +269,6 @@ merge' !src1 !src2 !dst i1 i2 j =
              !(src_tup, dst'') =  merge' src1'1 src2'1 dst' i1 (i2 + 1) (j + 1) in
          (src_tup, dst'') 
 
-             -- unneeded:            fst (fst t) == xs1 && snd (fst t) == xs2 &&
 {-@ merge :: { xs1:(Array a) | isSorted' xs1 }
           -> { xs2:(Array a) | isSorted' xs2 && token xs1 == token xs2  }
           -> {  zs:(Array a) | size xs1 + size xs2 == size zs }
