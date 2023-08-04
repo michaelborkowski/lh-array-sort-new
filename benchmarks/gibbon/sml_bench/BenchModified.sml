@@ -1,9 +1,14 @@
-fun isSorted arr = 
+fun slice_eq_exn (s1, s2) = 
   let
+    val len = ArraySlice.length s1
+    val _ = 
+      if ArraySlice.length s2 = len then ()
+      else raise Fail "Mismatched lengths"
     fun aux i = 
-      ArraySlice.length arr <= i + 1 orelse
-        ArraySlice.sub(arr, i) <= ArraySlice.sub(arr, i + 1)
-        andalso aux (i + 1)
+      if i < len then
+        if ArraySlice.sub(s1, i) = ArraySlice.sub(s2, i) then ()
+        else raise Fail "Unequal slices"
+      else aux (i + 1)
   in
     aux 0
   end
@@ -19,8 +24,8 @@ fun sort cmp [] = []
   | sort cmp [x] = [x]
   | sort cmp xs =
     let
-      val ys = List.take (xs, length xs div 2)
-      val zs = List.drop (xs, length xs div 2)
+      val ys = List.take (xs, List.length xs div 2)
+      val zs = List.drop (xs, List.length xs div 2)
     in
       merge cmp (sort cmp ys, sort cmp zs)
     end
@@ -44,9 +49,7 @@ fun dotrial f mk_arg =
       val diff = Time.- (t1, t0)
       val _ = print("iter time: " ^ Time.fmt 8 diff ^ "\n")
 
-      val _ =
-        if isSorted result then ()
-        else raise Fail "Incorrectly sorted!"
+      val _ = slice_eq_exn(result, isort1 compare_int arg)
     in
       (result, diff)
     end

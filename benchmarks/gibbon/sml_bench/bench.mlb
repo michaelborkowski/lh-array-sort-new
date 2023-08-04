@@ -1,12 +1,12 @@
 $(SML_LIB)/basis/basis.mlb
 $(SML_LIB)/basis/mlton.mlb
 
-Util.sml
-BenchModified.sml
 QSortShims.sml
 QuickSort.sml
 Insertion.sml
-(* MergeSortSeq.sml *)
+Util.sml
+BenchModified.sml
+MergeSortSeq.sml
 DpsMerge.sml
 DpsMergeSort.sml
 Entry.sml
