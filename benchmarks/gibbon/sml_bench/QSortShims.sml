@@ -20,23 +20,12 @@ and swap xs i j =
   let val xi = (get xs i) in 
   let val xs' = (set xs i (get xs j)) in 
   let val xs'' = (set xs' j xi) in xs'' end end end
-and generate_loop vec idx end_ f = 
-  (if (idx = end_) then vec 
-   else 
-  let val vec1 = let val _ = (ArraySlice.update(vec , idx, (f idx))) in vec end in (generate_loop vec1 (idx + 1) end_ f) end)
-and generate n f = 
-  let val n' = (maxInt n 0) in 
-  let val vec = ((fn internal__ => ArraySlice.full(Array.array(internal__, 0))) n') in 
-  let val vec1 = (generate_loop vec 0 n' f) in vec1 end end end
-and copy vec = (generate (ArraySlice.length vec) (fn i => (nth vec i)))
-and copy2 a wildcard__10 b wildcard__13 wildcard__15 = 
-  let val c = (copy b) in 
-  let val len = (length c) in 
-  let fun aux i = 
-  (if (i < len) then 
-  let val wildcard__21 = (set c i (get a i)) in (aux (i + 1)) end 
+and copy2 a i b j n = 
+  let fun aux k = 
+  (if (k < n) then 
+  let val wildcard__18 = (set b (k + i) (get a (k + j))) in (aux (i + 1)) end 
    else ()) in 
-  let val wildcard__17 = (aux 0) in (a ,  c) end end end end
+  let val wildcard__14 = (aux 0) in (a ,  b) end end
 and get2 ar i = ((get ar i) ,  ar)
 and size v = (length v)
 and size2 ar = ((size ar) ,  ar)
@@ -54,6 +43,14 @@ and foldl_loop idx end_ f acc vec =
    else 
   let val acc1 = (f acc (ArraySlice.sub(vec , idx))) in (foldl_loop (idx + 1) end_ f acc1 vec) end)
 and foldl f acc vec = (foldl_loop 0 (ArraySlice.length vec) f acc vec)
+and generate_loop vec idx end_ f = 
+  (if (idx = end_) then vec 
+   else 
+  let val vec1 = let val _ = (ArraySlice.update(vec , idx, (f idx))) in vec end in (generate_loop vec1 (idx + 1) end_ f) end)
+and generate n f = 
+  let val n' = (maxInt n 0) in 
+  let val vec = ((fn internal__ => ArraySlice.full(Array.array(internal__, 0))) n') in 
+  let val vec1 = (generate_loop vec 0 n' f) in vec1 end end end
 and filter f vec = 
   let val idxs = (generate (ArraySlice.length vec) (fn i => 
   (if (f (nth vec i)) then i 
@@ -116,6 +113,7 @@ and select v1 v2 i =
   (if (i < len) then (ArraySlice.sub(v1 , i)) 
    else (ArraySlice.sub(v2 , (i - len)))) end
 and append v1 v2 = (generate ((ArraySlice.length v1) + (ArraySlice.length v2)) (fn i => (select v1 v2 i)))
+and copy vec = (generate (ArraySlice.length vec) (fn i => (nth vec i)))
 and lcopy vec = (copy vec)
 and slice i n vec = ArraySlice.subslice(vec , i, (SOME n))
 and tail vec = (slice 1 ((ArraySlice.length vec) - 1) vec)

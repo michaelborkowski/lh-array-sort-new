@@ -18,20 +18,16 @@ get2 :: Vector Int -> Int -> (Int, Vector Int)
 get2 ar i = (get ar i, ar)
 
 copy2 :: Vector a -> Int -> Vector a -> Int -> Int -> (Vector a, Vector a)
-copy2 a _ b _ _ = 
+copy2 a i b j n = 
   let
-    c = copy b
-    len = length c
-    aux i = 
-      if i < len then
-        let
-          _ = set c i (get a i)
-        in
-          aux (i + 1)
+    aux k = 
+      if k < n then
+        let _ = set b (k+i) (get a (k+j)) in
+        aux (i + 1)
       else ()
     _ = aux 0
   in
-  (a, c)
+    (a, b)
 
 swap :: Vector Int -> Int -> Int -> Vector Int
 swap xs i j = 
