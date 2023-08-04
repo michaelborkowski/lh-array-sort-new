@@ -6,7 +6,8 @@ QuickSort.sml
 Insertion.sml
 Util.sml
 BenchModified.sml
-MergeSortSeq.sml
-DpsMerge.sml
-DpsMergeSort.sml
+(* MergeSortSeq.sml *)
+(* DpsMerge.sml *)
+(* DpsMergeSort.sml *)
+Merge.sml
 Entry.sml

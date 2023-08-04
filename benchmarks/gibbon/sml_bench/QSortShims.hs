@@ -17,8 +17,21 @@ size2 ar = (size ar, ar)
 get2 :: Vector Int -> Int -> (Int, Vector Int)
 get2 ar i = (get ar i, ar)
 
-copy2 :: Vector a -> (Vector a, Vector a)
-copy2 a _ _ _ _ = (copy a, a)
+copy2 :: Vector a -> Int -> Vector a -> Int -> Int -> (Vector a, Vector a)
+copy2 a _ b _ _ = 
+  let
+    c = copy b
+    len = length c
+    aux i = 
+      if i < len then
+        let
+          _ = set c i (get a i)
+        in
+          aux (i + 1)
+      else ()
+    _ = aux 0
+  in
+  (a, c)
 
 swap :: Vector Int -> Int -> Int -> Vector Int
 swap xs i j = 
