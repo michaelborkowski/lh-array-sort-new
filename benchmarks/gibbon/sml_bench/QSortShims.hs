@@ -17,9 +17,15 @@ size2 ar = (size ar, ar)
 get2 :: Vector Int -> Int -> (Int, Vector Int)
 get2 ar i = (get ar i, ar)
 
+copy2 :: Vector a -> (Vector a, Vector a)
+copy2 a _ _ _ _ = (copy a, a)
+
 swap :: Vector Int -> Int -> Int -> Vector Int
 swap xs i j = 
   let xi  = get xs i
       xs' = set xs i (get xs j)
       xs'' = set xs' j xi
   in xs''
+
+splitMid :: Vector a -> (Vector a, Vector a)
+splitMid v0 = splitAt (length v0 / 2) v0

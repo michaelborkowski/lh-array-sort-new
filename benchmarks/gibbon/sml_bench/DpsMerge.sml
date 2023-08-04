@@ -1,39 +1,56 @@
 
-fun nth vec i = (ArraySlice.sub(vec , i))
-and get v i = (nth v i)
-and length vec = (ArraySlice.length vec)
-and maxInt a b = 
-  (if (a > b) then a 
-   else b)
-and minInt a b = 
-  (if (a < b) then a 
-   else b)
-and splitAt n vec = 
-  let val len = (ArraySlice.length vec) in 
-  let val n' = (maxInt n 0) in 
-  let val m = (minInt n' len) in 
-  let val m' = (maxInt 0 (len - n')) in (ArraySlice.subslice(vec , 0, (SOME m)) ,  ArraySlice.subslice(vec , m, (SOME m'))) end end end end
-and splitMid v0 = (splitAt ((length v0) div 2) v0)
-and inplaceUpdate i val_ vec = let val _ = (ArraySlice.update(vec , i, val_)) in vec end
-and set v i a = (inplaceUpdate i a v)
-and swap xs i j = 
-  let val xi = (get xs i) in 
-  let val xs' = (set xs i (get xs j)) in 
-  let val xs'' = (set xs' j xi) in xs'' end end end
-and generate_loop vec idx end_ f = 
+fun generate_loop vec idx end_ f = 
   (if (idx = end_) then vec 
    else 
   let val vec1 = let val _ = (ArraySlice.update(vec , idx, (f idx))) in vec end in (generate_loop vec1 (idx + 1) end_ f) end)
+and maxInt a b = 
+  (if (a > b) then a 
+   else b)
 and generate n f = 
   let val n' = (maxInt n 0) in 
   let val vec = ((fn internal__ => ArraySlice.full(Array.array(internal__, 0))) n') in 
   let val vec1 = (generate_loop vec 0 n' f) in vec1 end end end
-and copy vec = (generate (ArraySlice.length vec) (fn i => (nth vec i)))
-and copy2 a wildcard__10 wildcard__12 wildcard__14 wildcard__16 = ((copy a) ,  a)
-and get2 ar i = ((get ar i) ,  ar)
-and size v = (length v)
-and size2 ar = ((size ar) ,  ar)
+and select v1 v2 i = 
+  let val len = (ArraySlice.length v1) in 
+  (if (i < len) then (ArraySlice.sub(v1 , i)) 
+   else (ArraySlice.sub(v2 , (i - len)))) end
+and append v1 v2 = (generate ((ArraySlice.length v1) + (ArraySlice.length v2)) (fn i => (select v1 v2 i)))
+and merge' cmp src1 src2 dst i1 i2 j = 
+  let val tup_37 = (size2 src1) in 
+  let val len1 = (case tup_37 of (x__, _) => x__) in 
+  let val src1' = (case tup_37 of (_, x__) => x__) in 
+  let val tup_33 = (size2 src2) in 
+  let val len2 = (case tup_33 of (x__, _) => x__) in 
+  let val src2' = (case tup_33 of (_, x__) => x__) in 
+  (if (i1 >= len1) then 
+  let val tup_7 = (copy2 src2' i2 dst j (len2 - i2)) in 
+  let val src2'1 = (case tup_7 of (x__, _) => x__) in 
+  let val dst' = (case tup_7 of (_, x__) => x__) in ((append src1' src2'1) ,  dst') end end end 
+   else 
+  (if (i2 >= len2) then 
+  let val tup_11 = (copy2 src1' i1 dst j (len1 - i1)) in 
+  let val src1'1 = (case tup_11 of (x__, _) => x__) in 
+  let val dst' = (case tup_11 of (_, x__) => x__) in ((append src1'1 src2') ,  dst') end end end 
+   else 
+  let val tup_29 = (get2 src1' i1) in 
+  let val v1 = (case tup_29 of (x__, _) => x__) in 
+  let val src1'1 = (case tup_29 of (_, x__) => x__) in 
+  let val tup_25 = (get2 src2' i2) in 
+  let val v2 = (case tup_25 of (x__, _) => x__) in 
+  let val src2'1 = (case tup_25 of (_, x__) => x__) in 
+  (if ((cmp v1 v2) < 0) then 
+  let val dst' = (set dst j v1) in 
+  let val tup_15 = (merge' cmp src1'1 src2'1 dst' (i1 + 1) i2 (j + 1)) in 
+  let val src'' = (case tup_15 of (x__, _) => x__) in 
+  let val dst'' = (case tup_15 of (_, x__) => x__) in (src'' ,  dst'') end end end end 
+   else 
+  let val dst' = (set dst j v2) in 
+  let val tup_20 = (merge' cmp src1'1 src2'1 dst' i1 (i2 + 1) (j + 1)) in 
+  let val src'' = (case tup_20 of (x__, _) => x__) in 
+  let val dst'' = (case tup_20 of (_, x__) => x__) in (src'' ,  dst'') end end end end) end end end end end end)) end end end end end end
+and mergeVerified cmp src1 src2 dst = (merge' cmp src1 src2 dst 0 0 0)
 and alloc vec = ((fn internal__ => ArraySlice.full(Array.array(internal__, 0))) vec)
+and nth vec i = (ArraySlice.sub(vec , i))
 and filter_loop idxs write_at start end_ from to = 
   (if (start = end_) then to 
    else 
@@ -98,21 +115,26 @@ and lscanl f acc vec =
   let val x = vec in (scanl f acc x) end
 and lfoldl f acc vec = 
   let val x = vec in (foldl f acc x) end
+and length vec = (ArraySlice.length vec)
 and update vec i x = (generate (length vec) (fn j => 
   (if (i = j) then x 
    else (ArraySlice.sub(vec , j)))))
 and map f vec = (generate (ArraySlice.length vec) (fn i => (f (ArraySlice.sub(vec , i)))))
 and lmap f vec = 
   let val x = vec in (map f x) end
-and select v1 v2 i = 
-  let val len = (ArraySlice.length v1) in 
-  (if (i < len) then (ArraySlice.sub(v1 , i)) 
-   else (ArraySlice.sub(v2 , (i - len)))) end
-and append v1 v2 = (generate ((ArraySlice.length v1) + (ArraySlice.length v2)) (fn i => (select v1 v2 i)))
+and copy vec = (generate (ArraySlice.length vec) (fn i => (nth vec i)))
 and lcopy vec = (copy vec)
 and slice i n vec = ArraySlice.subslice(vec , i, (SOME n))
 and tail vec = (slice 1 ((ArraySlice.length vec) - 1) vec)
 and head vec = (nth vec 0)
+and minInt a b = 
+  (if (a < b) then a 
+   else b)
+and splitAt n vec = 
+  let val len = (ArraySlice.length vec) in 
+  let val n' = (maxInt n 0) in 
+  let val m = (minInt n' len) in 
+  let val m' = (maxInt 0 (len - n')) in (ArraySlice.subslice(vec , 0, (SOME m)) ,  ArraySlice.subslice(vec , m, (SOME m'))) end end end end
 and lsplitAt' n vec = 
   let val tup_74 = (splitAt n vec) in 
   let val x = (case tup_74 of (x__, _) => x__) in 
@@ -123,7 +145,8 @@ and singleton x =
   let val vec = ((fn internal__ => ArraySlice.full(Array.array(internal__, 0))) 1) in 
   let val vec2 = let val _ = (ArraySlice.update(vec , 0, x)) in vec end in vec2 end end
 and isEmpty vec = ((ArraySlice.length vec) = 0)
-(* and inplaceSort cmp vec = (quickSort vec cmp) *)
+and inplaceUpdate i val_ vec = let val _ = (ArraySlice.update(vec , i, val_)) in vec end
+and inplaceSort cmp vec = (quickSort vec cmp)
 and flatten ls = raise (Fail "VConcatP")
 and sort cmp vec = raise (Fail "VSortP")
 and merge vec1 vec2 = raise (Fail "VMergeP")
