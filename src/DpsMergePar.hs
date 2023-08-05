@@ -336,18 +336,9 @@ lem_merge_par_func_sorted src1 src2 dst =
 -- | Parallel Merge: Implementation
 --------------------------------------------------------------------------------    
 
-{- merge_par' on the main branch:
-               -> { t:_           | B.union (toBag xs1) (toBag xs2) == toBag (snd t) &&
-                                    token (fst (fst t)) == token xs1 && token (snd (fst t)) == token xs2 &&
-                                    token zs  == token (snd t) &&
-                                    left (fst (fst t)) == left xs1 && right (fst (fst t)) == right xs1 &&
-                                    left (snd (fst t)) == left xs2 && right (snd (fst t)) == right xs2 &&
-                                    left (snd t) == left zs  && right (snd t) == right zs  &&
-                                    size (snd t) == size zs } / [size xs1] @-} {-
-                                    isSorted' (snd t) && -}
 {-@ merge_par' :: xs1:(Array a) -> { xs2:(Array a) | token xs1 == token xs2 }
       -> { zs :(Array a) | size xs1 + size xs2 == size zs }
-      -> { t:_   | t == ((xs1, xs2), merge_par_func xs1 xs2 zs) &&
+      -> { t:_   | snd t == merge_par_func xs1 xs2 zs &&
                    token (fst (fst t)) == token xs1 && token (snd (fst t)) == token xs2 &&
                    left (fst (fst t)) == left xs1 && right (fst (fst t)) == right xs1 &&
                    left (snd (fst t)) == left xs2 && right (snd (fst t)) == right xs2 &&
@@ -357,7 +348,7 @@ merge_par' :: (Show a, HasPrimOrd a) => A.Array a -> A.Array a -> A.Array a ->
                                                        ((A.Array a, A.Array a), A.Array a)
 merge_par' !src1 !src2 !dst =
   if A.size dst < goto_seqmerge
-  then merge src1 src2 dst
+  then merge' src1 src2 dst 0 0 0
      ? toProof (merge_par_func src1 src2 dst === merge_func src1 src2 dst 0 0 0)
   else let !(n1, src1') = A.size2 src1
            !(n2, src2') = A.size2 src2
@@ -378,39 +369,28 @@ merge_par' !src1 !src2 !dst =
 
                          (dst_l, dst_cr)   = A.splitAt (mid1+mid2) dst'
                          (dst_c, dst_r)    = A.splitAt 1           dst_cr
-
-
                          !dst_c'           = A.set dst_c 0 pivot
 
-                         -- !((src1_l',src2_l'), dst_l')
-                         --                   = merge_par' (src1_l ? lem_isSortedBtw_slice src1'1 0  mid1)
-                         --                                (src2_l ? lem_isSortedBtw_slice src2'1 0  mid2)
-                         --                                dst_l
-                         -- !((src1_r',src2_r'), dst_r')
-                         --                   = merge_par' (src1_r ? lem_isSortedBtw_slice src1'1 mid1 n1
-                         --                                        ? lem_isSortedBtw_slice src1_cr 1 (n1-mid1))
-                         --                                (src2_r ? lem_isSortedBtw_slice src2'1 mid2 n2)
-                         --                                dst_r
-
-                         (!((src1_l',src2_l'), dst_l'), !((src1_r',src2_r'), dst_r')) {-= (left, right)
-                         (left, right)-} = tuple2 (merge_par' src1_l src2_l) dst_l
+                         (!((src1_l',src2_l'), dst_l'), !((src1_r',src2_r'), dst_r')) 
+                            = (merge_par' src1_l src2_l dst_l) .||. (merge_par' src1_r src2_r dst_r)
+                                                                              {-
+                         (left, right) = tuple2 (merge_par' src1_l src2_l) dst_l
 --                                         ( ( (src1_l ? lem_isSortedBtw_slice src1'1 0  mid1)
 --                                           , (src2_l ? lem_isSortedBtw_slice src2'1 0  mid2) )
 --                                         , dst_l )
-                                                (merge_par' src1_r src2_r) dst_r
+                                                  (merge_par' src1_r src2_r) dst_r
 --                                         ( ( (src1_r ? lem_isSortedBtw_slice src1'1 mid1 n1
 --                                                     ? lem_isSortedBtw_slice src1_cr 1 (n1-mid1))
 --                                           , (src2_r ? lem_isSortedBtw_slice src2'1 mid2 n2) )
 --                                         , dst_r )
-
+                        -}
                          src1_cr'     = A.append src1_c  src1_r'
                          src1'3       = A.append src1_l' src1_cr'
                          src2'3       = A.append src2_l' src2_r'
                          dst''        = A.append dst_l' dst_c'
                          dst'''       = A.append dst''  dst_r' 
-                      in ((src1'3, src2'3), dst''')
-                      
-{- @ reflect binarySearch @-} 
+                      in ((src1'3, src2'3), dst''') 
+
 {-@ binarySearch :: ls:_ -> query:_
                          -> { tup:_ | 0 <= fst tup && fst tup <= size ls &&
                                       snd tup == ls && tup = (binarySearch_func ls query, ls) } @-}
@@ -418,7 +398,6 @@ binarySearch :: HasPrimOrd a => A.Array a -> a -> (Int, A.Array a) -- must be ab
 binarySearch ls query = let (n, ls')  = A.size2 ls
                          in binarySearch' ls' query 0 n
 
-{- @ reflect binarySearch' @ -} 
 {-@ binarySearch' :: ls:_ -> query:_  -> lo:Nat 
                           -> { hi:Nat | lo <= hi && hi <= size ls }
                           -> { tup:_ | 0 <= fst tup && fst tup <= size ls &&
@@ -433,16 +412,15 @@ binarySearch' ls query lo hi = if lo == hi
                                         then binarySearch' ls' query lo      mid
                                         else binarySearch' ls' query (mid+1) hi
                                         
--- unneeded: fst t == A.append xs1 xs2 &&
 {-@ merge_par :: { xs1:(Array a) | isSorted' xs1 }
               -> { xs2:(Array a) | isSorted' xs2 && token xs1 == token xs2 && right xs1 == left xs2 }
               -> {  zs:(Array a) | size xs1 + size xs2 == size zs }
               -> { t:_           | B.union (toBag xs1) (toBag xs2) == toBag (snd t) &&
                                    isSorted' (snd t) &&
-                                   token (fst t) == token xs1 &&
-                                   token zs  == token (snd t) &&
+                                   token (fst t) == token xs1 && token (snd t) == token zs &&
                                    left (fst t) == left xs1 && right (fst t) == right xs2 &&
                                    left (snd t) == left zs  && right (snd t) == right zs  &&
+                                   size (fst t) == size xs1 + size xs2 &&
                                    size (snd t) == size zs } / [size xs1] @-} 
 {-# INLINE merge_par #-}
 {-# SPECIALISE merge_par :: A.Array Float -> A.Array Float -> A.Array Float -> (A.Array Float, A.Array Float) #-}

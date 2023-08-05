@@ -48,6 +48,7 @@ library
 --      Microbench
       QuickSort
 --  the last not quite ready yet?
+      QuickSortCilk
 --      CilkSort
   other-modules:
       Array.List

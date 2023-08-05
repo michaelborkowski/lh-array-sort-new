@@ -56,15 +56,15 @@ msortInplace src tmp =
         (tmp1, tmp2)     = splitMid tmpA
         (tmp3, tmp4)     = splitMid tmpB
         (((src1', tmp1'), (src2', tmp2')), ((src3', tmp3'), (src4', tmp4')))
-                         = tuple4 (msortInplace src1) tmp1 (msortInplace src2) tmp2
-                                  (msortInplace src3) tmp3 (msortInplace src4) tmp4
---                         = (msortInplace src1 tmp1 .||. msortInplace src2 tmp2) .|*|.
-  --                         (msortInplace src3 tmp3 .||. msortInplace src4 tmp4)
+                         = (msortInplace src1 tmp1 .||. msortInplace src2 tmp2) .||.
+                           (msortInplace src3 tmp3 .||. msortInplace src4 tmp4)
+--                         = tuple4 (msortInplace src1) tmp1 (msortInplace src2) tmp2
+--                                  (msortInplace src3) tmp3 (msortInplace src4) tmp4
         tmpA'            = A.append tmp1' tmp2'
         tmpB'            = A.append tmp3' tmp4'
         ((srcA'', tmpA''), (srcB'', tmpB''))
-                         = tuple2 (merge_par src1' src2') tmpA' (merge_par src3' src4') tmpB'
---                         = merge src1' src2' tmpA' .|*|. merge src3' src4' tmpB'
+                         = merge_par src1' src2' tmpA' .||. merge_par src3' src4' tmpB'
+--                         = tuple2 (merge_par src1' src2') tmpA' (merge_par src3' src4') tmpB'
         src''            = A.append srcA'' srcB''
         (tmp''', src''') = merge_par tmpA'' tmpB'' src''
     in  (src''', tmp''') ? lem_toBag_splitMid src

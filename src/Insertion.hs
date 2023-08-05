@@ -142,6 +142,7 @@ lem_insert_func_equiv xs x i
 -- Given xs[0..i] sorted and xs[i] doesn't matter, insert x so that xs[0..i+1] is sorted.
 {-@ insert :: xs:_ -> x:_  -> { i:Nat | i < A.size xs }
            -> { ys:_ | ys == insert_func xs x i &&    
+                       left xs == left ys && right xs == right ys &&
                        A.size ys == A.size xs && token xs == token ys } / [i] @-} 
 insert :: Ord a => A.Array a -> a -> Int -> A.Array a                    
 insert !xs !x 0 = A.set xs 0 x        
@@ -156,6 +157,7 @@ insert !xs !x !i =                 -- sort the element at offset i into the firs
 {-@ isort :: { xs:_ | A.size xs > 1 }  
       -> { i:Nat | i <= A.size xs && isSortedBtw xs 0 i }
       -> { ys:_ | toBag xs == toBag ys   && isSorted' ys &&
+                  left xs == left ys && right xs == right ys &&
                   A.size xs == A.size ys && token xs == token ys } / [A.size xs - i] @-}
 isort :: Ord a => A.Array a -> Int -> A.Array a -- | Sort in-place.
 isort xs i 
@@ -169,7 +171,8 @@ isort xs i
 
 -- TODO: Postcondition: isSorted' ys &&
 {-@ isort_top' :: { xs:_ | A.size xs > 1 } 
-      -> { ys:_ | toBag xs == toBag ys && 
+      -> { ys:_ | toBag xs == toBag ys &&  
+                  left xs == left ys && right xs == right ys &&
                   A.size xs == A.size ys && token xs == token ys } @-}
 isort_top' :: Ord a => A.Array a -> A.Array a
 isort_top' xs = isort xs 0

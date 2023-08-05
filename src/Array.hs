@@ -86,7 +86,8 @@ type HasPrimOrd a =
 
 {-# INLINE alloc #-}
 {-@ alloc :: forall <p :: Ur b -> Bool>. n:Nat -> x:_ 
-                -> f:({ys:(Array a) | size ys == n} -> Ur<p> b) -> ret:Ur<p> b @-}
+                -> f:({ ys:(Array a) | size ys == n && left ys == 0 && right ys == n } 
+                            -> Ur<p> b) -> ret:Ur<p> b @-}
 alloc ::
 #ifdef PRIM_MUTABLE_ARRAYS
   P.Prim a =>
@@ -263,8 +264,7 @@ generate_loop arr idx end f =
     else let arr1 = set arr idx (f idx)
          in generate_loop arr1 (idx+1) end f
 
-{- @ ignore copy2_par @-}
-{-@ assume copy2_par :: xs:_ -> { xi:Nat | xi <= size xs } -> ys:_
+{-@ copy2_par :: xs:_ -> { xi:Nat | xi <= size xs } -> ys:_
               -> { yi:Nat | yi <= size ys }
               -> { n:Nat  | xi + n <= size xs && yi + n <= size ys }
               -> { zs:_   | xs == fst zs && snd zs == copy xs xi ys yi n &&
@@ -279,17 +279,18 @@ copy2_par src0 src_offset0 dst0 dst_offset0 len0 = (src0, copy_par src0 src_offs
 
 --TODO: src_offset0 and dst_offset0 are not respected.
 {- @ ignore copy_par @-}
-{-@ assume copy_par :: xs:_ -> { xi:Nat | xi <= size xs } -> ys:_
-              -> { yi:Nat | yi <= size ys } 
-              -> { n:Nat  | xi + n <= size xs && yi + n <= size ys }
-              -> { zs:_   | zs == copy xs xi ys yi n &&
-                            size ys == size zs && token ys == token zs &&
-                            left ys == left zs && right ys == right zs }  @-}
+{-@ copy_par :: xs:_ -> { xi:Nat | xi <= size xs } -> ys:_
+                     -> { yi:Nat | yi <= size ys } 
+                     -> { n:Nat  | xi + n <= size xs && yi + n <= size ys }
+                     -> { zs:_   | zs == copy xs xi ys yi n &&
+                                   size ys == size zs && token ys == token zs &&
+                                   left ys == left zs && right ys == right zs }  @-}
 copy_par ::
 #ifdef PRIM_MUTABLE_ARRAYS
   P.Prim a =>
 #endif
   Array a -> Int -> Array a -> Int -> Int -> Array a
+#ifdef PRIM_MUTABLE_ARRAYS  
 copy_par src0 src_offset0 dst0 dst_offset0 len0 = copy_par' src0 src_offset0 dst0 dst_offset0 len0
   where
     cutoff = defaultGrainSize len0
@@ -302,6 +303,9 @@ copy_par src0 src_offset0 dst0 dst_offset0 len0 = copy_par' src0 src_offset0 dst
                left = copy_par' src_l 0 dst_l 0 half
                right = copy_par' src_r 0 dst_r 0 (len-half)
            in left `par` right `pseq` append left right
+#else
+copy_par src0 src_offset0 dst0 dst_offset0 len0 = copy src0 src_offset0 dst0 dst_offset0 len0
+#endif             
 
 --TODO: src_offset0 and dst_offset0 are not respected.
 {-@ ignore copy_par_m @-}

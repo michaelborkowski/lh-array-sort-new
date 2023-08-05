@@ -295,6 +295,24 @@ lem_toSlice_right :: Eq a => Array a -> Int -> Int -> Proof
 lem_toSlice_right xs i j | i + 1 == j  = ()
                          | otherwise   = () ? lem_toSlice_right xs (i+1) j
 
+{-@ lem_toSlice_from_right_append :: xs:_ 
+                      -> { ys:_ | token xs == token ys && right xs == left ys }
+                      -> { i:Nat | A.size xs <= i }
+                      -> { j:Nat | i <= j && j <= A.size xs + A.size ys }
+                      -> { pf:_ | toSlice (append xs ys) i j == toSlice ys (i-size xs) (j-size xs)} 
+                       / [j - i] @-}
+lem_toSlice_from_right_append :: Array a -> Array a -> Proof
+lem_toSlice_from_right_append xs ys i j
+    = lem_get_toSlice' (append xs ys) ys i i j (i-size xs) (i-size xs) (j-size xs)
+    ? lem_toSlice_from_right_append xs ys (i+1) j
+
+{@ lem_toSlice_slice :: xs:_ -> i:Nat  -> { j:Nat  | i <= j && j <= size xs }             
+                             -> i':Nat -> { j':Nat | i' <= j' && j' <= j - i }
+                             -> { pf:_ | toSlice (slice xs i j) i' j' == toSlice xs (i+i') (j+j')} 
+                             / [j' - i'] @-}
+lem_toSlice_slice :: 
+toSlice (slice xs_cr (j-i) (A.size xs - i)) 0 (A.size xs - j)
+
 -- same relative indices in each array, arbitrary narrowing
 {-@ lem_equal_slice_narrow :: xs:(Array a) -> { ys:(Array a) | A.size xs == A.size ys }
                         -> { i:Int | 0 <= i } -> { i':Int | i <= i' } -> { j':Int | i' <= j' }

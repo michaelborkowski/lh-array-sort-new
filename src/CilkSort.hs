@@ -13,7 +13,7 @@ import           DpsMerge
 import           Equivalence
 import           Order
 import           Insertion
-import           QuickSort
+import           QuickSortCilk
 
 #ifdef MUTABLE_ARRAYS
 import           Array.Mutable as A

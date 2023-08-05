@@ -379,6 +379,24 @@ lem_drop_conc :: [a] -> [a] -> Proof
 lem_drop_conc []     ys = ()
 lem_drop_conc (x:xs) ys = () ? lem_drop_conc xs ys
 
+{-@ lem_take_take :: xs:_ -> { i:Nat | i <= len xs } -> { j:Nat | j <= i }
+                  -> { pf:_ | take j (take i xs) == take j xs } @-}
+lem_take_take :: [a] -> Int -> Int -> Proof
+lem_take_take _      i 0 = ()
+lem_take_take (x:xs) i j = lem_take_take xs (i-1) (j-1)
+
+{-@ lem_drop_take :: xs:_ -> { i:Nat | i <= len xs } -> { j:Nat | j <= i }
+                  -> { pf:_ | drop j (take i xs) == take (i-j) (drop j xs) } @-}
+lem_drop_take :: [a] -> Int -> Int -> Proof
+lem_drop_take _      i 0 = ()
+lem_drop_take (x:xs) i j = lem_drop_take xs (i-1) (j-1)
+
+{-@ lem_drop_drop :: xs:_ -> { i:Nat | i <= len xs } -> { j:Nat | j <= len xs - i }
+                  -> { pf:_ | drop j (drop i xs) == drop (j+i) xs } @-}
+lem_drop_drop :: [a] -> Int -> Int -> Proof
+lem_drop_drop _      0 j = ()
+lem_drop_drop (x:xs) i j = lem_drop_drop xs (i-1) j                  
+
 {-@ lem_slice_append :: xs:_ -> { ys:_ | token xs == token ys && right xs == left ys }
                              -> { pf:_ | slice (append xs ys) 0 (size xs) == xs &&
                                          slice (append xs ys) (size xs) (size xs + size ys) == ys } @-}
@@ -386,3 +404,28 @@ lem_slice_append :: Array a -> Array a -> Proof
 lem_slice_append (Arr xls _ _ _) (Arr yls _ _ _)  = () ? lem_take_conc xls yls 
                                                        ? lem_drop_conc xls yls
                                                        ? lem_take_all      yls
+
+{- don't need this one i think
+{-@ lem_slice_from_right_append :: xs:_ 
+                      -> { ys:_ | token xs == token ys && right xs == left ys }
+                      -> { i:Nat | A.size xs <= i }
+                      -> { j:Nat | i <= j && j <= A.size xs + A.size ys }
+                      -> { pf:_ | slice (append xs ys) i j == slice ys (i-size xs) (j-size xs)} @-}
+lem_slice_from_right_append :: Array a -> Array a -> Proof
+lem_slice_from_right_append (Arr xls _ _ _) (Arr yls _ _ _) 
+    = lem_drop_drop (conc xls yls) (len xls) (i - len xls)
+    ? lem_drop_conc xls yls
+-}
+
+{-@ lem_slice_twice :: xs:_ -> i:Nat  -> { j:Nat  | i <= j && j <= size xs }             
+                              -> i':Nat -> { j':Nat | i' <= j' && j' <= j - i }
+                              -> {pf:_ | slice (slice xs i j) i' j' == slice xs (i+i') (i+j') }
+                               / [j' - i'] @-}
+lem_slice_twice :: Eq a => Array a -> Int -> Int -> Int -> Int -> Proof
+lem_slice_twice (Arr xs _ _ _)  i j i' j' 
+    | i' == j'  = ()
+    | otherwise = lem_drop_take (drop i xs) (j-i) i'
+                ? lem_drop_drop xs i i'
+                ? lem_take_take (drop (i+i') xs) (j - i - i') (j' - i')
+                -- LHS = take (j'-i') (drop i' (take (j-i) (drop i xs)))
+                -- RHS = take (j'-i') (drop (i+i') xs)
