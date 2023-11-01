@@ -1,0 +1,13 @@
+$(SML_LIB)/basis/basis.mlb
+$(SML_LIB)/basis/mlton.mlb
+
+QSortShims.sml
+QuickSort.sml
+Insertion.sml
+Util.sml
+BenchModified.sml
+(* MergeSortSeq.sml *)
+(* DpsMerge.sml *)
+(* DpsMergeSort.sml *)
+Merge.sml
+Entry.sml
