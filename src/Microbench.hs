@@ -26,14 +26,18 @@ type HasPrimNum a =
   (Num a)
 #endif
 
+{-@ sumArray :: xs:_ -> a @-}
 sumArray :: HasPrimNum a => A.Array a -> a
 sumArray arr = go 0 0 (A.size arr)
   where
+    {-@ go :: _ -> i:Nat -> { n:Nat | i <= n && n == A.size arr } 
+                -> _ / [n-i] @-}
     go !acc !idx !n =
       if idx == n
       then acc
       else go (acc + A.get arr idx) (idx+1) n
 
+{-@ ignore sumArray_par @-}
 sumArray_par :: HasPrimNum a => Int -> A.Array a -> a
 sumArray_par cutoff = go
   where
@@ -47,6 +51,7 @@ sumArray_par cutoff = go
                  y = go right
              in x `par` y `pseq` x+y
 
+{-@ ignore fillArray @-}
 fillArray ::
 #ifdef PRIM_MUTABLE_ARRAYS
   (P.Prim a) =>

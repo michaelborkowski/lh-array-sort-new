@@ -45,7 +45,7 @@ library
       DpsMergeSort4
       DpsMergeSortPar
       DpsMergeSort4Par
---      Microbench
+      Microbench
       QuickSort
       QuickSortCilk
 --  the last not quite ready yet?
