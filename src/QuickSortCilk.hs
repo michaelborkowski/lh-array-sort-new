@@ -71,21 +71,37 @@ quickSortBtw xs i j  =
            xs_c'         = isort_top' xs_c
            xs_cr'        = A.append   xs_c' xs_r
           in A.append xs_l xs_cr'
-      --     ? lem_slice_twice xs i (A.size xs) (j-i) (A.size xs - i)
-    --       ? lem_slice_append xs_c' xs_r
---           ? lem_slice_from_right_append xs_l  xs_cr' j (A.size xs)
---           ? lem_toSlice_from_right_append xs_c' xs_r (j-i) (A.size xs - i)
-  --         ? lem_slice_twice (A.append xs_l xs_cr') i (A.size xs) (j-i) (A.size xs - i)
+           ? toProof ( True
+                   === isSortedBtw xs_c' 0 (j-i)      
+                     ? lem_isSortedBtw_from_left_append  xs_c' xs_r   0 (j-i) 
+                   === isSortedBtw xs_cr' 0 (j-i) 
+                     ? lem_isSortedBtw_from_right_append xs_l  xs_cr' i j
+                   === isSortedBtw (A.append xs_l xs_cr') i j
+           )
+           ? lem_toBagBtw_slice xs_cr 0 (j-i) 0 (j-i)
+           ? lem_toBagBtw_slice xs i (A.size xs) 0 (j-i)          
+           ? lem_toBagBtw_from_right_append xs_l  xs_cr' i j
+           ? lem_toBagBtw_from_left_append  xs_c' xs_r   0 (j-i)
+           ? lem_toBagBtw_slice xs_cr 0 (j-i) 0 (j-i)
+           ? lem_toBagBtw_slice xs i (A.size xs) 0 (j-i)
+           ? toProof ( toSlice (A.append xs_l xs_cr') 0 i 
+                     ? lem_toSlice_from_left_append xs_l xs_cr' 0 i 
+                   === toSlice xs_l 0 i
+                   === toSlice (slice xs 0 i) 0 i 
+                     ? lem_toSlice_slice xs 0 i 0 i
+                   === toSlice xs 0 i
+           )
            ? toProof ( toSlice (A.append xs_l xs_cr') j (A.size xs)
                      ? lem_toSlice_from_right_append xs_l  xs_cr' j (A.size xs)
                    === toSlice (A.append xs_c' xs_r) (j-i) (A.size xs - i)
                      ? lem_toSlice_from_right_append xs_c' xs_r (j-i) (A.size xs - i)
                    === toSlice xs_r 0 (A.size xs - j)  
                    === toSlice (slice xs_cr (j-i) (A.size xs - i)) 0 (A.size xs - j)
-           )
-           ? toProof ( toSlice xs j (A.size xs)
-                     ?
-                   === 
+                     ? lem_toSlice_slice xs_cr (j-i) (A.size xs - i) 0 (A.size xs - j)
+                   === toSlice xs_cr (j-i) (A.size xs - i)
+                   === toSlice (slice xs i (A.size xs)) (j-i) (A.size xs - i)
+                     ? lem_toSlice_slice xs i (A.size xs) (j-i) (A.size xs - i)
+                   === toSlice xs j (A.size xs)
            )
   else let (xs', i_piv) = shuffleBtw xs i j   -- isPartitionedBtw xs' i i_piv j
            xs''         = quickSortBtw xs'  i           i_piv
@@ -164,6 +180,18 @@ shuffleBtw xs i j =
    in (xs'', ip)
 --  where
 
+ -- | This belongs in Equivalence.hs but causes a Fixpoint panic if it's there
+{-@ lem_toSlice_slice :: xs:_ -> i:Nat  -> { j:Nat  | i <= j && j <= A.size xs }             
+                             -> i':Nat -> { j':Nat | i' <= j' && j' <= j - i }
+                             -> { pf:_ | toSlice (slice xs i j) i' j' == toSlice xs (i+i') (i+j')} 
+                             / [j' - i'] @-}
+lem_toSlice_slice :: (HasPrimOrd a, Eq a) => Array a -> Int -> Int -> Int -> Int -> Proof
+lem_toSlice_slice xs i j i' j'
+    | i' >= j'  = ()
+    | otherwise = lem_get_slice xs i j (i'+i)
+                ? lem_toSlice_slice xs i j (i'+1) j'
+
+
  -- | The remaining definitions and lemmas pertain to the partition property w/r/t the pivot element
 
 {-@ reflect belowPivot @-}
@@ -195,7 +223,6 @@ isPartitionedBtw :: HasPrimOrd a => Array a -> Int -> Int -> Int -> Bool
 isPartitionedBtw xs i i_piv j = rangeUpperBound xs i           i_piv   (get xs i_piv)   &&
                                 rangeLowerBound xs (i_piv + 1) j       (get xs i_piv)
 
-{-@ ple lem_range_outside_swap @-}
 {-@ lem_range_outside_swap :: xs:(Array a) -> { i:Int | 0 <= i }
                            -> { jl:Int | i <= jl } -> { jr:Int | jl < jr }
                            -> { j:Int  | jr <= j-1 && j <= size xs }
@@ -213,7 +240,6 @@ lem_range_outside_swap xs i jl jr j piv
                       ? lem_rangeProperty_build_right (swap xs jl jr) (abovePivot piv) (jr+1) (j-1)
     | otherwise  = ()
 
-{-@ ple lem_range_inside_swap @-}
 {-@ lem_range_inside_swap :: xs:(Array a) -> { jl:Int | 0 <= jl }
                   -> { jr:Int | jl < jr && jr < size xs &&
                                 rangeLowerBound xs jl jr (get xs jr) }
@@ -233,7 +259,6 @@ lem_range_inside_swap xs jl jr = () ? lma_swap xs jl jr
 
 
   -- Lemmas addressing how recursive calls to quickSortBtw preserve the partition property
-{-@ ple lem_qs_pres_partition_left @-}
 {-@ lem_qs_pres_partition_left  :: xs:(Array a) -> { ys:(Array a) | size xs == size ys }
                                 -> { i:Int | 0 <= i } -> { i_piv:Int | i <= i_piv }
                                 -> { j:Int | i_piv < j && j <= size xs &&
@@ -249,7 +274,6 @@ lem_qs_pres_partition_left  xs ys i i_piv j
          ? lem_equal_slice_bag        xs ys         (i_piv+1) j )
                                                             (abovePivot (get xs i_piv))
 
-{-@ ple lem_qs_pres_partition_right @-}
 {-@ lem_qs_pres_partition_right  :: xs:(Array a) -> { ys:(Array a) | size xs == size ys }
                                 -> { i:Int | 0 <= i } -> { i_piv:Int | i <= i_piv }
                                 -> { j:Int | i_piv < j && j <= size xs &&
@@ -266,7 +290,6 @@ lem_qs_pres_partition_right xs ys i i_piv j
          ? lem_equal_slice_narrow     xs ys 0 i_piv (i_piv+1) (i_piv+1)
          ? lem_bagBtw_pres_rangeProperty xs ys (i_piv+1) j (abovePivot (get xs i_piv))
 
-{-@ ple lem_sorted_partitions @-}
 {-@ lem_sorted_partitions :: xs:(Array a) -> { i:Int | 0 <= i } -> { i_piv:Int | i <= i_piv }
                                           -> { j:Int | i_piv < j && j <= size xs && j - i >= 2 &&
                                                        isSortedBtw xs i         i_piv &&

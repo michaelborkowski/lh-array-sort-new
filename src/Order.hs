@@ -115,6 +115,30 @@ lem_isSorted_append xs ys
         ? (if size ys > 0 then lem_get_append_right xs ys (size xs) else ())
         ? (if size xs > 0 then lem_get_append_left  xs ys (size xs - 1) else ()) )
 
+{-@ lem_isSortedBtw_from_left_append :: xs:_ 
+        -> { ys:_ | token xs == token ys && right xs == left ys }
+        -> i:Nat -> { j:Nat | i <= j && j <= size xs && isSortedBtw xs i j }
+        -> { pf:_ | isSortedBtw (append xs ys) i j } / [j - i] @-}
+lem_isSortedBtw_from_left_append :: HasPrimOrd a => Array a -> Array a -> Int -> Int -> Proof
+lem_isSortedBtw_from_left_append xs ys i j
+    | i+1 >= j  = ()
+    | otherwise = lem_isSortedBtw_from_left_append xs ys (i+1) j 
+                ? lem_get_append_left xs ys i
+                ? lem_get_append_left xs ys (i+1)
+
+{-@ lem_isSortedBtw_from_right_append :: xs:_ 
+        -> { ys:_ | token xs == token ys && right xs == left ys }
+        -> { i:Nat | size xs <= i }
+        -> { j:Nat | i <= j && j <= size xs + size ys && 
+                     isSortedBtw ys (i-size xs) (j-size xs) }
+        -> { pf:_ | isSortedBtw (append xs ys) i j } / [j - i] @-}
+lem_isSortedBtw_from_right_append :: HasPrimOrd a => Array a -> Array a -> Int -> Int -> Proof
+lem_isSortedBtw_from_right_append xs ys i j
+    | i+1 >= j  = ()
+    | otherwise = lem_isSortedBtw_from_right_append xs ys (i+1) j 
+                ? lem_get_append_right xs ys i           
+                ? lem_get_append_right xs ys (i+1)           
+
 {-@ lem_isSorted_copy :: { xs:_ | isSorted' xs } -> { xi:Nat | xi <= size xs } -> ys:_
         -> { yi:Nat | yi <= size ys && isSortedBtw ys 0 yi }
         -> { n:Nat  | xi + n <= size xs && yi + n <= size ys &&

@@ -169,9 +169,8 @@ isort xs i
                          ? lem_insert_func_equiv xs a i
                          ? lem_bag_unchanged     xs   i
 
--- TODO: Postcondition: isSorted' ys &&
 {-@ isort_top' :: { xs:_ | A.size xs > 1 } 
-      -> { ys:_ | toBag xs == toBag ys &&  
+      -> { ys:_ | toBag xs == toBag ys &&  isSorted' ys &&
                   left xs == left ys && right xs == right ys &&
                   A.size xs == A.size ys && token xs == token ys } @-}
 isort_top' :: Ord a => A.Array a -> A.Array a

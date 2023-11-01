@@ -40,7 +40,7 @@ cilkSortInplace :: (Show a, Ord a) => A.Array a -> A.Array a -> (A.Array a, A.Ar
 cilkSortInplace src tmp =
   let (len, src') = A.size2 src in
   if len <= QUICKSIZE
-  then let src'' = isort_top {-quickSort-} src'
+  then let src'' = quickSort src'
         in (src'', tmp)
   else
     let (srcA, srcB)     = splitMid src'

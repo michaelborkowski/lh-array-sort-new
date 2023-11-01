@@ -47,8 +47,8 @@ library
       DpsMergeSort4Par
 --      Microbench
       QuickSort
---  the last not quite ready yet?
       QuickSortCilk
+--  the last not quite ready yet?
 --      CilkSort
   other-modules:
       Array.List
