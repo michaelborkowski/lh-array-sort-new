@@ -160,14 +160,15 @@ insert !xs !x !i =                 -- sort the element at offset i into the firs
                   left xs == left ys && right xs == right ys &&
                   A.size xs == A.size ys && token xs == token ys } / [A.size xs - i] @-}
 isort :: Ord a => A.Array a -> Int -> A.Array a -- | Sort in-place.
-isort xs i 
-    | i == A.size xs = xs
-    | otherwise      = let (s, xs')   = A.size2 xs 
-                           !(a, xs'') = A.get2  xs' i
-                        in isort (insert xs'' a i ? lem_insert_func_sorted xs a i)
-                                 (i+1) 
-                         ? lem_insert_func_equiv xs a i
-                         ? lem_bag_unchanged     xs   i
+isort xs i = 
+  let (s, xs') = A.size2 xs in
+  if i == s then xs'
+  else
+    let !(a, xs'') = A.get2  xs' i
+    in isort (insert xs'' a i ? lem_insert_func_sorted xs a i)
+              (i+1) 
+      ? lem_insert_func_equiv xs a i
+      ? lem_bag_unchanged     xs   i
 
 {-@ isort_top' :: { xs:_ | A.size xs > 1 } 
       -> { ys:_ | toBag xs == toBag ys &&  isSorted' ys &&
