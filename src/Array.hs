@@ -19,7 +19,7 @@ module Array
     Array
 
     -- * Construction and querying
-  , alloc, make, generate, generate_par, generate_par_m
+  , alloc, make, generate, generate_par, generate_par_m, makeArray
   , copy, copy_par, copy_par_m
   , size, get, set, slice, append, splitMid, swap
 
@@ -99,11 +99,19 @@ alloc i a f = f (makeNoFill i a)
 alloc i a f = f (make i a)
 #endif
 
--- with a concrete `b` type
-{- @ alloc1 :: forall <p :: Ur (Array a) -> Bool>. n:Nat -> x:_ 
-           -> f:({ys:(Array a) | size ys == n} 
-                     -> {zs:(Ur<p> (Array a)) | size (unur zs) == n}) 
-           -> { ret:(Ur<p> (Array a)) | size (unur ret) == n } @-}
+{-# INLINE makeArray #-}
+{-@ makeArray :: n:Nat -> x:_ -> 
+      ret:{ ys:(Array a) | size ys == n && left ys == 0 && right ys == n } @-}
+makeArray :: 
+#ifdef PRIM_MUTABLE_ARRAYS
+  P.Prim a =>
+#endif
+  Int -> a -> Array a
+#ifdef MUTABLE_ARRAYS
+makeArray = makeNoFill
+#else
+makeArray = make
+#endif
 
 {-@ reflect swap @-}
 {-@ swap :: xs:(Array a) -> { i:Int | 0 <= i && i < size xs }
