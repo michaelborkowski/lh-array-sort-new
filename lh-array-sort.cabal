@@ -60,6 +60,7 @@ library
   hs-source-dirs:
       src
   build-depends:
+      base, 
       deepseq,
       random,
       -- Versions pinned in cabal.project.
