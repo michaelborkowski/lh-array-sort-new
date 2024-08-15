@@ -23,7 +23,7 @@ source-repository-package
     type: git
     location: https://github.com/ucsd-progsys/liquidhaskell
     tag: 344b0ffff7a9b38ff63e4ff55da8c69b9a58bab4
-    subdir: liquid-prelude liquidhaskell-boot
+    subdir: liquid-prelude liquidhaskell-boot .
 
 
 
