@@ -4,10 +4,10 @@
 module Array
   (
     -- * Array type
-    Array
+    -- Array
 
     -- * Construction and querying
-  , alloc, make, size, get, set, slice, append, splitMid, swap
+  alloc, make, size, get, set, slice, append, splitMid, swap
 
     -- * Linear versions
   , size2, get2, slice2, copy2
@@ -22,6 +22,10 @@ module Array
   , lma_gs, lma_gns, lma_swap, lma_swap_eql, lem_slice_append, lem_get_slice
 
   ) where
+
+import qualified Unsafe.Linear as Unsafe
+import Data.Unrestricted.Linear (Ur(..))
+import Language.Haskell.Liquid.ProofCombinators (Proof)
 
 --------------------------------------------------------------------------------
 
@@ -44,8 +48,8 @@ fromList :: [a] -> Array a
 toList :: Array a -> [a]
 
 -- TODO:
-size2 :: Array a %1-> (Ur Int, Array a)
-get2 :: Array a %1-> Int -> (Ur a, Array a)
+-- size2 :: Array a %1-> (Ur Int, Array a)
+-- get2 :: Array a %1-> Int -> (Ur a, Array a)
 
 
 -- This doesn't belong here, but it's here for convenience.
