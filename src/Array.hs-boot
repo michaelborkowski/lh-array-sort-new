@@ -1,13 +1,14 @@
+{-# LANGUAGE CPP           #-}
 -- We don't have any cyclic module dependencies. This file serves the role of
 -- an ML-like signature file for the Array API.
 
 module Array
   (
     -- * Array type
-    -- Array
+  Array
 
     -- * Construction and querying
-  alloc, make, size, get, set, slice, append, splitMid, swap
+  , alloc, make, size, get, set, slice, append, splitMid, swap
 
     -- * Linear versions
   , size2, get2, slice2, copy2
@@ -23,13 +24,19 @@ module Array
 
   ) where
 
-import qualified Unsafe.Linear as Unsafe
+  -- import qualified Unsafe.Linear as Unsafe
 import Data.Unrestricted.Linear (Ur(..))
 import Language.Haskell.Liquid.ProofCombinators (Proof)
 
+#ifdef MUTABLE_ARRAYS
+import           Array.Mutable (Array)
+#else
+import           Array.List    (Array)
+#endif
+
 --------------------------------------------------------------------------------
 
-data Array a
+-- type Array a = A.Array a
 
 alloc :: Int -> a -> (Array a %1-> Ur b) -> Ur b
 make :: Int -> a -> Array a
