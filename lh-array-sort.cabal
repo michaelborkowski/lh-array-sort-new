@@ -28,6 +28,8 @@ library
 
   if flag(prim-mutable-arrays)
     cpp-options: -DPRIM_MUTABLE_ARRAYS -DMUTABLE_ARRAYS
+  
+  default-extensions: LinearTypes
 
   exposed-modules:
       Par
