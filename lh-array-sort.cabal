@@ -65,9 +65,11 @@ library
       base, 
       deepseq,
       random,
+      containers,
       -- Versions pinned in cabal.project.
       -- liquid-base,
       -- liquid-containers,
+      
       liquid-prelude,
       liquidhaskell-boot, 
       liquidhaskell,

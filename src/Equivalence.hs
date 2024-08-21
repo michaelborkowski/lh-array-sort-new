@@ -24,28 +24,31 @@ import           Array.List as A
 
 --------------------------------------------------------------------------------
 
+{-@ type BBag a = Data.Map.Map a Nat @-}
+type BBag a = B.Bag a
+
   -- | Key Lemma about Bags in general
 
-{-@ lem_bag_getput :: v:a -> b:(B.Bag a) -> { pf:_ | B.get v (B.put v b) > 0 } @-}
-lem_bag_getput :: Ord a => a -> B.Bag a -> Proof
+{-@ lem_bag_getput :: v:a -> b:(BBag a) -> { pf:_ | B.get v (B.put v b) > 0 } @-}
+lem_bag_getput :: Ord a => a -> BBag a -> Proof
 lem_bag_getput v b = toProof ( B.get v (B.put v b) === 1 + B.get v b )
 
-{-@ lem_bag_union :: v:a -> b:(B.Bag a) -> b':(B.Bag a)
+{-@ lem_bag_union :: v:a -> b:(BBag a) -> b':(BBag a)
                          -> { pf:_ | B.put v (B.union b b') == B.union (B.put v b) b' } @-}
-lem_bag_union :: Ord a => a -> B.Bag a -> B.Bag a -> Proof
+lem_bag_union :: Ord a => a -> BBag a -> BBag a -> Proof
 lem_bag_union v b b' = ()
 
   -- | Reflected operation to represent the elements in an array as a multiset
 
 {-@ reflect toBag @-}
-{-@ toBag :: xs:(Array a) -> s:(B.Bag a) @-}
-toBag :: HasPrimOrd a => Array a -> B.Bag a
+{-@ toBag :: xs:(Array a) -> s:(BBag a) @-}
+toBag :: HasPrimOrd a => Array a -> BBag a
 toBag xs = toBagBtw xs 0 (size xs)
 
 {-@ reflect toBagBtw @-}
 {-@ toBagBtw :: xs:(Array a) -> {i:Int | 0 <= i } -> { j:Int | i <= j && j <= A.size xs }
-                             -> s:(B.Bag a) / [j - i] @-}
-toBagBtw :: HasPrimOrd a => Array a -> Int -> Int -> B.Bag a
+                             -> s:(BBag a) / [j - i] @-}
+toBagBtw :: HasPrimOrd a => Array a -> Int -> Int -> BBag a
 toBagBtw xs i j | i == j     = B.empty
                 | otherwise  = B.put (A.get xs i) (toBagBtw xs (i+1) j)
 
@@ -471,8 +474,8 @@ lem_copy_equal_slice xs xi ys yi n
 
 {-@ reflect toBagLeft @-}
 {-@ toBagLeft :: xs:(Array a) -> n:{v:Nat | v <= A.size xs}
-                             -> s:(B.Bag a) / [n] @-}
-toBagLeft :: HasPrimOrd a => Array a -> Int -> B.Bag a
+                             -> s:(BBag a) / [n] @-}
+toBagLeft :: HasPrimOrd a => Array a -> Int -> BBag a
 toBagLeft xs 0 = B.empty
 toBagLeft xs n = B.put (A.get xs (n-1)) (toBagLeft xs (n-1))
 

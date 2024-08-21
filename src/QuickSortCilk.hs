@@ -53,7 +53,7 @@ quickSort xs =
                                                      toSlice (unur out) 0 n == toSlice xs2 0 n} @-}
                promise tmp = Ur (A.copy xs2 0 tmp 0 n) 
                            ? lem_copy_equal_slice  xs2 0 tmp 0 n 
-               {-@ cpy :: { ys:(Array a) | size ys == n && toSlice ys 0 n == toSlice xs2 0 n } @-}
+               {- @ cpy :: { ys:(Array a) | size ys == n && toSlice ys 0 n == toSlice xs2 0 n } @-}
                Ur cpy = A.alloc n hd (Unsafe.toLinear promise)
             in quickSortBtw (cpy ? lem_equal_slice_bag   xs2   cpy 0 n) 0 n
 

@@ -22,9 +22,9 @@ package prof
 source-repository-package
     type: git
     location: https://github.com/ucsd-progsys/liquidhaskell
-    tag: d87510a610002aaadca36b0ca9f45c5c9c1f081d
+    tag: 7963e5c7168e5b4559d10133ea9a2ee6eb17eca1
+	-- d87510a610002aaadca36b0ca9f45c5c9c1f081d
     subdir: liquid-prelude liquidhaskell-boot liquid-fixpoint .
-
 
 
 
