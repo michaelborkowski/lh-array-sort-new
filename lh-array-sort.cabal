@@ -70,9 +70,9 @@ library
       -- liquid-base,
       -- liquid-containers,
       
-      liquid-prelude,
-      liquidhaskell-boot, 
-      liquidhaskell,
+      liquid-prelude        >= 0.9.2.8.2,
+      liquidhaskell-boot    == 0.9.10.1, 
+      liquidhaskell         == 0.9.10.1,
       parallel,
       monad-par,
       linear-base,
