@@ -1,4 +1,4 @@
-HC = ghc
+HC = ghc-9.10.1
 CC = gcc
 RTFLAGS = +RTS -N6
 
@@ -13,8 +13,8 @@ else
 		F_MUTABLE_ARRAYS = --flag lh-array-sort:-mutable-arrays
 endif
 else
-	CABAL = cabal
-	HCTOOL = cabal
+	CABAL = cabal-3.12.1.0 --allow-newer
+	HCTOOL = cabal-3.12.1.0 --allow-newer
 	HCTOOLEXEC = v2-exec
 ifeq ($(MUTABLE_ARRAYS),1)
 		F_MUTABLE_ARRAYS = -fmutable-arrays

@@ -168,7 +168,7 @@ swap2 xs i j  = {-Unsafe.toLinear3-} go xs i j
                 size (fst t) == div (size xs) 2 &&
                 size (snd t) == size xs - div (size xs) 2 &&
                 size xs = (size (fst t)) + (size (snd t)) } @-}
-splitMid :: Ord a => Array a -> (Array a, Array a)
+splitMid :: {- Ord a => -} Array a -> (Array a, Array a)
 splitMid = {- Unsafe.toLinear -} go
   where
     {-@ go :: xs:(Array a)

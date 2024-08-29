@@ -28,6 +28,8 @@ library
 
   if flag(prim-mutable-arrays)
     cpp-options: -DPRIM_MUTABLE_ARRAYS -DMUTABLE_ARRAYS
+  
+  default-extensions: LinearTypes
 
   exposed-modules:
       Par
@@ -60,13 +62,17 @@ library
   hs-source-dirs:
       src
   build-depends:
+      base, 
       deepseq,
       random,
+      containers,
       -- Versions pinned in cabal.project.
-      liquid-base,
-      liquid-containers,
-      liquid-prelude,
-      liquidhaskell,
+      -- liquid-base,
+      -- liquid-containers,
+      
+      liquid-prelude        >= 0.9.2.8.2,
+      liquidhaskell-boot    == 0.9.10.1, 
+      liquidhaskell         == 0.9.10.1,
       parallel,
       monad-par,
       linear-base,

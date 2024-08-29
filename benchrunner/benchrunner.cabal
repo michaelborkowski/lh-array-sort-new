@@ -9,7 +9,7 @@ executable benchrunner
     main-is:          Benchrunner.hs
     other-modules:    Measure
     -- other-extensions:
-    build-depends:      base >= 4.14 && <4.17
+    build-depends:      base
                       , lh-array-sort
                       , criterion
                       , random

@@ -1,10 +1,13 @@
+{-# LANGUAGE CPP           #-}
 -- We don't have any cyclic module dependencies. This file serves the role of
 -- an ML-like signature file for the Array API.
+
+{-@ LIQUID "--exact-data-cons" @-}
 
 module Array
   (
     -- * Array type
-    Array
+  Array
 
     -- * Construction and querying
   , alloc, make, size, get, set, slice, append, splitMid, swap
@@ -16,26 +19,36 @@ module Array
   , fromList, toList
 
     -- * Parallel tuple operator
-  , (.||.)
+--  , (.||.)
 
     -- * LiqidHaskell lemmas
   , lma_gs, lma_gns, lma_swap, lma_swap_eql, lem_slice_append, lem_get_slice
 
   ) where
 
+  -- import qualified Unsafe.Linear as Unsafe
+import Data.Unrestricted.Linear (Ur(..))
+import Language.Haskell.Liquid.ProofCombinators (Proof)
+
+#ifdef MUTABLE_ARRAYS
+import           Array.Mutable (Array)
+#else
+import           Array.List    (Array)
+#endif
+
 --------------------------------------------------------------------------------
 
-data Array a
+-- type Array a = A.Array a
 
-alloc :: Int -> a -> (Array a %1-> Ur b) -> Ur b
+alloc :: Int -> a -> (Array a %1-> Ur b) %1-> Ur b
 make :: Int -> a -> Array a
 size :: Array a -> Int
 get :: Array a -> Int -> a
 set :: Array a -> Int -> a -> Array a
 slice :: Array a -> Int -> Int -> Array a
 append :: Array a -> Array a -> Array a
-splitMid :: Array a %1-> (Array a, Array a)
-swap :: Array a %1-> Int -> Int -> Array a
+splitMid :: Array a -> (Array a, Array a) -- this currently is not linear
+swap :: Array a -> Int -> Int -> Array a  -- this currently is not linear
 size2 :: Array a %1-> (Int, Array a)
 get2 :: Array a -> Int -> (a, Array a)
 slice2 :: Array a -> Int -> Int -> (Array a, Array a)
@@ -44,13 +57,14 @@ fromList :: [a] -> Array a
 toList :: Array a -> [a]
 
 -- TODO:
-size2 :: Array a %1-> (Ur Int, Array a)
-get2 :: Array a %1-> Int -> (Ur a, Array a)
+-- size2 :: Array a %1-> (Ur Int, Array a)
+-- get2 :: Array a %1-> Int -> (Ur a, Array a)
 
 
--- This doesn't belong here, but it's here for convenience.
+-- This doesn't belong here, and GHC insists it cannot go here because it's not 
+--   defined in Array.hs
 -- Parallel tuple combinator.
-(.||.) :: a -> b -> (a,b)
+-- (.||.) :: a -> b -> (a,b)
 
 --------------------------------------------------------------------------------
 
