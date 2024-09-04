@@ -4,7 +4,7 @@
 
 {-# LANGUAGE CPP #-}
 
-module Properties where
+module RangeProperties where
 
 import qualified Language.Haskell.Liquid.Bag as B
 import           Language.Haskell.Liquid.ProofCombinators hiding ((?))

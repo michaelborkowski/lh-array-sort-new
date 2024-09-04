@@ -35,6 +35,7 @@ library
       Par
       Array
       Properties
+      Partitions
       Order
       Equivalence
 --      Merge
@@ -50,6 +51,7 @@ library
       Microbench
       QuickSort
       QuickSortCilk
+      -- QuickSortNew   -- remove until ready
 --  the last not quite ready yet?
 --      CilkSort
   other-modules:
