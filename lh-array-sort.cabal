@@ -51,7 +51,7 @@ library
       QuickSort
       QuickSortCilk
 -- remove until ready:
-      QuickSortNew   
+--      QuickSortNew   
 --  the last not quite ready yet?
 --      CilkSort
   other-modules:
