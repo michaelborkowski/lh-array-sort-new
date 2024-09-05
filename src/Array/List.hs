@@ -15,6 +15,8 @@
 {-# LANGUAGE GADTs         #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE LinearTypes   #-}
+{-# LANGUAGE ConstraintKinds #-}
+{-# LANGUAGE FlexibleInstances       #-}
 
 module Array.List {-
   (
@@ -45,6 +47,17 @@ import           Language.Haskell.Liquid.ProofCombinators hiding ((?))
 import           ProofCombinators
 
 --------------------------------------------------------------------------------
+
+-- nice trick from: https://github.com/leftaroundabout/trivial-constraint
+class Unconstrained t 
+instance Unconstrained t
+
+type HasPrim a =
+#ifdef PRIM_MUTABLE_ARRAYS
+  (P.Prim a)
+#else
+  Unconstrained a
+#endif
 
 {-@ data Array a = Arr {  lst   :: [a]
                        ,  left  :: Nat
@@ -395,7 +408,16 @@ lem_drop_take (x:xs) i j = lem_drop_take xs (i-1) (j-1)
                   -> { pf:_ | drop j (drop i xs) == drop (j+i) xs } @-}
 lem_drop_drop :: [a] -> Int -> Int -> Proof
 lem_drop_drop _      0 j = ()
-lem_drop_drop (x:xs) i j = lem_drop_drop xs (i-1) j                  
+lem_drop_drop (x:xs) i j = lem_drop_drop xs (i-1) j    
+
+{-@ lem_get_slice :: xs:_ -> { l:Nat | l <= size xs } -> { r:Nat | l < r && r <= size xs }
+                          -> { i:Nat | l <= i && i < r }
+                          -> { pf:_ | get (slice xs l r) (i - l) == get xs i } @-}
+lem_get_slice :: Array a -> Int -> Int -> Int -> Proof
+lem_get_slice arr l r i = () ? lem_getList_take (drop l lst) (r - l) (i - l)
+                             ? lem_getList_drop lst          l       i
+  where
+    lst = toList arr
 
 {-@ lem_slice_append :: xs:_ -> { ys:_ | token xs == token ys && right xs == left ys }
                              -> { pf:_ | slice (append xs ys) 0 (size xs) == xs &&

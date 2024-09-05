@@ -3,6 +3,7 @@
 {-# LANGUAGE DeriveFunctor #-}
 {-# LANGUAGE LinearTypes   #-}
 {-# LANGUAGE ConstraintKinds #-}
+{-# LANGUAGE FlexibleInstances       #-}
 -- {-# LANGUAGE Strict        #-}
 
 {-@ LIQUID "--reflection"  @-}
@@ -31,11 +32,13 @@ module Array
 
   , Ur(..), unur
 
-  , HasPrimOrd(..)
+  , HasPrimOrd(..), HasPrim(..)
 
     -- * LiqidHaskell lemmas
-  , lma_gs, lma_gns, lem_swap_order
+  , lma_gs, lma_gns
   , lem_slice_append, lem_get_slice
+  , lem_get_append_left, lem_get_append_right
+  , lem_set_commute, lem_set_twice
 
 #ifdef MUTABLE_ARRAYS
   , module Array.Mutable
@@ -88,11 +91,7 @@ type HasPrimOrd a =
 {-@ alloc :: forall <p :: Ur b -> Bool>. n:Nat -> x:_ 
                 -> f:({ ys:(Array a) | size ys == n && left ys == 0 && right ys == n } 
                             -> Ur<p> b) -> ret:Ur<p> b @-}
-alloc ::
-#ifdef PRIM_MUTABLE_ARRAYS
-  P.Prim a =>
-#endif
-  Int -> a -> (Array a %1-> Ur b) %1-> Ur b
+alloc :: HasPrim a => Int -> a -> (Array a %1-> Ur b) %1-> Ur b
 #ifdef MUTABLE_ARRAYS
 alloc i a f = f (makeNoFill i a)
 #else
@@ -102,11 +101,7 @@ alloc i a f = f (make i a)
 {-# INLINE makeArray #-}
 {-@ makeArray :: n:Nat -> x:_ -> 
       ret:{ ys:(Array a) | size ys == n && left ys == 0 && right ys == n } @-}
-makeArray :: 
-#ifdef PRIM_MUTABLE_ARRAYS
-  P.Prim a =>
-#endif
-  Int -> a -> Array a
+makeArray :: HasPrim a =>  Int -> a -> Array a
 #ifdef MUTABLE_ARRAYS
 makeArray = makeNoFill
 #else
@@ -127,11 +122,7 @@ defaultGrainSize n =
     in min 2048 grain
 
 {-@ ignore generate_par @-}
-generate_par ::
-#ifdef PRIM_MUTABLE_ARRAYS
-  P.Prim a =>
-#endif
-  Int -> (Int -> a) -> Array a
+generate_par :: HasPrim a => Int -> (Int -> a) -> Array a
 {-# INLINE generate_par #-}
 generate_par n f =
     let n'  = n `max` 0
@@ -152,11 +143,7 @@ generate_par n f =
           in arr1 `par` arr2 `pseq` append arr1 arr2
 
 {-@ ignore generate_par_m @-}
-generate_par_m ::
-#ifdef PRIM_MUTABLE_ARRAYS
-  P.Prim a =>
-#endif
-  Int -> (Int -> a) -> P.Par (Array a)
+generate_par_m :: HasPrim a => Int -> (Int -> a) -> P.Par (Array a)
 {-# INLINE generate_par_m #-}
 generate_par_m n f =
     let n'  = n `max` 0
@@ -178,11 +165,7 @@ generate_par_m n f =
           pure $ append left right
 
 {-@ ignore generate @-}
-generate ::
-#ifdef PRIM_MUTABLE_ARRAYS
-  P.Prim a =>
-#endif
-  Int -> (Int -> a) -> Array a
+generate :: HasPrim a => Int -> (Int -> a) -> Array a
 {-# INLINE generate #-}
 generate n f =
     let n'  = n `max` 0
@@ -190,11 +173,7 @@ generate n f =
     in generate_loop arr 0 n' f
 
 {-@ ignore generate_loop @-}
-generate_loop ::
-#ifdef PRIM_MUTABLE_ARRAYS
-  P.Prim a =>
-#endif
-  Array a -> Int -> Int -> (Int -> a) -> Array a
+generate_loop :: HasPrim a => Array a -> Int -> Int -> (Int -> a) -> Array a
 generate_loop arr idx end f =
     if idx == end
     then arr
@@ -207,11 +186,7 @@ generate_loop arr idx end f =
               -> { zs:_   | xs == fst zs && snd zs == copy xs xi ys yi n &&
                             size (snd zs) == size ys && token (snd zs) == token ys &&
                             left (snd zs) == left ys && right (snd zs) == right ys } @-}
-copy2_par ::
-#ifdef PRIM_MUTABLE_ARRAYS
-  P.Prim a =>
-#endif
-  Array a -> Int -> Array a -> Int -> Int -> (Array a, Array a)
+copy2_par :: HasPrim a =>  Array a -> Int -> Array a -> Int -> Int -> (Array a, Array a)
 copy2_par src0 src_offset0 dst0 dst_offset0 len0 = (src0, copy_par src0 src_offset0 dst0 dst_offset0 len0)
 
 --TODO: src_offset0 and dst_offset0 are not respected.
@@ -222,11 +197,7 @@ copy2_par src0 src_offset0 dst0 dst_offset0 len0 = (src0, copy_par src0 src_offs
                      -> { zs:_   | zs == copy xs xi ys yi n &&
                                    size ys == size zs && token ys == token zs &&
                                    left ys == left zs && right ys == right zs }  @-}
-copy_par ::
-#ifdef PRIM_MUTABLE_ARRAYS
-  P.Prim a =>
-#endif
-  Array a -> Int -> Array a -> Int -> Int -> Array a
+copy_par :: HasPrim a =>  Array a -> Int -> Array a -> Int -> Int -> Array a
 #ifdef PRIM_MUTABLE_ARRAYS  
 copy_par src0 src_offset0 dst0 dst_offset0 len0 = copy_par' src0 src_offset0 dst0 dst_offset0 len0
   where
@@ -246,11 +217,7 @@ copy_par src0 src_offset0 dst0 dst_offset0 len0 = copy src0 src_offset0 dst0 dst
 
 --TODO: src_offset0 and dst_offset0 are not respected.
 {-@ ignore copy_par_m @-}
-copy_par_m ::
-#ifdef PRIM_MUTABLE_ARRAYS
-  P.Prim a =>
-#endif
-  Array a -> Int -> Array a -> Int -> Int -> P.Par (Array a)
+copy_par_m :: HasPrim a => Array a -> Int -> Array a -> Int -> Int -> P.Par (Array a)
 copy_par_m !src0 src_offset0 !dst0 dst_offset0 !len0 = copy_par_m' src0 src_offset0 dst0 dst_offset0 len0
   where
     cutoff = defaultGrainSize len0
@@ -303,6 +270,18 @@ lem_slice_append = _todo
 
 lem_get_slice :: Array a -> Int -> Int -> Int -> Proof
 lem_get_slice = _todo
+
+lem_get_append_left :: Array a -> Array a -> Int -> Proof
+lem_get_append_left = _todo
+
+lem_get_append_right :: Array a -> Array a -> Int -> Proof
+lem_get_append_right = _todo
+
+lem_set_commute :: Array a -> Int -> a -> Int -> a -> Proof
+lem_set_commute = _todo
+
+lem_set_twice :: Array a -> Int -> a -> a -> Proof
+lem_set_twice = _todo
 #endif
 
 
@@ -312,11 +291,7 @@ lem_get_slice = _todo
 
 {-@ lma_gs :: xs:_ -> n:{v:Nat | v < size xs } -> x:_
       -> {pf:_ | get (set xs n x) n = x} @-}
-lma_gs ::
-#ifdef PRIM_MUTABLE_ARRAYS
-  P.Prim a =>
-#endif
-  Array a -> Int -> a -> Proof
+lma_gs :: HasPrim a => Array a -> Int -> a -> Proof
 lma_gs arr n x = lma_gs_list (toList arr) n x
 
 --{-@ lma_gs2 :: xs:_ -> n:{v:Nat | v < size xs } -> x:_
@@ -327,11 +302,7 @@ lma_gs arr n x = lma_gs_list (toList arr) n x
 {-@ lma_gns :: xs:_ -> n:{v:Nat | v < size xs }
           -> m:{v:Nat | v /= n && v < size xs } -> x:_
           -> { pf:_ | get (set xs n x) m = get xs m} @-}
-lma_gns ::
-#ifdef PRIM_MUTABLE_ARRAYS
-  P.Prim a =>
-#endif
-  Array a -> Int -> Int -> a -> Proof
+lma_gns :: HasPrim a => Array a -> Int -> Int -> a -> Proof
 lma_gns arr n m x = lma_gns_list (toList arr) n m x
 
 --{-@ lma_gns2 :: xs:_ -> n:{v:Nat | v < size xs }
@@ -339,14 +310,3 @@ lma_gns arr n m x = lma_gns_list (toList arr) n m x
 --          -> { pf:_ | fst (get2 (set xs n x) m) == fst (get2 xs m) } @-}
 --lma_gns2 :: Array a -> Int -> Int -> a -> Proof
 --lma_gns2 xs n m x = lma_gns xs n m x
-
-#ifndef MUTABLE_ARRAYS
-{-@ lem_get_slice :: xs:_ -> { l:Nat | l <= size xs } -> { r:Nat | l < r && r <= size xs }
-                          -> { i:Nat | l <= i && i < r }
-                          -> { pf:_ | get (slice xs l r) (i - l) == get xs i } @-}
-lem_get_slice :: Array a -> Int -> Int -> Int -> Proof
-lem_get_slice arr l r i = () ? lem_getList_take (drop l lst) (r - l) (i - l)
-                             ? lem_getList_drop lst          l       i
-  where
-    lst = toList arr
-#endif

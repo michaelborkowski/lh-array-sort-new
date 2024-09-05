@@ -13,8 +13,9 @@ import           Prelude
 import           Language.Haskell.Liquid.ProofCombinators hiding ((?))
 import           ProofCombinators
 import           Array
-import           Order
-import           Equivalence
+import           ArrayOperations
+import           Properties.Order
+import           Properties.Equivalence
 import           Language.Haskell.Liquid.Bag as B
 --import           Control.Parallel (par, pseq)
 

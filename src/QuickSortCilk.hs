@@ -16,9 +16,10 @@ import           Language.Haskell.Liquid.ProofCombinators hiding ((?))
 
 import ProofCombinators
 import Array
-import Equivalence
-import Order
-import Properties
+import ArrayOperations
+import Properties.Equivalence
+import Properties.Order
+import Properties.RangeProperties
 
 import Insertion
 

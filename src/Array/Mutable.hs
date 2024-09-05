@@ -2,6 +2,8 @@
 {-# LANGUAGE MagicHash        #-}
 {-# LANGUAGE BangPatterns     #-}
 {-# LANGUAGE LinearTypes      #-}
+{-# LANGUAGE ConstraintKinds #-}
+{-# LANGUAGE FlexibleInstances       #-}
 
 -- The Strict pragma is not just for performance, it's necessary for correctness.
 -- Without it, this implementation contains a bug related to some thunk/effect
@@ -32,6 +34,18 @@ import           Array.Mutable.Unlifted
 --------------------------------------------------------------------------------
 -- Mutable, lifted array API
 --------------------------------------------------------------------------------
+
+-- nice trick from: https://github.com/leftaroundabout/trivial-constraint
+class Unconstrained t 
+instance Unconstrained t
+
+type HasPrim a =
+#ifdef PRIM_MUTABLE_ARRAYS
+  (P.Prim a)
+#else
+  Unconstrained a
+#endif
+
 {-@ data Array a = Array { left :: _, right :: _, arr :: _ } @-}
 
 data Array a = Array { lower :: {-# UNPACK #-} !Int
@@ -53,22 +67,14 @@ instance NFData a => NFData (Array a) where
   rnf (Array lo hi _arr) = rnf lo `seq` rnf hi `seq` ()
 
 {-# INLINE make #-}
-make ::
-#ifdef PRIM_MUTABLE_ARRAYS
-  P.Prim a =>
-#endif
-  Int -> a -> Array a
+make :: HasPrim a => Int -> a -> Array a
 make 0 _ = Array 0 0 undefined
 make s0@(GHC.I# s) x = Array 0 s0 (make# s x)
 
 
 {-# INLINE makeNoFill #-}
 
-makeNoFill ::
-#ifdef PRIM_MUTABLE_ARRAYS
-  P.Prim a =>
-#endif
-  Int -> a -> Array a
+makeNoFill :: HasPrim a => Int -> a -> Array a
 makeNoFill s0@(GHC.I# s) x =
   Array 0 s0
 #ifdef PRIM_MUTABLE_ARRAYS
@@ -84,11 +90,7 @@ size :: Array a -> Int
 size (Array !lo !hi _arr) = hi-lo
 
 {-# INLINE get #-}
-get ::
-#ifdef PRIM_MUTABLE_ARRAYS
-  P.Prim a =>
-#endif
-  Array a -> Int -> a
+get :: HasPrim a => Array a -> Int -> a
 get (Array (GHC.I# lo) _hi !arr) (GHC.I# i) =
   seq
 #ifdef RUNTIME_CHECKS
@@ -101,11 +103,7 @@ get (Array (GHC.I# lo) _hi !arr) (GHC.I# i) =
   get# arr (lo GHC.+# i)
 
 {-# INLINE set #-}
-set ::
-#ifdef PRIM_MUTABLE_ARRAYS
-  P.Prim a =>
-#endif
-  Array a -> Int -> a -> Array a
+set :: HasPrim a => Array a -> Int -> a -> Array a
 set (Array (GHC.I# lo) hi !arr) (GHC.I# i) !a =
   seq
 #ifdef RUNTIME_CHECKS
@@ -118,11 +116,7 @@ set (Array (GHC.I# lo) hi !arr) (GHC.I# i) !a =
   Array (GHC.I# lo) hi (set# arr (lo GHC.+# i) a)
 
 {-# INLINE copy #-}
-copy ::
-#ifdef PRIM_MUTABLE_ARRAYS
-  P.Prim a =>
-#endif
-  Array a -> Int -> Array a -> Int -> Int -> Array a
+copy :: HasPrim a => Array a -> Int -> Array a -> Int -> Int -> Array a
 copy s@(Array (GHC.I# lo1) _hi1 src) (GHC.I# src_offset)
       d@(Array (GHC.I# lo2) _hi2 dst) (GHC.I# dst_offset)
       (GHC.I# n) =
@@ -136,11 +130,7 @@ copy s@(Array (GHC.I# lo1) _hi1 src) (GHC.I# src_offset)
 
 
 {-# INLINE copy2 #-}
-copy2 ::
-#ifdef PRIM_MUTABLE_ARRAYS
-  P.Prim a =>
-#endif
-  Array a -> Int -> Array a -> Int -> Int -> (Array a, Array a)
+copy2 :: HasPrim a => Array a -> Int -> Array a -> Int -> Int -> (Array a, Array a)
 copy2 s@(Array (GHC.I# lo1) _hi1 src) (GHC.I# src_offset)
       d@(Array (GHC.I# lo2) _hi2 dst) (GHC.I# dst_offset)
       (GHC.I# n) =
@@ -179,28 +169,16 @@ size2 = Unsafe.toLinear go
   where
     go !ar = (size ar, ar)
 
-get2 ::
-#ifdef PRIM_MUTABLE_ARRAYS
-  P.Prim a =>
-#endif
-  Array a -> Int -> (a, Array a)
+get2 :: HasPrim a => Array a -> Int -> (a, Array a)
 get2 !ar i = (get ar i, ar)
 
-fromList ::
-#ifdef PRIM_MUTABLE_ARRAYS
-  P.Prim a =>
-#endif
-  [a] -> Array a
+fromList :: HasPrim a => [a] -> Array a
 fromList [] = Array 0 0 undefined
 fromList ls =
   let a0 = make (length ls) (head ls)
   in foldl (\acc (i,x) -> set acc i x) a0 (zip [0..] ls)
 
-toList ::
-#ifdef PRIM_MUTABLE_ARRAYS
-  P.Prim a =>
-#endif
-  Array a -> [a]
+toList :: HasPrim a => Array a -> [a]
 toList arr =
   let ixs = [0..(size arr - 1)]
   in [ get arr i | i <- ixs ]
@@ -208,20 +186,12 @@ toList arr =
 
 --------------------------------------------------------------------------------
 
-toList# ::
-#ifdef PRIM_MUTABLE_ARRAYS
-  P.Prim a =>
-#endif
-  Array# a -> [a]
+toList# :: HasPrim a => Array# a -> [a]
 toList# arr =
   let ixs = [0..(GHC.I# (size# arr) - 1)]
   in [ get# arr i | (GHC.I# i) <- ixs ]
 
-fromList# ::
-#ifdef PRIM_MUTABLE_ARRAYS
-  P.Prim a =>
-#endif
-  [a] -> Array# a
+fromList# :: HasPrim a => [a] -> Array# a
 fromList# [] = make# 0# undefined
 fromList# ls =
   let !(GHC.I# len) = length ls

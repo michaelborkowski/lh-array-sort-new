@@ -6,16 +6,17 @@
 {- # LANGUAGE Strict #-}
 {- # LANGUAGE LinearTypes   #-}
 
-module Partitions where
+module Properties.Partitions where
 
 --import qualified Language.Haskell.Liquid.Bag as B
 import           Language.Haskell.Liquid.ProofCombinators hiding ((?))
 
 import ProofCombinators
 import Array
---import Equivalence
---import Order
-import Properties
+import ArrayOperations
+--import Properties.Equivalence
+--import Properties.Order
+import Properties.RangeProperties
 
 #ifdef MUTABLE_ARRAYS
 import           Array.Mutable

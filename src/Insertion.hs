@@ -13,8 +13,9 @@ import           Language.Haskell.Liquid.ProofCombinators hiding ((?))
 import qualified Language.Haskell.Liquid.Bag as B
 import           ProofCombinators
 import           Array
-import           Order
-import           Equivalence
+import           ArrayOperations
+import Properties.Order
+import Properties.Equivalence
 
 import qualified Unsafe.Linear as Unsafe
 

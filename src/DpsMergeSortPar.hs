@@ -12,11 +12,12 @@ import qualified Language.Haskell.Liquid.Bag as B
 import           Language.Haskell.Liquid.ProofCombinators hiding ((?))
 import           ProofCombinators
 import           Array as A
+import           ArrayOperations
 import           DpsMergePar
 import qualified DpsMergeSort as Seq
 --import qualified DpsMerge as Seq
-import           Equivalence
-import           Order
+import Properties.Equivalence
+import Properties.Order
 import           Par
 import           Control.DeepSeq ( NFData(..) )
 

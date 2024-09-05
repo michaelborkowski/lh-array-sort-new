@@ -16,10 +16,11 @@ import           Language.Haskell.Liquid.ProofCombinators hiding ((?))
 
 import ProofCombinators
 import Array
-import Equivalence
-import Order
-import Properties
-import Partitions
+import ArrayOperations
+import Properties.Equivalence
+import Properties.Order
+import Properties.RangeProperties
+import Properties.Partitions
 
 #ifdef MUTABLE_ARRAYS
 import qualified Unsafe.Linear as Unsafe

@@ -16,7 +16,7 @@
 module ArrayOperations
   (
     -- * Construction and querying
-  , splitMid, swap
+    splitMid, swap
 
     -- * Linear versions
   , swap2
@@ -55,11 +55,7 @@ import qualified Data.Primitive.Types as P
                          -> { j:Int | 0 <= j && j < size xs }
                          -> { ys:(Array a) | size xs == size ys && token xs == token ys &&
                                              left xs == left ys && right xs == right ys } @-}
-swap ::
-#ifdef PRIM_MUTABLE_ARRAYS
-  P.Prim a =>
-#endif
-  Array a -> Int -> Int -> Array a
+swap :: HasPrim a => Array a -> Int -> Int -> Array a
 swap xs i j = let !xi   = get xs i
                   !xj   = get xs j
                   xs'   = set xs i xj
@@ -75,11 +71,7 @@ swap xs i j = let !xi   = get xs i
                           -> { ys:(Array a) | size xs == size ys && token xs == token ys &&
                                               left xs == left ys && right xs == right ys &&
                                               ys == swap xs i j } @-}
-swap2 ::
-#ifdef PRIM_MUTABLE_ARRAYS
-  P.Prim a =>
-#endif
-  Array a %1-> Int -> Int -> Array a
+swap2 :: HasPrim a => Array a -> Int -> Int -> Array a
 swap2 xs i j  = {-Unsafe.toLinear3-} go xs i j
   where
     {-@ go :: xs:(Array a) -> { i:Int | 0 <= i && i < size xs }
@@ -129,11 +121,7 @@ splitMid = {- Unsafe.toLinear -} go
                              -> { j:Int | 0 <= j && j < size xs }
                              -> { pf:_  | get (swap xs i j) i == get xs j &&
                                           get (swap xs i j) j == get xs i } @-}
-lma_swap ::
-#ifdef PRIM_MUTABLE_ARRAYS
-  P.Prim a =>
-#endif
-  Array a -> Int -> Int -> Proof
+lma_swap :: HasPrim a => Array a -> Int -> Int -> Proof
 lma_swap xs i j
    | i == j     = () ? lma_gs  xs' j xi
    | i /= j     = () ? lma_gns xs' j i xi        --
@@ -147,18 +135,13 @@ lma_swap xs i j
                                  -> { j:Int | 0 <= j && j < size xs }
                                  -> { k:Int | 0 <= k && k < size xs && k /= i && k /= j }
                                  -> { pf:_  | get (swap xs i j) k == get xs k } @-}
-lma_swap_eql ::
-#ifdef PRIM_MUTABLE_ARRAYS
-  P.Prim a =>
-#endif
-  Array a -> Int -> Int -> Int -> Proof
+lma_swap_eql :: HasPrim a => Array a -> Int -> Int -> Int -> Proof
 lma_swap_eql xs i j k = () ? lma_gns xs' j k xi
                            ? lma_gns xs  i k (get xs j)
   where
     xi   = get xs  i
     xs'  = set xs  i (get xs j)
 
--- #ifndef MUTABLE_ARRAYS
 {-@ lem_swap_order :: xs:(Array a) -> { i:Int | 0 <= i && i < size xs }
                         -> { j:Int | 0 <= j && j < size xs }
                         -> { pf:_ | swap xs i j == swap xs j i } @-}
@@ -166,7 +149,3 @@ lem_swap_order :: Array a -> Int -> Int -> Proof
 lem_swap_order xs i j 
   | i == j    = ()
   | otherwise = () ? lem_set_commute xs i (get xs j) j (get xs i)
--- #else
--- lem_swap_order :: Array a -> Int -> Int -> Proof
--- lem_swap_order xs i j = _todo
--- #endif

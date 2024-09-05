@@ -10,8 +10,8 @@ import qualified Language.Haskell.Liquid.Bag as B
 import           Language.Haskell.Liquid.ProofCombinators hiding ((?))
 import           ProofCombinators
 import           Array
-import           Equivalence
-import           Order
+import Properties.Equivalence
+import Properties.Order
 
 #ifdef MUTABLE_ARRAYS
 import           Array.Mutable as A

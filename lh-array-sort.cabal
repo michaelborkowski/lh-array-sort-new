@@ -34,13 +34,12 @@ library
   exposed-modules:
       Par
       Array
-      Properties
-      Partitions
-      Order
-      Equivalence
---      Merge
+      ArrayOperations
+      Properties.Equivalence
+      Properties.Order
+      Properties.Partitions
+      Properties.RangeProperties
       Insertion
-      LinearMerge
       DpsMerge
       DpsMergePar
       DpsMergeParSeqFallback
@@ -51,7 +50,8 @@ library
       Microbench
       QuickSort
       QuickSortCilk
-      -- QuickSortNew   -- remove until ready
+-- remove until ready:
+      QuickSortNew   
 --  the last not quite ready yet?
 --      CilkSort
   other-modules:

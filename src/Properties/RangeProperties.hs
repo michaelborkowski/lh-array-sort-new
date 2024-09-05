@@ -4,13 +4,13 @@
 
 {-# LANGUAGE CPP #-}
 
-module RangeProperties where
+module Properties.RangeProperties where
 
 import qualified Language.Haskell.Liquid.Bag as B
 import           Language.Haskell.Liquid.ProofCombinators hiding ((?))
 import           ProofCombinators
 import           Array
-import           Equivalence
+import Properties.Equivalence
 
 #ifdef MUTABLE_ARRAYS
 import           Array.Mutable
@@ -31,14 +31,10 @@ type Property a = (a -> Bool)  -- predicates
 --type Property a = (Array a -> Int -> Bool)  -- predicates
 
 {-@ reflect rangeProperty @-}
-{-@ rangeProperty :: xs:(Array a) -> { i:Int | 0 <= i } -> { j:Int | i <= j && j <= size xs }
+{-@ rangeProperty :: xs:(Array a) -> { i:Int | 0 <= i } -> { j:Int | j <= size xs }
                                   -> p:(Property a) -> Bool / [j - i] @-}
-rangeProperty ::
-#ifdef PRIM_MUTABLE_ARRAYS
-  P.Prim a =>
-#endif
-  Array a -> Int -> Int -> Property a -> Bool
-rangeProperty xs i j p | i == j    = True
+rangeProperty :: HasPrim a => Array a -> Int -> Int -> Property a -> Bool
+rangeProperty xs i j p | i >= j    = True
                        | otherwise = (p (get xs i)) && rangeProperty xs (i+1) j p
 
 {-@ lem_rangeProperty_right :: xs:(Array a) -> { i:Int | 0 <= i } -> { j:Int | i < j && j <= size xs }
@@ -49,11 +45,12 @@ lem_rangeProperty_right xs i j p | i + 1 == j  = ()
                                  | otherwise   = () ? lem_rangeProperty_right xs (i+1) j p
 
 {-@ lem_rangeProperty_build_right :: xs:(Array a) -> p:(Property a) -> { i:Int | 0 <= i }
-                                  -> { j:Int | i <= j && j <= size xs &&
+                                  -> { j:Int | j <= size xs &&
                                                rangeProperty xs i j p && p (get xs j) }
                                   -> { pf:_ | rangeProperty xs i (j+1) p } / [j-i] @-}
 lem_rangeProperty_build_right :: Array a -> Property a -> Int -> Int -> Proof
-lem_rangeProperty_build_right xs p i j | i == j     = ()
+lem_rangeProperty_build_right xs p i j | i > j      = ()
+                                       | i == j     = ()
                                        | otherwise  = () ? lem_rangeProperty_build_right xs p (i+1) j
 
 --                                         -> { p:(Property a) | rangeProperty xs i j p }

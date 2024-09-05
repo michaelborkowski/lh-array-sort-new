@@ -14,7 +14,7 @@ import           Prelude hiding ((++))
 import           Language.Haskell.Liquid.ProofCombinators hiding ((?))
 import           ProofCombinators
 import qualified Array as A
-import           Order
+import Properties.Order
 
 #ifdef MUTABLE_ARRAYS
 import           Array.Mutable as A
