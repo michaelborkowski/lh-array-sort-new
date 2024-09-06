@@ -1,15 +1,9 @@
 {-# LANGUAGE CPP           #-}
 {-# LANGUAGE BangPatterns  #-}
 {-# LANGUAGE DeriveFunctor #-}
-{-# LANGUAGE LinearTypes   #-}
-{-# LANGUAGE ConstraintKinds #-}
-{-# LANGUAGE FlexibleInstances       #-}
+
 -- {-# LANGUAGE Strict        #-}
 
-{-@ LIQUID "--reflection"  @-}
--- {-@ LIQUID "--diff"        @-}
-{-@ LIQUID "--ple"         @-}
-{-@ LIQUID "--short-names" @-}
 
 {-@ LIQUID "--exact-data-cons" @-}
 {-@ LIQUID "--higherorder" @-}

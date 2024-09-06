@@ -1,12 +1,6 @@
-{-@ LIQUID "--reflection"  @-}
--- {-@ LIQUID "--diff"        @-}
-{-@ LIQUID "--ple"         @-}
-{-@ LIQUID "--short-names" @-}
 
 {-@ LIQUID "--exact-data-cons" @-}
 {-@ LIQUID "--higherorder" @-}
-
-{- @ LIQUID "--no-environment-reduction"      @-}
 {-@ LIQUID "--prune-unsorted" @-}
 
 {-@ infixr ++  @-}  -- TODO: Silly to have to rewrite this annotation!
@@ -14,9 +8,7 @@
 {-# LANGUAGE CPP           #-}
 {-# LANGUAGE GADTs         #-}
 {-# LANGUAGE DeriveGeneric #-}
-{-# LANGUAGE LinearTypes   #-}
-{-# LANGUAGE ConstraintKinds #-}
-{-# LANGUAGE FlexibleInstances       #-}
+
 
 module Array.List {-
   (

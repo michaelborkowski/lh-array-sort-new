@@ -1,10 +1,5 @@
 {-# LANGUAGE CPP #-}
-{-# LANGUAGE ConstraintKinds #-}
 
-{-@ LIQUID "--reflection"  @-}
--- {-@ LIQUID "--diff"        @-}
-{-@ LIQUID "--ple"         @-}
-{-@ LIQUID "--short-names" @-}
 
 {-# LANGUAGE GADTs #-}
 

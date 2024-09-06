@@ -1,21 +1,13 @@
-{-@ LIQUID "--reflection"   @-}
-{-@ LIQUID "--ple"          @-}
-{-@ LIQUID "--short-names"  @-}
 
 {-# LANGUAGE CPP #-}
-{- # LANGUAGE Strict #-}
-{- # LANGUAGE LinearTypes   #-}
 
 module Properties.Partitions where
 
---import qualified Language.Haskell.Liquid.Bag as B
 import           Language.Haskell.Liquid.ProofCombinators hiding ((?))
 
 import ProofCombinators
 import Array
 import ArrayOperations
---import Properties.Equivalence
---import Properties.Order
 import Properties.RangeProperties
 
 #ifdef MUTABLE_ARRAYS
@@ -23,8 +15,6 @@ import           Array.Mutable
 #else
 import           Array.List
 #endif
-
---import qualified Data.Primitive.Types as P
 
 
 -- | The definitions and lemmas below pertain to the partition property w/r/t a pivot element

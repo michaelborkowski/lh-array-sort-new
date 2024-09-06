@@ -79,7 +79,7 @@ library
       monad-par,
       linear-base,
       primitive
-  default-language: Haskell2010
+  default-language: GHC2021
   ghc-options: -Wall -Wcompat
                -fdefer-typed-holes
                -ddump-simpl
@@ -88,4 +88,7 @@ library
                -w
   if !(flag(mutable-arrays) || flag(prim-mutable-arrays))
     ghc-options: -fplugin=LiquidHaskell
+                 -fplugin-opt=LiquidHaskell:--ple
                  -fplugin-opt=LiquidHaskell:--ple-with-undecided-guards
+                 -fplugin-opt=LiquidHaskell:--reflection
+                 -fplugin-opt=LiquidHaskell:--short-names

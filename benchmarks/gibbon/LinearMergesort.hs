@@ -1,4 +1,4 @@
-{-# LANGUAGE LinearTypes #-}
+
 
 -- TODO: use same source as Verified Haskell a.k.a. DpsMerge.
 

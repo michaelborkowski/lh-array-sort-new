@@ -1,6 +1,3 @@
-{-@ LIQUID "--reflection"   @-}
-{-@ LIQUID "--ple"          @-}
-{-@ LIQUID "--short-names"  @-}
 
 {-# LANGUAGE CPP #-}
 
@@ -46,12 +43,24 @@ lem_rangeProperty_right xs i j p | i + 1 == j  = ()
 
 {-@ lem_rangeProperty_build_right :: xs:(Array a) -> p:(Property a) -> { i:Int | 0 <= i }
                                   -> { j:Int | j <= size xs &&
-                                               rangeProperty xs i j p && p (get xs j) }
+                                               rangeProperty xs i j p && (i>j || p (get xs j)) }
                                   -> { pf:_ | rangeProperty xs i (j+1) p } / [j-i] @-}
 lem_rangeProperty_build_right :: Array a -> Property a -> Int -> Int -> Proof
 lem_rangeProperty_build_right xs p i j | i > j      = ()
                                        | i == j     = ()
                                        | otherwise  = () ? lem_rangeProperty_build_right xs p (i+1) j
+
+-- The two versions above aren't really useful for equational reasoning because placing preconditions
+--    on the arguments doesn't give us an <=> / === and can require subproofs, but this version
+--    works well for equational reasoning
+{-@ lem_rangeProperty_iff_right :: xs:(Array a) -> p:(Property a) -> { i:Int | 0 <= i }
+                                  -> { j:Int | j <= size xs }
+                                  -> { pf:_ | rangeProperty xs i j p && (i>j || p (get xs j)) 
+                                                <=> rangeProperty xs i (j+1) p } / [j-i] @-}
+lem_rangeProperty_iff_right :: Array a -> Property a -> Int -> Int -> Proof
+lem_rangeProperty_iff_right xs p i j | i > j      = ()
+                                     | i == j     = ()
+                                     | otherwise  = () ? lem_rangeProperty_iff_right xs p (i+1) j
 
 --                                         -> { p:(Property a) | rangeProperty xs i j p }
 {-@ lem_rangeProperty_at :: xs:(Array a) -> { i:Int | 0 <= i } -> { j:Int | i < j && j <= size xs }

@@ -1,9 +1,7 @@
-{-@ LIQUID "--ple" @-}
-{-@ LIQUID "--reflection"  @-}
 
 {-# LANGUAGE CPP #-}
 {-# LANGUAGE BangPatterns #-}
-{-# LANGUAGE LinearTypes  #-}
+
 
 module DpsMergeSort where
 

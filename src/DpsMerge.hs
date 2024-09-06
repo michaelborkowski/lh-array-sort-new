@@ -1,5 +1,3 @@
-{-@ LIQUID "--ple" @-}
-{-@ LIQUID "--reflection"  @-}
 
 {-# LANGUAGE CPP #-}
 {-# LANGUAGE BangPatterns #-}

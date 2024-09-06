@@ -1,9 +1,7 @@
 {-# LANGUAGE CPP              #-}
 {-# LANGUAGE MagicHash        #-}
 {-# LANGUAGE BangPatterns     #-}
-{-# LANGUAGE LinearTypes      #-}
-{-# LANGUAGE ConstraintKinds #-}
-{-# LANGUAGE FlexibleInstances       #-}
+
 
 -- The Strict pragma is not just for performance, it's necessary for correctness.
 -- Without it, this implementation contains a bug related to some thunk/effect

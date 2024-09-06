@@ -1,6 +1,3 @@
-{-@ LIQUID "--reflection"  @-}
-{-@ LIQUID "--ple"         @-}
-{-@ LIQUID "--short-names" @-}
 
 {-# LANGUAGE CPP #-}
 {-# LANGUAGE GADTs #-}

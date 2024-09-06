@@ -2,7 +2,7 @@
 {-# LANGUAGE UnboxedTuples    #-}
 {-# LANGUAGE MagicHash        #-}
 {-# LANGUAGE BangPatterns     #-}
-{-# LANGUAGE LinearTypes      #-}
+
 
 module Array.Mutable.PrimUnlifted where
 

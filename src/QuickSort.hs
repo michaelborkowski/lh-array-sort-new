@@ -1,13 +1,10 @@
-{-@ LIQUID "--reflection"  @-}
-{-@ LIQUID "--ple"         @-}
-{-@ LIQUID "--short-names" @-}
 
 {-@ LIQUID "--exact-data-cons" @-}
 {-@ LIQUID "--higherorder"  @-}
 
 {-# LANGUAGE CPP #-}
 {-# LANGUAGE Strict #-}
-{-# LANGUAGE LinearTypes   #-}
+
 
 module QuickSort where
 
