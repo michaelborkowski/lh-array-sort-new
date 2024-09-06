@@ -1,6 +1,3 @@
-{-@ LIQUID "--ple" @-}
-{-@ LIQUID "--reflection"  @-}
-{-@ LIQUID "--short-names" @-}
 
 {-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE CPP #-}
@@ -11,14 +8,15 @@ import qualified Language.Haskell.Liquid.Bag as B
 import           Language.Haskell.Liquid.ProofCombinators hiding ((?))
 import           ProofCombinators
 import           Array
-import           Equivalence
-import           Order
+import Properties.Equivalence
+import Properties.Order
 import           DpsMergeParSeqFallback
 
 import           Par
 
 #ifdef MUTABLE_ARRAYS
 import           Array.Mutable as A
+import           Control.DeepSeq ( NFData(..) )
 #else
 import           Array.List as A
 #endif
@@ -344,8 +342,12 @@ lem_merge_par_func_sorted src1 src2 dst =
                    left (snd (fst t)) == left xs2 && right (snd (fst t)) == right xs2 &&
                    size (snd t) == size zs && token (snd t) == token zs &&
                    left (snd t) == left zs && right (snd t) == right zs  } / [size xs1] @-} 
-merge_par' :: (Show a, HasPrimOrd a) => A.Array a -> A.Array a -> A.Array a -> 
-                                                       ((A.Array a, A.Array a), A.Array a)
+#ifdef MUTABLE_ARRAYS
+merge_par' :: (Show a, HasPrimOrd a, NFData a) =>
+#else
+merge_par' :: (Show a, HasPrimOrd a) =>
+#endif                   
+   A.Array a -> A.Array a -> A.Array a -> ((A.Array a, A.Array a), A.Array a)
 merge_par' !src1 !src2 !dst =
   if A.size dst < goto_seqmerge
   then merge' src1 src2 dst 0 0 0
@@ -425,7 +427,12 @@ binarySearch' ls query lo hi = if lo == hi
 {-# INLINE merge_par #-}
 {-# SPECIALISE merge_par :: A.Array Float -> A.Array Float -> A.Array Float -> (A.Array Float, A.Array Float) #-}
 {-# SPECIALISE merge_par :: A.Array Int -> A.Array Int -> A.Array Int -> (A.Array Int, A.Array Int) #-}
-merge_par :: (Show a, HasPrimOrd a) => A.Array a -> A.Array a -> A.Array a -> (A.Array a, A.Array a)
+#ifdef MUTABLE_ARRAYS
+merge_par :: (Show a, HasPrimOrd a, NFData a) =>
+#else
+merge_par :: (Show a, HasPrimOrd a) =>
+#endif                   
+   A.Array a -> A.Array a -> A.Array a -> (A.Array a, A.Array a)
 merge_par !src1 !src2 !dst =
   let !((src1', src2'), dst') = merge_par' src1  src2  dst
       src'                    = A.append   src1' src2'

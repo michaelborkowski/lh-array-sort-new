@@ -10,7 +10,7 @@ module Array
   Array
 
     -- * Construction and querying
-  , alloc, make, size, get, set, slice, append, splitMid, swap
+  , alloc, make, size, get, set, slice, append
 
     -- * Linear versions
   , size2, get2, slice2, copy2
@@ -22,7 +22,7 @@ module Array
 --  , (.||.)
 
     -- * LiqidHaskell lemmas
-  , lma_gs, lma_gns, lma_swap, lma_swap_eql, lem_slice_append, lem_get_slice
+  , lma_gs, lma_gns, lem_slice_append, lem_get_slice
 
   ) where
 
@@ -31,30 +31,30 @@ import Data.Unrestricted.Linear (Ur(..))
 import Language.Haskell.Liquid.ProofCombinators (Proof)
 
 #ifdef MUTABLE_ARRAYS
-import           Array.Mutable (Array)
+import           Array.Mutable (Array, HasPrim(..))
 #else
-import           Array.List    (Array)
+import           Array.List    (Array, HasPrim(..))
 #endif
 
 --------------------------------------------------------------------------------
 
 -- type Array a = A.Array a
 
-alloc :: Int -> a -> (Array a %1-> Ur b) %1-> Ur b
-make :: Int -> a -> Array a
-size :: Array a -> Int
-get :: Array a -> Int -> a
-set :: Array a -> Int -> a -> Array a
-slice :: Array a -> Int -> Int -> Array a
-append :: Array a -> Array a -> Array a
-splitMid :: Array a -> (Array a, Array a) -- this currently is not linear
-swap :: Array a -> Int -> Int -> Array a  -- this currently is not linear
-size2 :: Array a %1-> (Int, Array a)
-get2 :: Array a -> Int -> (a, Array a)
-slice2 :: Array a -> Int -> Int -> (Array a, Array a)
-copy2 :: Array a -> Int -> Array a -> Int -> Int -> (Array a, Array a)
+alloc    :: HasPrim a => Int -> a -> (Array a %1-> Ur b) %1-> Ur b
+make     :: Int -> a -> Array a
+size     :: Array a -> Int
+get      :: Array a -> Int -> a
+set      :: Array a -> Int -> a -> Array a
+slice    :: Array a -> Int -> Int -> Array a
+append   :: Array a -> Array a -> Array a
+--splitMid :: Array a -> (Array a, Array a) -- not in TCB
+--swap :: Array a -> Int -> Int -> Array a  -- not in TCB
+size2    :: Array a %1-> (Int, Array a)
+get2     :: Array a -> Int -> (a, Array a)
+slice2   :: Array a -> Int -> Int -> (Array a, Array a)
+copy2    :: Array a -> Int -> Array a -> Int -> Int -> (Array a, Array a)
 fromList :: [a] -> Array a
-toList :: Array a -> [a]
+toList   :: Array a -> [a]
 
 -- TODO:
 -- size2 :: Array a %1-> (Ur Int, Array a)
@@ -68,9 +68,7 @@ toList :: Array a -> [a]
 
 --------------------------------------------------------------------------------
 
-lma_gs :: Array a -> Int -> a -> Proof
-lma_gns :: Array a -> Int -> Int -> a -> Proof
-lma_swap :: Array a -> Int -> Int -> Proof
-lma_swap_eql :: Array a -> Int -> Int -> Int -> Proof
+lma_gs           :: HasPrim a => Array a -> Int -> a -> Proof
+lma_gns          :: HasPrim a => Array a -> Int -> Int -> a -> Proof
 lem_slice_append :: Array a -> Array a -> Proof
-lem_get_slice :: Array a -> Int -> Int -> Int -> Proof
+lem_get_slice    :: Array a -> Int -> Int -> Int -> Proof

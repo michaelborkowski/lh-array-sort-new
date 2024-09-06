@@ -1,6 +1,5 @@
-{-# LANGUAGE LinearTypes   #-}
 
-{-@ LIQUID "--reflection"  @-}
+
 {-@ LIQUID "--higherorder"  @-}
 
 {-    @ LIQUID "--extensionality" @-}

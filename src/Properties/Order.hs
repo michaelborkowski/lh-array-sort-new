@@ -1,14 +1,9 @@
 {-# LANGUAGE CPP #-}
-{-# LANGUAGE ConstraintKinds #-}
 
-{-@ LIQUID "--reflection"  @-}
--- {-@ LIQUID "--diff"        @-}
-{-@ LIQUID "--ple"         @-}
-{-@ LIQUID "--short-names" @-}
 
 {-# LANGUAGE GADTs #-}
 
-module Order where
+module Properties.Order where
 
 import           Prelude hiding ((++))
 import           Language.Haskell.Liquid.ProofCombinators hiding ((?))

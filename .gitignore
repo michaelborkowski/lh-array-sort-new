@@ -32,6 +32,8 @@ cabal.project.local~
 src/.liquid/
 src/Array/.liquid
 src/Array/Mutable/.liquid
+src/Properties/.liquid
+src/Algorithms/.liquid
 
 # C
 # ~~~~~~~~~~~~~~~~~~~~

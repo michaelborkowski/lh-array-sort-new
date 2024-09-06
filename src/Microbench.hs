@@ -1,6 +1,5 @@
 {-# LANGUAGE CPP #-}
 {-# LANGUAGE BangPatterns #-}
-{-# LANGUAGE ConstraintKinds #-}
 
 {-@ LIQUID "--exact-data-cons" @-}
 {-@ LIQUID "--higherorder" @-}
@@ -52,11 +51,7 @@ sumArray_par cutoff = go
              in x `par` y `pseq` x+y
 
 {-@ ignore fillArray @-}
-fillArray ::
-#ifdef PRIM_MUTABLE_ARRAYS
-  (P.Prim a) =>
-#endif
-  (Int, a) -> A.Array a
+fillArray :: A.HasPrim a => (Int, a) -> A.Array a
 fillArray (sz, val) = A.make sz val
 
 {-# NOINLINE seqfib #-}

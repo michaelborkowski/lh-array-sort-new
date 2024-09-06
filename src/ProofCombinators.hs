@@ -1,4 +1,4 @@
-{-# LANGUAGE LinearTypes   #-}
+
 
 module ProofCombinators ((?){-}, pleUnfold-}) where
 

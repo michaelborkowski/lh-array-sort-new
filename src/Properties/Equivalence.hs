@@ -1,12 +1,8 @@
-{-@ LIQUID "--reflection"  @-}
-{-@ LIQUID "--ple"         @-}
-{-@ LIQUID "--short-names" @-}
 
 {-# LANGUAGE CPP #-}
 {-# LANGUAGE GADTs #-}
-{-# LANGUAGE ConstraintKinds #-}
 
-module Equivalence where
+module Properties.Equivalence where
 
 import           Prelude
 import           Language.Haskell.Liquid.ProofCombinators hiding ((?))
@@ -14,13 +10,15 @@ import           ProofCombinators
 import qualified Data.Set as S
 import qualified Language.Haskell.Liquid.Bag as B
 import           Array
-import           Order
+import           ArrayOperations
 
 #ifdef MUTABLE_ARRAYS
 import           Array.Mutable as A
 #else
 import           Array.List as A
 #endif
+
+import Properties.Order
 
 --------------------------------------------------------------------------------
 

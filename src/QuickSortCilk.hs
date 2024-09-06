@@ -1,13 +1,10 @@
-{-@ LIQUID "--reflection"  @-}
-{-@ LIQUID "--ple"         @-}
-{-@ LIQUID "--short-names" @-}
 
 {-@ LIQUID "--exact-data-cons" @-}
 {-@ LIQUID "--higherorder"  @-}
 
 {-# LANGUAGE CPP #-}
 {-# LANGUAGE Strict #-}
-{-# LANGUAGE LinearTypes   #-}
+
 
 module QuickSortCilk where
 
@@ -16,9 +13,10 @@ import           Language.Haskell.Liquid.ProofCombinators hiding ((?))
 
 import ProofCombinators
 import Array
-import Equivalence
-import Order
-import Properties
+import ArrayOperations
+import Properties.Equivalence
+import Properties.Order
+import Properties.RangeProperties
 
 import Insertion
 

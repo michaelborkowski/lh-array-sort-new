@@ -1,5 +1,3 @@
-{-@ LIQUID "--ple" @-}
-{-@ LIQUID "--reflection"  @-}
 
 {-# LANGUAGE CPP #-}
 
@@ -9,10 +7,11 @@ import qualified Language.Haskell.Liquid.Bag as B
 import           Language.Haskell.Liquid.ProofCombinators hiding ((?))
 import           ProofCombinators
 import           Array
+import           ArrayOperations
 import           DpsMergePar
 import qualified DpsMergeSort4 as Seq
-import           Equivalence
-import           Order
+import Properties.Equivalence
+import Properties.Order
 import           Par
 
 #ifdef MUTABLE_ARRAYS
