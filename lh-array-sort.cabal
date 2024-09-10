@@ -20,6 +20,9 @@ Flag prim-mutable-arrays
    Description: Use mutable arrays of primitive types.
    Default: False
 
+Flag liquid-checks
+   Description: Perform liquid checks. If False, we instead perform linear checks (unless we use mutable arrays.)
+   Default: True
 
 library
 
@@ -29,8 +32,6 @@ library
   if flag(prim-mutable-arrays)
     cpp-options: -DPRIM_MUTABLE_ARRAYS -DMUTABLE_ARRAYS
   
-  default-extensions: LinearTypes
-
   exposed-modules:
       Par
       Array
@@ -60,7 +61,8 @@ library
       Array.Mutable.Unlifted
       Array.Mutable.PrimUnlifted
       ProofCombinators
-      UnsafeLinear
+      Linear.Unsafe
+      Linear.Common
   hs-source-dirs:
       src
   build-depends:
@@ -68,10 +70,7 @@ library
       deepseq,
       random,
       containers,
-      -- Versions pinned in cabal.project.
-      -- liquid-base,
-      -- liquid-containers,
-      
+
       liquid-prelude        >= 0.9.2.8.2,
       liquidhaskell-boot    == 0.9.10.1, 
       liquidhaskell         == 0.9.10.1,
@@ -87,8 +86,14 @@ library
                -O2
                -w
   if !(flag(mutable-arrays) || flag(prim-mutable-arrays))
-    ghc-options: -fplugin=LiquidHaskell
-                 -fplugin-opt=LiquidHaskell:--ple
-                 -fplugin-opt=LiquidHaskell:--ple-with-undecided-guards
-                 -fplugin-opt=LiquidHaskell:--reflection
-                 -fplugin-opt=LiquidHaskell:--short-names
+    if flag(liquid-checks)
+      ghc-options: -fplugin=LiquidHaskell
+                   -fplugin-opt=LiquidHaskell:--ple
+                   -fplugin-opt=LiquidHaskell:--ple-with-undecided-guards
+                   -fplugin-opt=LiquidHaskell:--reflection
+                   -fplugin-opt=LiquidHaskell:--short-names
+    else
+      build-depends: quest-plugin
+      default-extensions: LinearTypes
+      ghc-options: -fplugin=QuestPlugin
+      cpp-options: -DLINEAR

@@ -23,7 +23,7 @@ import Properties.Partitions
 import qualified Unsafe.Linear as Unsafe
 import           Array.Mutable as A
 #else
-import qualified UnsafeLinear as Unsafe
+import qualified Linear.Unsafe as Unsafe
 import           Array.List as A
 #endif
 import qualified Array as A

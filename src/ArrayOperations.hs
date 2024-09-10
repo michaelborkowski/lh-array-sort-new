@@ -18,7 +18,7 @@ module ArrayOperations
   , lma_swap, lma_swap_eql, lem_swap_order
   ) where
 
-import qualified UnsafeLinear as Unsafe
+import qualified Linear.Unsafe as Unsafe
 import           Data.Unrestricted.Linear (Ur(..))
 import           Prelude hiding (take, drop, splitAt)
 import           GHC.Conc ( numCapabilities, par, pseq )

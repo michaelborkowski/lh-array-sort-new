@@ -5,7 +5,7 @@ version:            0.1
 build-type:         Simple
 
 executable prof
-    build-depends:       base >= 4.14 && <4.17
+    build-depends:       base >= 4.14 && <4.21
                        , deepseq
                        , criterion
                        , split

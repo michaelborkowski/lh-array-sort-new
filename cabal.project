@@ -2,6 +2,7 @@ packages: .
           ./benchrunner
           ./benchmarks/haskell
           ./prof
+          ./quest-plugin
 
 with-compiler: ghc-9.10.1
 

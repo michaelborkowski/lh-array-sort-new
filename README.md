@@ -10,6 +10,9 @@ Checking time should not exceed 2min for any single file. Slightly faster than L
 
 ## Building and benchmarking
 
+Note: for an explanation of how building with LiquidHaskell v. Linear-Haskell checks works, see
+https://github.com/michaelborkowski/lh-array-sort/pull/5
+
 
 This project is set up to be built using `make`. By default all make
 commands will use Cabal to build Haskell stuff and will compile verified

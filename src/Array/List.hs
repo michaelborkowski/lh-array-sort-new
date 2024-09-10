@@ -33,7 +33,8 @@ import           Prelude hiding (take, drop)
 import           Control.DeepSeq ( NFData(..) )
 import           System.IO.Unsafe
 import           System.Random
-import qualified UnsafeLinear  as Unsafe
+import           Linear.Common
+import qualified Linear.Unsafe  as Unsafe
 
 import           Language.Haskell.Liquid.ProofCombinators hiding ((?))
 import           ProofCombinators
@@ -104,7 +105,7 @@ size (Arr _ l r _) = r-l
 {-  @ reflect size2 @-}
 {-@ size2 :: xs:(Array a)
                -> { tup:_ | fst tup == size xs && snd tup == xs } @-}
-size2 :: Array a -> (Int, Array a)
+size2 :: Array a -. (Int, Array a)
 size2 xs = Unsafe.toLinear go (xs ? toProof (Unsafe.toLinear go xs === go xs))
   where
     {-@ go :: xs:(Array a)

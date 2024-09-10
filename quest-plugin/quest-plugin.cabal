@@ -1,0 +1,29 @@
+cabal-version:   3.4
+name:            quest-plugin
+version:         0.1.0.0
+license:         NONE
+author:          Artem Pelenitsyn
+maintainer:      a.pelenitsyn@gmail.com
+build-type:      Simple
+
+library
+  exposed-modules:  QuestPlugin
+  build-depends:
+    , base
+    , ghc ^>= 9.10
+    , syb
+  hs-source-dirs:   .
+  default-language: Haskell2010
+  ghc-options: -Wall
+
+test-suite example
+  default-language: Haskell2010
+  type:             exitcode-stdio-1.0
+  hs-source-dirs:   example
+  main-is:          Example.hs
+
+  build-depends:
+    , base
+    , quest-plugin
+  ghc-options: -fplugin=QuestPlugin
+  -- if comment out the above line, the example will blow up with `undefined`

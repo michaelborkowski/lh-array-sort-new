@@ -14,6 +14,7 @@ import           ArrayOperations
 import Properties.Order
 import Properties.Equivalence
 
+import           Linear.Common
 import qualified Unsafe.Linear as Unsafe
 
 #ifdef MUTABLE_ARRAYS

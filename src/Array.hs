@@ -42,7 +42,8 @@ module Array
 
   ) where
 
-import qualified UnsafeLinear as Unsafe
+import           Linear.Common
+import qualified Linear.Unsafe as Unsafe
 import           Data.Unrestricted.Linear (Ur(..))
 import           Prelude hiding (take, drop, splitAt)
 import           GHC.Conc ( numCapabilities, par, pseq )
@@ -66,7 +67,7 @@ import           ProofCombinators
 import qualified Data.Primitive.Types as P
 
 {-@ measure unur @-}
-unur :: Ur a %1-> a
+unur :: Ur a -. a
 unur (Ur a) = a
 
 --------------------------------------------------------------------------------
@@ -85,7 +86,7 @@ type HasPrimOrd a =
 {-@ alloc :: forall <p :: Ur b -> Bool>. n:Nat -> x:_ 
                 -> f:({ ys:(Array a) | size ys == n && left ys == 0 && right ys == n } 
                             -> Ur<p> b) -> ret:Ur<p> b @-}
-alloc :: HasPrim a => Int -> a -> (Array a %1-> Ur b) %1-> Ur b
+alloc :: HasPrim a => Int -> a -> (Array a -. Ur b) -. Ur b
 #ifdef MUTABLE_ARRAYS
 alloc i a f = f (makeNoFill i a)
 #else
