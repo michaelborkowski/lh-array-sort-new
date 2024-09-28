@@ -163,6 +163,13 @@ setList (x:xs) n y = x:(setList xs (n-1) y)
 set :: Array a -> Int -> a -> Array a
 set (Arr arr l r t) n y = Arr (setList arr n y) l r t
 
+{-@ reflect setLin @-}
+{-@ setLin :: n:Nat -> x:_ -> { xs:_ | n < size xs }
+                -> { nxs:(Array a) | left xs == left nxs && right xs == right nxs &&
+                                     token xs == token nxs && size xs == size nxs } @-}
+setLin :: Int -> a -> (Array a -. Array a)
+setLin n y (Arr arr l r t) = Arr (setList arr n y) l r t
+
   -- copies
 
 {-@ reflect copy @-}

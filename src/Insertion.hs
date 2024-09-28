@@ -144,14 +144,14 @@ lem_insert_func_equiv xs x i
                        left xs == left ys && right xs == right ys &&
                        A.size ys == A.size xs && token xs == token ys } / [i] @-} 
 insert :: Ord a => A.Array a -> a -> Int -> A.Array a                    
-insert !xs !x 0 = A.set xs 0 x        
+insert !xs !x 0 = A.setLin 0 x xs
 insert !xs !x !i =                 -- sort the element at offset i into the first i+1 elements
   let (!(Ur a), !xs') = A.get2 (i-1) xs -- a is above xs[0..i-1], insert must preserve
   in if x < a
-     then let !xs''  = A.set xs' i a        
+     then let !xs''  = A.setLin i a xs'
               !xs''' = insert xs''  x (i - 1)
            in xs''' 
-     else A.set xs' i x                    
+     else A.setLin i x xs'
      
 {-@ isort :: { xs:_ | A.size xs > 1 }  
       -> { i:Nat | i <= A.size xs && isSortedBtw xs 0 i }
