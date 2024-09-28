@@ -40,17 +40,26 @@ library
       Properties.Order
       Properties.Partitions
       Properties.RangeProperties
+
+      -- Re-enable sorts as refactoring completes
       Insertion
-      DpsMerge
-      DpsMergePar
-      DpsMergeParSeqFallback
-      DpsMergeSort
-      DpsMergeSort4
-      DpsMergeSortPar
-      DpsMergeSort4Par
-      Microbench
-      QuickSort
-      QuickSortCilk
+
+      -- DpsMerge
+      -- DpsMergePar
+      -- DpsMergeParSeqFallback
+      -- DpsMergeSort
+      -- DpsMergeSort4
+      -- DpsMergeSortPar
+      -- DpsMergeSort4Par
+
+      -- Microbench
+
+      -- QuickSort
+      -- QuickSortCilk
+
+      -- JZ: Add Parallel Cilksort
+      -- Current Cilksort is entirely sequential
+
 -- remove until ready:
 --      QuickSortNew   
 --  the last not quite ready yet?
