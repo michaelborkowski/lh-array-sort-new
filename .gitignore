@@ -34,6 +34,7 @@ src/Array/.liquid
 src/Array/Mutable/.liquid
 src/Properties/.liquid
 src/Algorithms/.liquid
+src/Linear/.liquid
 
 # C
 # ~~~~~~~~~~~~~~~~~~~~
