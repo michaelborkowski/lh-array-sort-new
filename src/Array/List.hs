@@ -142,10 +142,10 @@ get :: Array a -> Int -> a
 get (Arr lst _ _ _) n = getList lst n
 
 {-@ reflect get2 @-}
-{-@ get2 :: xs:Array a -> {n:Nat | n < size xs }
+{-@ get2 :: n:Nat -> {xs:Array a | n < size xs }
               -> (Ur a, Array a)<{\ x zs -> unur x == get xs n && xs == zs }> @-}
-get2 :: Array a -> Int -> (Ur a, Array a)
-get2 xs i = (Ur (get xs i), xs)
+get2 :: Int -> Array a -> (Ur a, Array a)
+get2 i xs = (Ur (get xs i), xs)
 
   -- set
 

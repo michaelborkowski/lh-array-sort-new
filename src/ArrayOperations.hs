@@ -73,8 +73,8 @@ swap2 xs i j  = {-Unsafe.toLinear3-} go xs i j
                                                left xs == left ys && right xs == right ys &&
                                                ys == swap xs i j } @-}
     go xs i j =
-      let (!(Ur xi), !xs1) = get2 xs i
-          (!(Ur xj), !xs2) = get2 xs1 j
+      let (!(Ur xi), !xs1) = get2 i xs
+          (!(Ur xj), !xs2) = get2 j xs1
           !xs3 = set xs2 i xj
           !xs4 = set xs3 j xi
       in xi `pseq` xj `pseq` xs4
