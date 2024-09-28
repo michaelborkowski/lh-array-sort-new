@@ -160,7 +160,7 @@ insert !xs !x !i =                 -- sort the element at offset i into the firs
                   A.size xs == A.size ys && token xs == token ys } / [A.size xs - i] @-}
 isort :: Ord a => A.Array a -> Int -> A.Array a -- | Sort in-place.
 isort xs i = 
-  let (s, xs') = A.size2 xs in
+  let (Ur s, xs') = A.size2 xs in
   if i == s then xs'
   else
     let !(Ur a, xs'') = A.get2 i xs'
@@ -181,7 +181,7 @@ isort_top' xs = isort xs 0
       -> { ys:_ | toBag xs  == toBag ys  && isSorted' ys &&
                   A.size xs == A.size ys } @-}
 isort_top :: Ord a => A.Array a -> A.Array a
-isort_top xs0 = let (n, xs1) = A.size2 xs0 in
+isort_top xs0 = let (Ur n, xs1) = A.size2 xs0 in
     if n <= 1 then xs1 
     else let (Ur hd, xs2) = A.get2 0 xs1
              {-@ promise :: { tmp:(Array a) | size tmp == n } 
