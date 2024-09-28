@@ -143,9 +143,9 @@ get (Arr lst _ _ _) n = getList lst n
 
 {-@ reflect get2 @-}
 {-@ get2 :: xs:Array a -> {n:Nat | n < size xs }
-              -> (a, Array a)<{\ x zs -> x == get xs n && xs == zs }> @-}
-get2 :: Array a -> Int -> (a, Array a)
-get2 xs i = (get xs i, xs)                  -- (Ur (get xs i), xs)
+              -> (Ur a, Array a)<{\ x zs -> unur x == get xs n && xs == zs }> @-}
+get2 :: Array a -> Int -> (Ur a, Array a)
+get2 xs i = (Ur (get xs i), xs)
 
   -- set
 

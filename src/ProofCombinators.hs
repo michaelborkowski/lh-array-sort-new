@@ -16,10 +16,12 @@ import Data.Unrestricted.Linear (Ur(..))
 pleUnfold :: a %1-> a 
 pleUnfold x = x -}
 
+{-# INLINE unur #-}
 {-@ measure unur @-}
 unur :: Ur a -. a
 unur (Ur a) = a
 
+{-# INLINE ur #-}
 {-@ assume ur :: a -> Ur a @-}
 ur :: a -. Ur a
 ur a = Ur a
