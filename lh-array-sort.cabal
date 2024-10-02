@@ -42,7 +42,8 @@ library
       Properties.RangeProperties
 
       -- Re-enable sorts as refactoring completes
-      -- Insertion  -- disabling for now due to difficulty with proof style
+      Insertion  
+      -- disabling for now due to difficulty with proof style
 
       -- DpsMerge
       -- DpsMergePar
