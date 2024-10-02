@@ -79,12 +79,16 @@ shuffleBtw :: HasPrimOrd a => Int -> Int -> (Array a -. (Array a, Ur Int))
 shuffleBtw i j xs =
   let
       (Ur piv, xs1) = A.get2 (j-1) xs        -- fix xs[j-1] as the pivot
-      {-@ goShuffle :: { zs:(Array a) | get zs (j-1) == piv && A.size zs == A.size xs &&
+      {-@ goShuffle :: 
+                       { jl:Int | i <= jl }
+                    -> { jr:Int | jl <= jr+1 }
+                    -> { zs:(Array a) | get zs (j-1) == piv && A.size zs == A.size xs &&
                                         toBagBtw zs i j == toBagBtw xs i j &&
                                         toSlice xs 0 i == toSlice zs 0 i &&
-                                        toSlice xs j (A.size zs) == toSlice zs j (A.size zs)}
-                    -> { jl:Int | i <= jl    &&             rangeUpperBound zs i      jl    piv }
-                    -> { jr:Int | jl <= jr+1 && jr < j-1 && rangeLowerBound zs (jr+1) (j-1) piv }
+                                        toSlice xs j (A.size zs) == toSlice zs j (A.size zs)
+                                        
+                                        && rangeUpperBound zs i      jl    piv
+                                        && jr < j-1 && rangeLowerBound zs (jr+1) (j-1) piv }
                     -> (Array a, Int)<{\ws ip -> rangeUpperBound ws i      ip    piv &&
                                                  rangeLowerBound ws ip     (j-1) piv &&
                                                  A.size ws == A.size zs &&
@@ -95,26 +99,26 @@ shuffleBtw i j xs =
                                                  toSlice zs j (A.size zs) == toSlice ws j (A.size zs) &&
                                                  i <= ip && ip < j }> / [jr - jl + 1] @-}
       -- at return, all of ws[i:ip] <= ws[j-1] and all of ws[ip:j-1] > ws[j-1].
-      goShuffle zs jl jr    =   -- BOTH bounds inclusive here
+      goShuffle jl jr zs =   -- BOTH bounds inclusive here
         if jl > jr
         then (zs, jl)
         else let (Ur vl, zs') = A.get2 jl zs in
           if vl <= piv
-          then goShuffle zs' (jl+1 ? lem_rangeProperty_build_right zs (belowPivot (get zs (j-1)))
+          then goShuffle (jl+1 ? lem_rangeProperty_build_right zs (belowPivot (get zs (j-1)))
                                        i (jl ? toProof (belowPivot (get zs (j-1)) (get zs jl))))
-                             jr
+                             jr zs'
           else let (Ur vr, zs'') = A.get2 jr zs' in
             if vr >  piv
-            then goShuffle zs'' jl     (jr-1)
+            then goShuffle jl (jr-1) zs''
             else let zs''' = swap zs'' jl jr
                            ? lem_range_outside_swap zs i jl jr (j-1) piv
                            ? lma_swap        zs   jl jr
                            ? lma_swap_eql zs jl jr (j-1)
                            ? lem_bagBtw_swap zs i jl jr j
                            ? lem_toSlice_swap  zs i jl jr j
-                  in goShuffle zs''' jl (jr-1)
+                  in goShuffle jl (jr-1) zs'''
 
-      (xs', ip)  = goShuffle xs1 i (j-2)  -- BOTH bounds inclusive      
+      (xs', ip)  = goShuffle i (j-2) xs1  -- BOTH bounds inclusive      
       {- @ xs'' :: { vs:(Array a) | isPartitionedBtw vs i ip j &&
                                    toSlice xs' 0 i == toSlice vs 0 i && 
                                    toSlice xs' j (A.size xs') == toSlice vs j (A.size xs') &&
