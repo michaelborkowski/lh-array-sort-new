@@ -19,6 +19,7 @@ import Properties.Order
 import Properties.RangeProperties
 import Properties.Partitions
 
+import           Linear.Common
 #ifdef MUTABLE_ARRAYS
 import qualified Unsafe.Linear as Unsafe
 import           Array.Mutable as A
@@ -33,7 +34,7 @@ import qualified Array as A
 {-@ quickSort :: xs:(Array a) -> { ys:(Array a) | isSorted' ys && A.size xs == A.size ys &&
                                                                   toBag  xs == toBag  ys } @-}
 -- quickSort :: (Ord a, Show a) => Array a -> Array a
-quickSort :: (HasPrimOrd a, Show a) => Array a -> Array a
+quickSort :: (HasPrimOrd a, Show a) => Array a -. Array a
 quickSort xs = 
   let (Ur n, xs1) = A.size2 xs in
       if n == 0 then xs1
@@ -41,20 +42,20 @@ quickSort xs =
                tmp = makeArray n hd
                (xs2', cpy) = A.copy2 0 0 n xs2 tmp ? lem_copy_equal_slice xs2 0 tmp 0 n
                () = A.free(xs2')
-            in quickSortBtw (cpy ? lem_equal_slice_bag   xs2   cpy 0 n) 0 n
+            in quickSortBtw 0 n (cpy ? lem_equal_slice_bag   xs2   cpy 0 n)
 
-{-@ quickSortBtw :: xs:(Array a) -> { i:Int | 0 <= i } -> { j:Int | i <= j && j <= A.size xs }
-                -> { ys:(Array a) | isSortedBtw ys i j && A.size xs == A.size ys &&
+{-@ quickSortBtw :: { i:Int | 0 <= i } -> { j:Int | i <= j }
+                -> { xs:(Array a) | j <= A.size xs } -> { ys:(Array a) | isSortedBtw ys i j && A.size xs == A.size ys &&
                                     toSlice xs 0 i == toSlice ys 0 i &&
                                     toSlice xs j (A.size xs) == toSlice ys j (A.size xs) &&
                                     toBagBtw xs i j == toBagBtw ys i j } / [j - i] @-}
-quickSortBtw :: HasPrimOrd a => Array a -> Int -> Int -> Array a
-quickSortBtw xs i j  =
+quickSortBtw :: HasPrimOrd a => Int -> Int -> (Array a -. Array a)
+quickSortBtw i j xs =
   if j - i < 2
   then xs
-  else let (xs', i_piv) = shuffleBtw xs i j   -- isPartitionedBtw xs' i i_piv j
-           xs''         = quickSortBtw xs'  i           i_piv
-           xs'''        = quickSortBtw xs'' (i_piv + 1) j
+  else let (xs', Ur i_piv) = shuffleBtw i j xs
+           xs''         = quickSortBtw i i_piv xs'
+           xs'''        = quickSortBtw (i_piv + 1) j xs''
                         ? lem_qs_pres_partition_left  xs'  xs''  i i_piv j
         in xs'''        ? lem_sorted_partitions xs''' i i_piv (j
                               ? lem_equal_slice_sorted xs'' xs''' 0 i i_piv (i_piv+1)
@@ -68,14 +69,14 @@ quickSortBtw xs i j  =
                         ? lem_toBagBtw_compose           xs'  xs''    i i_piv     j
                         ? lem_toBagBtw_compose           xs'' xs'''   i (i_piv+1) j
 
-{-@ shuffleBtw :: xs:(Array a) -> { i:Int | 0 <= i } -> { j:Int | i + 1 < j && j <= A.size xs }
-                  -> (Array a, Int)<{\ys ip -> isPartitionedBtw ys i ip j &&
+{-@ shuffleBtw :: { i:Int | 0 <= i } -> j:Int -> { xs:(Array a) | i + 1 < j && j <= A.size xs }
+                  -> (Array a, Ur Int)<{\ys ip -> isPartitionedBtw ys i (unur ip) j &&
                                                toSlice xs 0 i == toSlice ys 0 i &&
                                                toSlice xs j (A.size xs) == toSlice ys j (A.size xs) &&
                                                toBagBtw xs i j == toBagBtw ys i j &&
-                                               i <= ip && ip < j && A.size ys == A.size xs }> @-}
-shuffleBtw :: HasPrimOrd a => Array a -> Int -> Int -> (Array a, Int)
-shuffleBtw xs i j =
+                                               i <= unur ip && unur ip < j && A.size ys == A.size xs }> @-}
+shuffleBtw :: HasPrimOrd a => Int -> Int -> (Array a -. (Array a, Ur Int))
+shuffleBtw i j xs =
   let
       (Ur piv, xs1) = A.get2 (j-1) xs        -- fix xs[j-1] as the pivot
       {-@ goShuffle :: { zs:(Array a) | get zs (j-1) == piv && A.size zs == A.size xs &&
@@ -126,7 +127,7 @@ shuffleBtw xs i j =
                                            ? lem_range_outside_swap xs' i ip (j-1) j (get xs' (j-1))
                                            ? lem_toSlice_swap xs' i ip (j-1) j
                    else xs' 
-   in (xs'', ip)
+   in (xs'', Ur ip)
 --  where
 
 
