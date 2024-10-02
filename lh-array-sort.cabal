@@ -42,7 +42,7 @@ library
       Properties.RangeProperties
 
       -- Re-enable sorts as refactoring completes
-      Insertion
+      -- Insertion  -- disabling for now due to difficulty with proof style
 
       -- DpsMerge
       -- DpsMergePar
@@ -54,7 +54,7 @@ library
 
       -- Microbench
 
-      -- QuickSort
+      QuickSort
       -- QuickSortCilk
 
       -- JZ: Add Parallel Cilksort

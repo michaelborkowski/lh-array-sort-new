@@ -35,9 +35,9 @@ import qualified Array as A
 -- quickSort :: (Ord a, Show a) => Array a -> Array a
 quickSort :: (HasPrimOrd a, Show a) => Array a -> Array a
 quickSort xs = 
-  let (n, xs1) = A.size2 xs in
+  let (Ur n, xs1) = A.size2 xs in
       if n == 0 then xs1
-      else let (hd, xs2) = A.get2 xs1 0
+      else let (Ur hd, xs2) = A.get2 0 xs1
                tmp = makeArray n hd
                cpy = A.copy xs2 0 tmp 0 n ? lem_copy_equal_slice  xs2 0 tmp 0 n
             in quickSortBtw (cpy ? lem_equal_slice_bag   xs2   cpy 0 n) 0 n
@@ -76,7 +76,7 @@ quickSortBtw xs i j  =
 shuffleBtw :: HasPrimOrd a => Array a -> Int -> Int -> (Array a, Int)
 shuffleBtw xs i j =
   let
-      (piv, xs1) = A.get2 xs (j-1)        -- fix xs[j-1] as the pivot
+      (Ur piv, xs1) = A.get2 (j-1) xs        -- fix xs[j-1] as the pivot
       {-@ goShuffle :: { zs:(Array a) | get zs (j-1) == piv && A.size zs == A.size xs &&
                                         toBagBtw zs i j == toBagBtw xs i j &&
                                         toSlice xs 0 i == toSlice zs 0 i &&
@@ -96,12 +96,12 @@ shuffleBtw xs i j =
       goShuffle zs jl jr    =   -- BOTH bounds inclusive here
         if jl > jr
         then (zs, jl)
-        else let (vl, zs') = A.get2 zs jl in
+        else let (Ur vl, zs') = A.get2 jl zs in
           if vl <= piv
           then goShuffle zs' (jl+1 ? lem_rangeProperty_build_right zs (belowPivot (get zs (j-1)))
                                        i (jl ? toProof (belowPivot (get zs (j-1)) (get zs jl))))
                              jr
-          else let (vr, zs'') = A.get2 zs' jr in
+          else let (Ur vr, zs'') = A.get2 jr zs' in
             if vr >  piv
             then goShuffle zs'' jl     (jr-1)
             else let zs''' = swap zs'' jl jr
