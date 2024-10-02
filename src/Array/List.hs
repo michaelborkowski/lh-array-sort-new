@@ -189,14 +189,13 @@ copy xs xi ys yi n = set (copy xs xi ys yi (n-1)) (yi + n - 1) (get xs (xi + n -
 --            *or*                       copy xs (xi+1) (set ys yi (get xs xi)) (yi+1) (n-1)
 
 {-@ reflect copy2 @-}
-{-@ copy2 :: xs:_ -> { xi:Nat | xi <= size xs } -> ys:_
-                  -> { yi:Nat | yi <= size ys }
-                  -> { n:Nat  | xi + n <= size xs && yi + n <= size ys }
+{-@ copy2 :: xi:Nat -> yi:Nat -> n:Nat
+                  -> { xs:_ | xi <= size xs } -> { ys:_ | yi <= size ys && xi + n <= size xs && yi + n <= size ys }
                   -> { zs:_   | xs == fst zs && snd zs == copy xs xi ys yi n &&
                                 size (snd zs) == size ys && token (snd zs) == token ys &&
                                 left (snd zs) == left ys && right (snd zs) == right ys } @-}
-copy2 :: Array a -> Int -> Array a -> Int -> Int -> (Array a, Array a)
-copy2 xs xi ys yi n = (xs, copy xs xi ys yi n)
+copy2 :: Int -> Int -> Int -> Array a -. Array a -. (Array a, Array a)
+copy2 xi yi n xs ys = (xs, copy xs xi ys yi n)
 
   -- slices, splits, and appends
 

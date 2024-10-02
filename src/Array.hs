@@ -19,7 +19,7 @@ module Array
   , size, get, set, slice, append
 
     -- * Linear versions
-  , size2, get2, slice2, copy2, copy2_par
+  , size2, get2, slice2, copy2, copy2_par, free
 
     -- * Convert to/from lists
   , fromList, toList
@@ -96,6 +96,10 @@ makeArray = makeNoFill
 #else
 makeArray = make
 #endif
+
+{-# INLINE free #-}
+free :: HasPrim a => Array a -. ()
+free = Unsafe.toLinear (\_ -> ())
 
 --------------------------------------------------------------------------------
 -- Parallel operations

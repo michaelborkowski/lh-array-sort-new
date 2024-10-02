@@ -39,7 +39,8 @@ quickSort xs =
       if n == 0 then xs1
       else let (Ur hd, xs2) = A.get2 0 xs1
                tmp = makeArray n hd
-               cpy = A.copy xs2 0 tmp 0 n ? lem_copy_equal_slice  xs2 0 tmp 0 n
+               (xs2', cpy) = A.copy2 0 0 n xs2 tmp ? lem_copy_equal_slice xs2 0 tmp 0 n
+               () = A.free(xs2')
             in quickSortBtw (cpy ? lem_equal_slice_bag   xs2   cpy 0 n) 0 n
 
 {-@ quickSortBtw :: xs:(Array a) -> { i:Int | 0 <= i } -> { j:Int | i <= j && j <= A.size xs }
