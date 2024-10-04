@@ -95,6 +95,12 @@ library
                -ddump-to-file
                -O2
                -w
+
+  -- the plugin stuff
+  build-depends: quest-plugin
+  ghc-options: -fplugin=QuestPlugin
+
+  -- Turn on Liquid Haskell conditionally; else, turn on Linear Haskell
   if !(flag(mutable-arrays) || flag(prim-mutable-arrays))
     if flag(liquid-checks)
       ghc-options: -fplugin=LiquidHaskell
@@ -103,7 +109,5 @@ library
                    -fplugin-opt=LiquidHaskell:--reflection
                    -fplugin-opt=LiquidHaskell:--short-names
     else
-      build-depends: quest-plugin
-      default-extensions: LinearTypes
-      ghc-options: -fplugin=QuestPlugin
-      cpp-options: -DLINEAR
+        default-extensions: LinearTypes
+        cpp-options: -DLINEAR
