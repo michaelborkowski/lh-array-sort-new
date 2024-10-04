@@ -99,6 +99,7 @@ shuffleBtw i j xs =
                                                  toSlice zs j (A.size zs) == toSlice ws j (A.size zs) &&
                                                  i <= ip && ip < j }> / [jr - jl + 1] @-}
       -- at return, all of ws[i:ip] <= ws[j-1] and all of ws[ip:j-1] > ws[j-1].
+      goShuffle :: HasPrimOrd a => Int -> Int -> (Array a -. (Array a, Int))
       goShuffle jl jr zs =   -- BOTH bounds inclusive here
         if jl > jr
         then (zs, jl)

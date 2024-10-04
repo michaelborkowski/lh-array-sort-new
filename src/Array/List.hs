@@ -144,8 +144,8 @@ get (Arr lst _ _ _) n = getList lst n
 {-@ reflect get2 @-}
 {-@ get2 :: n:Nat -> {xs:Array a | n < size xs }
               -> (Ur a, Array a)<{\ x zs -> unur x == get xs n && xs == zs }> @-}
-get2 :: Int -> Array a -> (Ur a, Array a)
-get2 i xs = (Ur (get xs i), xs)
+get2 :: Int -> (Array a -. (Ur a, Array a))
+get2 i = Unsafe.toLinear (\xs -> (Ur (get xs i), xs))
 
   -- set
 
@@ -169,7 +169,7 @@ set (Arr arr l r t) n y = Arr (setList arr n y) l r t
                                      token xs == token nxs && size xs == size nxs &&
                                      nxs == set xs n x } @-}
 setLin :: Int -> a -> (Array a -. Array a)
-setLin n y (Arr arr l r t) = Arr (setList arr n y) l r t
+setLin n y = Unsafe.toLinear (\(Arr arr l r t) -> Arr (setList arr n y) l r t)
 
   -- copies
 
@@ -196,7 +196,7 @@ copy xs xi ys yi n = set (copy xs xi ys yi (n-1)) (yi + n - 1) (get xs (xi + n -
                                 size (snd zs) == size ys && token (snd zs) == token ys &&
                                 left (snd zs) == left ys && right (snd zs) == right ys } @-}
 copy2 :: Int -> Int -> Int -> (Array a -. (Array a -. (Array a, Array a)))
-copy2 xi yi n xs ys = (xs, copy xs xi ys yi n)
+copy2 xi yi n = Unsafe.toLinear (\xs -> Unsafe.toLinear (\ys -> (xs, copy xs xi ys yi n)))
 
   -- slices, splits, and appends
 
