@@ -3,6 +3,7 @@
 module ProofCombinators ((?){-}, pleUnfold-}, ur, unur, Ur(..) ) where
 
 import Linear.Common
+import qualified Unsafe.Linear as Unsafe
 import Language.Haskell.Liquid.ProofCombinators (Proof)
 
 import Data.Unrestricted.Linear (Ur(..))
@@ -24,4 +25,4 @@ unur (Ur a) = a
 {-# INLINE ur #-}
 {-@ assume ur :: a -> Ur a @-}
 ur :: a -. Ur a
-ur a = Ur a
+ur a = Unsafe.toLinear Ur a
