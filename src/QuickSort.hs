@@ -4,6 +4,7 @@
 
 {-# LANGUAGE CPP #-}
 {-# LANGUAGE Strict #-}
+{-# LANGUAGE RankNTypes #-}
 
 
 module QuickSort where
@@ -75,7 +76,7 @@ quickSortBtw i j xs =
                                                toSlice xs j (A.size xs) == toSlice ys j (A.size xs) &&
                                                toBagBtw xs i j == toBagBtw ys i j &&
                                                i <= unur ip && unur ip < j && A.size ys == A.size xs }> @-}
-shuffleBtw :: HasPrimOrd a => Int -> Int -> (Array a -. (Array a, Ur Int))
+shuffleBtw :: forall a. HasPrimOrd a => Int -> Int -> (Array a -. (Array a, Ur Int))
 shuffleBtw i j xs =
   let
       (Ur piv, xs1) = A.get2 (j-1) xs        -- fix xs[j-1] as the pivot
@@ -126,7 +127,7 @@ shuffleBtw i j xs =
                                    A.size xs' == A.size vs &&
                                    toBagBtw xs i j == toBagBtw vs i j } @-}
       xs''       = if ip < j-1 
-                   then swap2 xs' ip (j-1) ? lma_swap xs' ip (j-1)
+                   then swap2 ip (j-1) xs' ? lma_swap xs' ip (j-1)
                                            ? lem_bagBtw_swap xs' i ip (j-1) j
                                            ? lem_range_inside_swap xs' ip (j-1)
                                            ? lem_range_outside_swap xs' i ip (j-1) j (get xs' (j-1))
