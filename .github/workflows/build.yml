@@ -43,8 +43,8 @@ jobs:
           key: ${{ runner.os }}-${{ matrix.ghc }}-${{ github.sha }}
           restore-keys: ${{ runner.os }}-${{ matrix.ghc }}-
 
-      - Build in liquid mode
+      - name: Build in liquid mode
         run: cabal build lh-array-sort
 
-      - Build in linear mode
+      - name: Build in linear mode
         run: cabal build lh-array-sort -f-liquid-checks
