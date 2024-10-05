@@ -104,13 +104,13 @@ size (Arr _ l r _) = r-l
 
 {-  @ reflect size2 @-}
 {-@ size2 :: xs:(Array a)
-               -> { tup:_ | fst tup == size xs && snd tup == xs } @-}
-size2 :: Array a -. (Int, Array a)
+               -> { tup:_ | unur (fst tup) == size xs && snd tup == xs } @-}
+size2 :: Array a -. (Ur Int, Array a)
 size2 xs = Unsafe.toLinear go (xs ? toProof (Unsafe.toLinear go xs === go xs))
   where
     {-@ go :: xs:(Array a)
-               -> { tup:_ | fst tup == size xs && snd tup == xs } @-}
-    go xs = (size xs, xs) 
+               -> { tup:_ | unur (fst tup) == size xs && snd tup == xs } @-}
+    go xs = (Ur (size xs), xs) 
 
 {-@ reflect listSize @-}
 {-@ listSize :: xs:_ -> Nat @-}
@@ -142,10 +142,10 @@ get :: Array a -> Int -> a
 get (Arr lst _ _ _) n = getList lst n
 
 {-@ reflect get2 @-}
-{-@ get2 :: xs:Array a -> {n:Nat | n < size xs }
-              -> (a, Array a)<{\ x zs -> x == get xs n && xs == zs }> @-}
-get2 :: Array a -> Int -> (a, Array a)
-get2 xs i = (get xs i, xs)                  -- (Ur (get xs i), xs)
+{-@ get2 :: n:Nat -> {xs:Array a | n < size xs }
+              -> (Ur a, Array a)<{\ x zs -> unur x == get xs n && xs == zs }> @-}
+get2 :: Int -> (Array a -. (Ur a, Array a))
+get2 i = Unsafe.toLinear (\xs -> (Ur (get xs i), xs))
 
   -- set
 
@@ -162,6 +162,14 @@ setList (x:xs) n y = x:(setList xs (n-1) y)
                                      token xs == token nxs && size xs == size nxs } @-}
 set :: Array a -> Int -> a -> Array a
 set (Arr arr l r t) n y = Arr (setList arr n y) l r t
+
+{-@ reflect setLin @-}
+{-@ setLin :: n:Nat -> x:_ -> { xs:_ | n < size xs }
+                -> { nxs:(Array a) | left xs == left nxs && right xs == right nxs &&
+                                     token xs == token nxs && size xs == size nxs &&
+                                     nxs == set xs n x } @-}
+setLin :: Int -> a -> (Array a -. Array a)
+setLin n y = Unsafe.toLinear (\(Arr arr l r t) -> Arr (setList arr n y) l r t)
 
   -- copies
 
@@ -182,14 +190,13 @@ copy xs xi ys yi n = set (copy xs xi ys yi (n-1)) (yi + n - 1) (get xs (xi + n -
 --            *or*                       copy xs (xi+1) (set ys yi (get xs xi)) (yi+1) (n-1)
 
 {-@ reflect copy2 @-}
-{-@ copy2 :: xs:_ -> { xi:Nat | xi <= size xs } -> ys:_
-                  -> { yi:Nat | yi <= size ys }
-                  -> { n:Nat  | xi + n <= size xs && yi + n <= size ys }
+{-@ copy2 :: xi:Nat -> yi:Nat -> n:Nat
+                  -> { xs:_ | xi <= size xs } -> { ys:_ | yi <= size ys && xi + n <= size xs && yi + n <= size ys }
                   -> { zs:_   | xs == fst zs && snd zs == copy xs xi ys yi n &&
                                 size (snd zs) == size ys && token (snd zs) == token ys &&
                                 left (snd zs) == left ys && right (snd zs) == right ys } @-}
-copy2 :: Array a -> Int -> Array a -> Int -> Int -> (Array a, Array a)
-copy2 xs xi ys yi n = (xs, copy xs xi ys yi n)
+copy2 :: Int -> Int -> Int -> (Array a -. (Array a -. (Array a, Array a)))
+copy2 xi yi n = Unsafe.toLinear (\xs -> Unsafe.toLinear (\ys -> (xs, copy xs xi ys yi n)))
 
   -- slices, splits, and appends
 

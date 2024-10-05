@@ -40,17 +40,27 @@ library
       Properties.Order
       Properties.Partitions
       Properties.RangeProperties
-      Insertion
-      DpsMerge
-      DpsMergePar
-      DpsMergeParSeqFallback
-      DpsMergeSort
-      DpsMergeSort4
-      DpsMergeSortPar
-      DpsMergeSort4Par
-      Microbench
+
+      -- Re-enable sorts as refactoring completes
+      Insertion  
+      -- disabling for now due to difficulty with proof style
+
+      -- DpsMerge
+      -- DpsMergePar
+      -- DpsMergeParSeqFallback
+      -- DpsMergeSort
+      -- DpsMergeSort4
+      -- DpsMergeSortPar
+      -- DpsMergeSort4Par
+
+      -- Microbench
+
       QuickSort
-      QuickSortCilk
+      -- QuickSortCilk
+
+      -- JZ: Add Parallel Cilksort
+      -- Current Cilksort is entirely sequential
+
 -- remove until ready:
 --      QuickSortNew   
 --  the last not quite ready yet?
@@ -85,6 +95,12 @@ library
                -ddump-to-file
                -O2
                -w
+
+  -- the plugin stuff
+  build-depends: quest-plugin
+  ghc-options: -fplugin=QuestPlugin
+
+  -- Turn on Liquid Haskell conditionally; else, turn on Linear Haskell
   if !(flag(mutable-arrays) || flag(prim-mutable-arrays))
     if flag(liquid-checks)
       ghc-options: -fplugin=LiquidHaskell
@@ -92,8 +108,8 @@ library
                    -fplugin-opt=LiquidHaskell:--ple-with-undecided-guards
                    -fplugin-opt=LiquidHaskell:--reflection
                    -fplugin-opt=LiquidHaskell:--short-names
+      ghc-options: -fplugin-opt=QuestPlugin:liquid
     else
-      build-depends: quest-plugin
       default-extensions: LinearTypes
-      ghc-options: -fplugin=QuestPlugin
       cpp-options: -DLINEAR
+      ghc-options: -fplugin-opt=QuestPlugin:linear

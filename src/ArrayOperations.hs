@@ -26,6 +26,7 @@ import           Array
 import           Control.Parallel.Strategies (runEval, rpar, rseq)
 import qualified Control.Monad.Par as P (Par, runPar, spawnP, spawn_, get, fork, put, new)
 
+import           Linear.Common
 #ifdef MUTABLE_ARRAYS
 import           Array.Mutable
 #else
@@ -59,26 +60,20 @@ swap xs i j = let !xi   = get xs i
               in xs''
 #endif
 
-{-@ swap2 :: xs:(Array a) -> { i:Int | 0 <= i && i < size xs }
-                          -> { j:Int | 0 <= j && j < size xs }
-                          -> { ys:(Array a) | size xs == size ys && token xs == token ys &&
-                                              left xs == left ys && right xs == right ys &&
-                                              ys == swap xs i j } @-}
-swap2 :: HasPrim a => Array a -> Int -> Int -> Array a
-swap2 xs i j  = {-Unsafe.toLinear3-} go xs i j
-  where
-    {-@ go :: xs:(Array a) -> { i:Int | 0 <= i && i < size xs }
-                           -> { j:Int | 0 <= j && j < size xs }
-                           -> { ys:(Array a) | size xs == size ys && token xs == token ys &&
-                                               left xs == left ys && right xs == right ys &&
-                                               ys == swap xs i j } @-}
-    go xs i j =
-      let (!xi, !xs1) = get2 xs i
-          (!xj, !xs2) = get2 xs1 j
-          !xs3 = set xs2 i xj
-          !xs4 = set xs3 j xi
-      in xi `pseq` xj `pseq` xs4
-        -- (set xs2 i xj) `pseq` (set xs2 j xi)
+
+{-@ swap2 :: { i:Int | 0 <= i }
+          -> { j:Int | 0 <= j } -> { xs:(Array a) | i < size xs && j < size xs }
+          -> { ys:(Array a) | size xs == size ys && token xs == token ys &&
+                              left xs == left ys && right xs == right ys &&
+                              ys == swap xs i j } @-}
+swap2 :: HasPrim a => Int -> Int -> (Array a -. Array a)
+swap2 i j xs = 
+  get2 i xs & \((!(Ur xi), !xs1)) -> get2 j xs1 & \(!(Ur xj), !xs2) -> 
+    let !xs3 = setLin i xj xs2
+        !xs4 = setLin j xi xs3
+    in {- xi `pseq` xj `pseq` -} xs4  
+  -- JZ: if `pseq` is really needed here, it poses a massive difficulty since
+  -- I don't know of an easy way to cast it linear in its second argument
 
 
 {-@ reflect splitMid @-}

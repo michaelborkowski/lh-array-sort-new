@@ -19,12 +19,10 @@ module Array
   , size, get, set, slice, append
 
     -- * Linear versions
-  , size2, get2, slice2, copy2, copy2_par
+  , size2, get2, slice2, copy2, copy2_par, free
 
     -- * Convert to/from lists
   , fromList, toList
-
-  , Ur(..), unur
 
   , HasPrimOrd(..), HasPrim(..)
 
@@ -44,7 +42,7 @@ module Array
 
 import           Linear.Common
 import qualified Linear.Unsafe as Unsafe
-import           Data.Unrestricted.Linear (Ur(..))
+import           ProofCombinators ( ur, unur )
 import           Prelude hiding (take, drop, splitAt)
 import           GHC.Conc ( numCapabilities, par, pseq )
 import           Array.List ( lma_gs_list, lma_gns_list
@@ -65,10 +63,6 @@ import           Control.DeepSeq ( NFData(..) )
 import           Language.Haskell.Liquid.ProofCombinators hiding ((?))
 import           ProofCombinators
 import qualified Data.Primitive.Types as P
-
-{-@ measure unur @-}
-unur :: Ur a -. a
-unur (Ur a) = a
 
 --------------------------------------------------------------------------------
 -- Advanced operations
@@ -102,6 +96,10 @@ makeArray = makeNoFill
 #else
 makeArray = make
 #endif
+
+{-# INLINE free #-}
+free :: HasPrim a => Array a -. ()
+free = Unsafe.toLinear (\_ -> ())
 
 --------------------------------------------------------------------------------
 -- Parallel operations
