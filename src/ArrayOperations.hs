@@ -68,11 +68,11 @@ swap xs i j = let !xi   = get xs i
                               ys == swap xs i j } @-}
 swap2 :: HasPrim a => Int -> Int -> (Array a -. Array a)
 swap2 i j xs =
-  let (!(Ur xi), !xs1) = get2 i xs
-      (!(Ur xj), !xs2) = get2 j xs1
-      !xs3 = setLin i xj xs2
-      !xs4 = setLin j xi xs3
-  in {- xi `pseq` xj `pseq` -} xs4
+  (\((!(Ur xi), !xs1)) -> (\(!(Ur xj), !xs2) -> 
+      let !xs3 = setLin i xj xs2
+          !xs4 = setLin j xi xs3
+      in {- xi `pseq` xj `pseq` -} xs4  
+  ) (get2 j xs1)) (get2 i xs)
   -- JZ: if `pseq` is really needed here, it poses a massive difficulty since
   -- I don't know of an easy way to cast it linear in its second argument
 
