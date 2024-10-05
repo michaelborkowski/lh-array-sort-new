@@ -10,3 +10,13 @@ type a -. b =
 #endif
 
 infixr 0 -.
+
+infixl 1 &
+{-# INLINE (&) #-}
+(&) :: a -. ((a -. b) -> b)
+a & b = b a
+
+infixl 8 #
+{-# INLINE (#) #-}
+(#) :: (a -. b) -. ((b -. c) -. (a -. c))
+(#) f g x = g (f x)
