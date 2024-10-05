@@ -3,10 +3,10 @@
 
 -- | GHC plugin to remove friction between Liquid Haskell and Linear Haskell
 --
---   Two modes (controlled by the LINEAR CPP symbol):
+--   Two modes controlled by the plugin arguments (passed by clients via `-fplugin-opt`):
 --
---   * linear mode (LINEAR is defined)
---   * liquid mode (LINEAR is NOT defined)
+--   * linear mode ("linear" is passed)
+--   * liquid mode ("liquid" is passed)
 --
 --   Current effects:
 --
@@ -31,39 +31,38 @@ plugin = defaultPlugin
   , pluginRecompile = purePlugin
   }
 
-rewriteQuest ::[CommandLineOption] -> ModSummary -> ParsedResult -> Hsc ParsedResult
-rewriteQuest _ _ orig@(ParsedResult m _)
+rewriteQuest :: [CommandLineOption] -> ModSummary -> ParsedResult -> Hsc ParsedResult
+rewriteQuest opts _ orig@(ParsedResult m _)
   = do
     dflags <- GHC.getDynFlags
-    hpm_module' <- transform dflags (GHC.hpm_module m)
+    hpm_module' <- transform opts dflags (GHC.hpm_module m)
     pure $ orig { GHC.parsedResultModule = m { GHC.hpm_module = hpm_module' } }
 
 transform
-    :: GHC.DynFlags
+    :: [CommandLineOption] -- control weather we linear or liquid
+    -> GHC.DynFlags
     -> GHC.Located (HsModule GhcPs)
     -> GHC.Hsc (GHC.Located (HsModule GhcPs))
-transform _dflags = SYB.everywhereM (SYB.mkM transform')
+transform opts _dflags = SYB.everywhereM (SYB.mkM (transform' opts))
   where
-    transform' :: LHsExpr GhcPs -> GHC.Hsc (LHsExpr GhcPs)
+    transform' :: [CommandLineOption] -> LHsExpr GhcPs -> GHC.Hsc (LHsExpr GhcPs)
 
-#ifdef LINEAR
     -- case: binary operation `a1 op a2`; check that `op` is `?` and rewrite to `a1` if yes
     -- purpose: remove ? as a source of spurious non-linearity;
-    transform' e@(L _ (OpApp _ a1 (L _ (HsVar _ (L _ (Unqual n)))) _a2)) =
+    -- mode: linear
+    transform' ["linear"] e@(L _ (OpApp _ a1 (L _ (HsVar _ (L _ (Unqual n)))) _a2)) =
       pure $ case occNameString n of
         "?" -> a1
         _   -> e
-#else
     -- case: qualified function application `mod.fun arg`; check that `mod.fun` is `Unsafe.toLinear` and
     -- rewrite to `arg` if yes
     -- purpose: remove calls to `toLinear` in the Liquid mode because it breaks Liquid Haskell reflection
-    transform' e@(L _l (HsApp _ (L _ (HsVar _ (L _ (Qual mod' fun)))) arg)) = do
-      -- liftIO . putStrLn $ SYB.gshow  e
+    -- mode: liquid
+    transform' ["liquid"] e@(L _l (HsApp _ (L _ (HsVar _ (L _ (Qual mod' fun)))) arg)) = do
       case (mod', occNameString fun) of
         (ModuleName "Unsafe", "toLinear") ->
           pure arg
         _          -> pure e
-#endif
 
-    transform' e = do
+    transform' _ e = do
       pure e

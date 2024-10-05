@@ -108,6 +108,8 @@ library
                    -fplugin-opt=LiquidHaskell:--ple-with-undecided-guards
                    -fplugin-opt=LiquidHaskell:--reflection
                    -fplugin-opt=LiquidHaskell:--short-names
+      ghc-options: -fplugin-opt=QuestPlugin:liquid
     else
-        default-extensions: LinearTypes
-        cpp-options: -DLINEAR
+      default-extensions: LinearTypes
+      cpp-options: -DLINEAR
+      ghc-options: -fplugin-opt=QuestPlugin:linear
