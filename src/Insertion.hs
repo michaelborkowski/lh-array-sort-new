@@ -118,7 +118,7 @@ lem_insert_func_sorted xs x i
 lem_insert_func_equiv :: Ord a => A.Array a -> a -> Int -> Proof
 lem_insert_func_equiv xs x 0 = () 
 lem_insert_func_equiv xs x i
-    | x < a     = toProof ( toBag (insert (set xs i a) x (i-1))
+    | x < a     = toProof ( toBag (insert x (i-1) (set xs i a))
                           ? lem_insert_func_equiv (set xs i a) x (i-1)
                         === toBag (set (set xs           i (get xs (i-1))) (i-1) x) -- by the IH
                           ? lma_gns xs i (i-1) x
@@ -139,56 +139,61 @@ lem_insert_func_equiv xs x i
 --------------------------------------------------------------------------------    
 
 -- Given xs[0..i] sorted and xs[i] doesn't matter, insert x so that xs[0..i+1] is sorted.
-{-@ insert :: xs:_ -> x:_  -> { i:Nat | i < A.size xs }
+{-@ insert :: x:_  -> i:Nat -> { xs:_ | i < A.size xs  }
            -> { ys:_ | ys == insert_func xs x i &&    
                        left xs == left ys && right xs == right ys &&
                        A.size ys == A.size xs && token xs == token ys } / [i] @-} 
-insert :: Ord a => A.Array a -> a -> Int -> A.Array a                    
-insert !xs !x 0 = A.setLin 0 x xs
-insert !xs !x !i =                 -- sort the element at offset i into the first i+1 elements
-  let (!(Ur a), !xs') = A.get2 (i-1) xs -- a is above xs[0..i-1], insert must preserve
-  in if x < a
-     then let !xs''  = A.setLin i a xs'
-              !xs''' = insert xs''  x (i - 1)
-           in xs''' 
-     else A.setLin i x xs'
+insert :: Ord a => a -> Int -> (A.Array a -. A.Array a)
+insert !x 0 !xs = A.setLin 0 x xs
+insert !x !i !xs =  -- sort the element at offset i into the first i+1 elements
+  A.get2 (i-1) xs {- a is above xs[0..i-1], insert must preserve -} & \(!(Ur a), !xs') -> 
+  if x < a
+  then let !xs''  = A.setLin i a xs'
+           !xs''' = insert x (i - 1) xs''
+       in xs''' 
+  else A.setLin i x xs'
      
-{-@ isort :: { xs:_ | A.size xs > 1 }  
-      -> { i:Nat | i <= A.size xs && isSortedBtw xs 0 i }
+{-@ isort ::   
+      i:Nat -> { xs:_ | A.size xs > 1 && i <= A.size xs && isSortedBtw xs 0 i }
       -> { ys:_ | toBag xs == toBag ys   && isSorted' ys &&
                   left xs == left ys && right xs == right ys &&
                   A.size xs == A.size ys && token xs == token ys } / [A.size xs - i] @-}
-isort :: Ord a => A.Array a -> Int -> A.Array a -- | Sort in-place.
-isort xs i = 
-  let (Ur s, xs') = A.size2 xs in
-  if i == s then xs'
-  else
-    let !(Ur a, xs'') = A.get2 i xs'
-    in isort (insert xs'' a i ? lem_insert_func_sorted xs a i)
-              (i+1) 
-      ? lem_insert_func_equiv xs a i
-      ? lem_bag_unchanged     xs   i
+isort :: Ord a => Int -> (A.Array a -. A.Array a) -- | Sort in-place.
+isort i xs = 
+  A.size2 xs & \(Ur s, xs') -> 
+    if i == s then xs'
+    else
+      A.get2 i xs' & \(!(Ur a, xs'')) -> 
+        isort (i+1) (insert a i xs'' ? lem_insert_func_sorted xs a i) 
+        ? lem_insert_func_equiv xs a i
+        ? lem_bag_unchanged     xs   i
 
 {-@ isort_top' :: { xs:_ | A.size xs > 1 } 
       -> { ys:_ | toBag xs == toBag ys &&  isSorted' ys &&
                   left xs == left ys && right xs == right ys &&
                   A.size xs == A.size ys && token xs == token ys } @-}
-isort_top' :: Ord a => A.Array a -> A.Array a
-isort_top' xs = isort xs 0
+isort_top' :: Ord a => A.Array a -. A.Array a
+isort_top' xs = isort 0 xs
 
 -- | Sort a copy of the input array. Therefore token is not preserved.
 {-@ isort_top :: { xs:_ | A.size xs > 1 } 
       -> { ys:_ | toBag xs  == toBag ys  && isSorted' ys &&
                   A.size xs == A.size ys } @-}
 isort_top :: Ord a => A.Array a -> A.Array a
-isort_top xs0 = let (Ur n, xs1) = A.size2 xs0 in
-    if n <= 1 then xs1 
-    else let (Ur hd, xs2) = A.get2 0 xs1
-             {-@ promise :: { tmp:(Array a) | size tmp == n } 
-                         -> { out:(Ur (Array a)) | size (unur out) == n && 
-                                                   toSlice (unur out) 0 n == toSlice xs2 0 n} @-}
-             promise tmp = Ur (A.copy xs2 0 tmp 0 n)
-                         ? lem_copy_equal_slice  xs2 0 tmp 0 n
-             {-@ cpy :: { ys:(Array a) | size ys == n && toSlice ys 0 n == toSlice xs2 0 n } @-}  
-             Ur cpy = A.alloc n hd (Unsafe.toLinear promise)
-          in isort (cpy ? lem_equal_slice_bag   xs2   cpy 0 n) 0
+isort_top xs0 = A.size2 xs0 & 
+  let 
+    {-@ go :: { arr:(Ur Int, A.Array a) | unur (fst arr) == A.size (snd arr) && A.size (snd arr) > 1 } -> 
+              { ys:_ | toBag (snd arr) == toBag ys && isSorted' ys && A.size (snd arr) == A.size ys } @-}
+    go :: Ord a => (Ur Int, A.Array a) -. A.Array a
+    go (Ur n, xs1) = 
+      if n <= 1 then xs1 
+      else let (Ur hd, xs2) = A.get2 0 xs1
+               {-@ promise :: { tmp:(Array a) | size tmp == n } 
+                           -> { out:(Ur (Array a)) | size (unur out) == n && 
+                                                    toSlice (unur out) 0 n == toSlice xs2 0 n} @-}
+               promise tmp = Ur (A.copy xs2 0 tmp 0 n)
+                           ? lem_copy_equal_slice  xs2 0 tmp 0 n
+               {-@ cpy :: { ys:(Array a) | size ys == n && toSlice ys 0 n == toSlice xs2 0 n } @-}  
+               Ur cpy = A.alloc n hd (Unsafe.toLinear promise)
+            in isort 0 (cpy ? lem_equal_slice_bag   xs2   cpy 0 n)
+  in go
