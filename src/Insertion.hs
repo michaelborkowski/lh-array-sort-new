@@ -179,7 +179,7 @@ isort_top' xs = isort 0 xs
 {-@ isort_top :: { xs:_ | A.size xs > 1 } 
       -> { ys:_ | toBag xs  == toBag ys  && isSorted' ys &&
                   A.size xs == A.size ys } @-}
-isort_top :: Ord a => A.Array a -> A.Array a
+isort_top :: Ord a => A.Array a -. A.Array a
 isort_top xs0 = A.size2 xs0 & 
   let 
     {-@ go :: { arr:(Ur Int, A.Array a) | unur (fst arr) == A.size (snd arr) && A.size (snd arr) > 1 } -> 
@@ -187,8 +187,9 @@ isort_top xs0 = A.size2 xs0 &
     go :: Ord a => (Ur Int, A.Array a) -. A.Array a
     go (Ur n, xs1) = 
       if n <= 1 then xs1 
-      else let (Ur hd, xs2) = A.get2 0 xs1
-               {-@ promise :: { tmp:(Array a) | size tmp == n } 
+      else case A.get2 0 xs1 of
+        (Ur hd, xs2) -> 
+            let {-@ promise :: { tmp:(Array a) | size tmp == n } 
                            -> { out:(Ur (Array a)) | size (unur out) == n && 
                                                     toSlice (unur out) 0 n == toSlice xs2 0 n} @-}
                promise tmp = Ur (A.copy xs2 0 tmp 0 n)
