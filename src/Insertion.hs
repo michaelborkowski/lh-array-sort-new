@@ -190,7 +190,7 @@ isort_top xs0 =
                       -> { out:(Ur (Array a)) | size (unur out) == n && 
                                               toSlice (unur out) 0 n == toSlice xs2 0 n} @-}
           promise :: A.Array a -. Ur (A.Array a)
-          promise = Unsafe.toLinear (\tmp -> Ur (A.copy xs2 0 tmp 0 n))
+          promise tmp = Unsafe.toLinear (\tmp' -> Ur (A.copy xs2 0 tmp' 0 n)) tmp
                       ? lem_copy_equal_slice  xs2 0 tmp 0 n
           {-@ cpy :: { ys:(Array a) | size ys == n && toSlice ys 0 n == toSlice xs2 0 n } @-}  
           Ur cpy = A.alloc n hd promise
