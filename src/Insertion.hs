@@ -183,9 +183,10 @@ isort_top :: forall a. Ord a => A.Array a -. A.Array a
 isort_top xs0 = 
   let !(Ur n, xs1) = A.size2 xs0 in
   if n <= 1 then xs1 
-  else case A.get2 0 xs1 of
-    (Ur hd, xs2) -> 
-      let {-@ promise :: { tmp:(Array a) | size tmp == n } 
+  else
+      let 
+          !(Ur hd, xs2) = A.get2 0 xs1
+          {-@ promise :: { tmp:(Array a) | size tmp == n } 
                       -> { out:(Ur (Array a)) | size (unur out) == n && 
                                               toSlice (unur out) 0 n == toSlice xs2 0 n} @-}
           promise :: A.Array a -. Ur (A.Array a)
