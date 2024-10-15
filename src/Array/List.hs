@@ -227,10 +227,8 @@ slice2 xs l r = (slice xs l r, xs)
                                   size (snd tup) == size xs - m && token (snd tup) == token xs &&
                                   left (snd tup) == left xs + m && right (snd tup) == right xs &&
                                   fst tup == slice xs 0 m       && snd tup == slice xs m (size xs) } @-}
-splitAt :: Int -> Array a -> (Array a, Array a)
-splitAt m xs = (slice xs 0 m, slice xs m n)
-  where
-    n = size xs
+splitAt :: Int -> Array a -. (Array a, Array a)
+splitAt m = Unsafe.toLinear (\xs -> (slice xs 0 m, slice xs m (size xs)))
 
 {-@ reflect conc @-}
 {-@ conc :: xs:_ -> ys:_ -> { zs:_ | len zs == len xs + len ys } @-}
@@ -258,8 +256,8 @@ drop n (x:xs) = drop (n-1) xs
         -> { zs:Array a | token xs == token zs && size zs == size xs + size ys &&
                           left xs == left zs && right ys == right zs &&
                           toList zs == conc (toList xs) (toList ys) } @-}
-append :: Array a -> Array a -> Array a
-append (Arr arr1 l1 _r1 t) (Arr arr2 _l2 r2 _t) = Arr (conc arr1 arr2) l1 r2 t
+append :: Array a -. Array a -. Array a
+append = Unsafe.toLinear (\(Arr arr1 l1 _r1 t) -> Unsafe.toLinear (\(Arr arr2 _l2 r2 _t) -> Arr (conc arr1 arr2) l1 r2 t))
 
 
 --------------------------------------------------------------------------------
