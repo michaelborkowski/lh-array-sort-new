@@ -257,7 +257,8 @@ drop n (x:xs) = drop (n-1) xs
                           left xs == left zs && right ys == right zs &&
                           toList zs == conc (toList xs) (toList ys) } @-}
 append :: Array a -. Array a -. Array a
-append = Unsafe.toLinear (\(Arr arr1 l1 _r1 t) -> Unsafe.toLinear (\(Arr arr2 _l2 r2 _t) -> Arr (conc arr1 arr2) l1 r2 t))
+append = Unsafe.toLinear (\xs -> Unsafe.toLinear (\ys -> 
+  case (xs, ys) of ((Arr arr1 l1 _r1 t), (Arr arr2 _l2 r2 _t)) -> Arr (conc arr1 arr2) l1 r2 t))
 
 
 --------------------------------------------------------------------------------
