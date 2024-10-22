@@ -13,7 +13,7 @@ import qualified Unsafe.Linear as Unsafe
 
 {-    @ assume toLinear :: f:_ -> { g:_ | f == g} @-}
 {-@ assume toLinear :: f:(a->b) -> x:a -> { v:b | v == f x} @-}
-toLinear :: (a -> b) -> (a -. b)
+toLinear :: (a -> b) -. (a -. b)
 --toLinear :: (a -> (b,a)) -> (a %1-> (b,a))
 toLinear f = Unsafe.toLinear f
 
