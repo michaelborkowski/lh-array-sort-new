@@ -19,7 +19,6 @@ module ArrayOperations
   ) where
 
 import qualified Linear.Unsafe as Unsafe
-import           Data.Unrestricted.Linear (Ur(..))
 import           Prelude hiding (take, drop, splitAt)
 import           GHC.Conc ( numCapabilities, par, pseq )
 import           Array

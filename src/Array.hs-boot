@@ -26,8 +26,7 @@ module Array
 
   ) where
 
-  -- import qualified Unsafe.Linear as Unsafe
-import Data.Unrestricted.Linear (Ur(..))
+import ProofCombinators (Ur(..))
 import Language.Haskell.Liquid.ProofCombinators (Proof)
 
 import Linear.Common
