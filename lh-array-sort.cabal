@@ -49,7 +49,7 @@ library
       -- DpsMergePar
       -- DpsMergeParSeqFallback
       -- DpsMergeSort
-      -- DpsMergeSort4
+      DpsMergeSort4
       -- DpsMergeSortPar
       -- DpsMergeSort4Par
 

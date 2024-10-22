@@ -12,6 +12,7 @@ import           DpsMerge
 import Properties.Equivalence
 import Properties.Order
 
+import           Linear.Common
 #ifdef MUTABLE_ARRAYS
 import           Array.Mutable as A
 #else
@@ -30,7 +31,7 @@ import           Array.List as A
        / [A.size xs] @-}
 msortInplace :: (Show a, HasPrimOrd a) => A.Array a -> A.Array a -> (A.Array a, A.Array a)
 msortInplace src tmp =
-  let (len, src') = A.size2 src in
+  let (Ur len, src') = A.size2 src in
   if len <= 1
   then (src', tmp)
   else
@@ -63,7 +64,7 @@ msortInplace src tmp =
                                A.size xs == A.size zs && token xs == token zs } @-}
 msort' :: (Show a, HasPrimOrd a) => A.Array a -> a -> A.Array a
 msort' src anyVal =
-  let (len, src') = A.size2 src
+  let (Ur len, src') = A.size2 src
       (src'', _tmp) = msortInplace src' (A.make len anyVal) in
   _tmp `seq` src''
 
@@ -73,6 +74,6 @@ msort' src anyVal =
                                 A.size xs == A.size ys && token xs == token ys  } @-}
 msort :: (Show a, HasPrimOrd a) => A.Array a -> A.Array a
 msort src =
-  let (len, src') = A.size2 src in
+  let (Ur len, src') = A.size2 src in
       if len == 0 then src'
-      else let (x0, src'') = A.get2 src' 0 in msort' src'' x0
+      else let (Ur x0, src'') = A.get2 0 src' in msort' src'' x0
