@@ -45,7 +45,7 @@ library
       Insertion  
       -- disabling for now due to difficulty with proof style
 
-      -- DpsMerge
+      DpsMerge
       -- DpsMergePar
       -- DpsMergeParSeqFallback
       -- DpsMergeSort

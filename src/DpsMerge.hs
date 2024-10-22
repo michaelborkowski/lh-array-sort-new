@@ -11,6 +11,7 @@ import           Array
 import Properties.Equivalence
 import Properties.Order
 
+import           Linear.Common
 #ifdef MUTABLE_ARRAYS
 import           Array.Mutable as A
 #else
@@ -18,15 +19,19 @@ import           Array.List as A
 #endif
 
 -- DPS merge
-{-@ merge' :: { xs1:(Array a) | isSorted' xs1 }
-           -> { xs2:(Array a) | isSorted' xs2 && token xs1 == token xs2 && right xs1 == left xs2 }
-           -> {  zs:(Array a) | size xs1 + size xs2 == size zs }
-           -> { i1:Nat | i1 <= size xs1 } -> { i2:Nat | i2 <= size xs2 }
-           -> { j:Nat  | i1 + i2 == j && j <= size zs &&
-                         isSortedBtw zs 0 j &&
-                         B.union (toBagBtw xs1 0 i1) (toBagBtw xs2 0 i2) == toBagBtw zs 0 j &&
-                         ( j == 0 || i1 == size xs1 || A.get xs1 i1 >= A.get zs (j-1) ) &&
-                         ( j == 0 || i2 == size xs2 || A.get xs2 i2 >= A.get zs (j-1) ) }
+{-@ merge' :: i1:Nat -> i2:Nat
+           -> { j:Nat  | i1 + i2 == j }
+
+           -> { xs1:(Array a) | isSorted' xs1 && i1 <= size xs1 }
+           -> { xs2:(Array a) | isSorted' xs2 && token xs1 == token xs2 && right xs1 == left xs2 && i2 <= size xs2 }
+           -> {  zs:(Array a) | size xs1 + size xs2 == size zs && 
+
+                                j <= size zs &&
+                                isSortedBtw zs 0 j &&
+                                B.union (toBagBtw xs1 0 i1) (toBagBtw xs2 0 i2) == toBagBtw zs 0 j &&
+                                ( j == 0 || i1 == size xs1 || A.get xs1 i1 >= A.get zs (j-1) ) &&
+                                ( j == 0 || i2 == size xs2 || A.get xs2 i2 >= A.get zs (j-1) ) }
+           
            -> { t:_    | B.union (toBag xs1) (toBag xs2) == toBag (snd t)  &&
                          toSlice zs 0 j == toSlice (snd t) 0 j &&
                          isSorted' (snd t) &&
@@ -35,15 +40,15 @@ import           Array.List as A
                          size (snd t) == size zs && token (snd t) == token zs &&
                          left (snd t) == left zs && right (snd t) == right zs  } / [size zs - j] @-}
 merge' :: HasPrimOrd a =>
-  A.Array a -> A.Array a -> A.Array a ->
   Int -> Int -> Int ->
+  A.Array a -. A.Array a -. A.Array a -.
   (A.Array a, A.Array a)
-merge' !src1 !src2 !dst i1 i2 j =
-  let !(len1, src1') = A.size2 src1
-      !(len2, src2') = A.size2 src2 in
+merge' i1 i2 j !src1 !src2 !dst =
+  let !(Ur len1, src1') = A.size2 src1
+      !(Ur len2, src2') = A.size2 src2 in
   if i1 >= len1
   then
-    let !(src2'1, dst') = A.copy2 src2' i2 dst j (len2-i2) in (A.append src1' src2'1, dst')
+    let !(src2'1, dst') = A.copy2 i2 j (len2-i2) src2' dst in (A.append src1' src2'1, dst')
             {- equivalence -}     ? lem_toBagBtw_compose' src1 0 i1 len1
                                   ? lem_toBagBtw_compose' src2 0 i2 len2
                                   ? lem_toBagBtw_compose' dst' 0 j  (A.size dst')
@@ -53,7 +58,7 @@ merge' !src1 !src2 !dst i1 i2 j =
             {- sortedness -}      ? lem_isSorted_copy src2' i2 dst j (len2-i2)
   else if i2 >= len2
   then
-    let !(src1'1, dst') = A.copy2 src1' i1 dst j (len1-i1) in (A.append src1'1 src2', dst')
+    let !(src1'1, dst') = A.copy2 i1 j (len1-i1) src1' dst in (A.append src1'1 src2', dst')
             {- equivalence -}     ? lem_toBagBtw_compose' src1 0 i1 len1
                                   ? lem_toBagBtw_compose' src2 0 i2 len2
                                   ? lem_toBagBtw_compose' dst' 0 j  (A.size dst')
@@ -62,11 +67,11 @@ merge' !src1 !src2 !dst i1 i2 j =
                                   ? lem_equal_slice_bag'  src1' dst'  i1 len1 j (A.size dst')
             {- sortedness -}      ? lem_isSorted_copy src1' i1 dst j (len1-i1)
   else
-    let !(v1, src1'1) = A.get2 src1' i1
-        !(v2, src2'1) = A.get2 src2' i2 in
+    let !(Ur v1, src1'1) = A.get2 i1 src1'
+        !(Ur v2, src2'1) = A.get2 i2 src2' in
     if v1 < v2
-    then let dst' = A.set dst j v1
-             !(src'', dst'') =  merge' src1'1 src2'1 dst' (i1 + 1) i2 (j + 1
+    then let dst' = A.setLin j v1 dst
+             !(src'', dst'') =  merge' (i1 + 1) i2 (j + 1
                     {- eq -}          ? lem_toBagBtw_right src1 0 (i1+1)
                                       ? lem_bag_union v1 (toBagBtw src1 0 i1) (toBagBtw src2 0 i2)
                                       ? lem_equal_slice_bag    dst dst'   0 (j
@@ -77,10 +82,10 @@ merge' !src1 !src2 !dst i1 i2 j =
                                       ? lem_equal_slice_sorted dst   dst'  0 0 j j
                                       ? lem_isSortedBtw_build_right  dst'  0 (j
                                             ? if j > 0 then lma_gns dst   j (j-1) v1 else ())
-                                 ) in
+                                 ) src1'1 src2'1 dst' in
          (src'', dst'') ? lem_equal_slice_narrow dst' dst'' 0 0 j (j+1)
-    else let dst' = A.set dst j v2
-             !(src'', dst'') =  merge' src1'1 src2'1 dst' i1 (i2 + 1) (j + 1
+    else let dst' = A.setLin j v2 dst
+             !(src'', dst'') =  merge' i1 (i2 + 1) (j + 1
                                       ? lem_toBagBtw_right src2 0 (i2+1)
                                       ? lem_bag_union v2 (toBagBtw src1 0 i1) (toBagBtw src2 0 i2)
                                       ? lem_equal_slice_bag    dst dst'   0 (j
@@ -91,7 +96,7 @@ merge' !src1 !src2 !dst i1 i2 j =
                                       ? lem_equal_slice_sorted dst   dst'  0 0 j j
                                       ? lem_isSortedBtw_build_right  dst'  0 (j
                                             ? if j > 0 then lma_gns dst   j (j-1) v2 else ())
-                                 ) in
+                                 ) src1'1 src2'1 dst' in
          (src'', dst'') ? lem_equal_slice_narrow dst' dst'' 0 0 j (j+1)
 
 {-@ merge :: { xs1:(Array a) | isSorted' xs1 }
@@ -108,7 +113,7 @@ merge' !src1 !src2 !dst i1 i2 j =
 {-# SPECIALISE merge :: A.Array Float -> A.Array Float -> A.Array Float -> (A.Array Float, A.Array Float) #-}
 {-# SPECIALISE merge :: A.Array Int -> A.Array Int -> A.Array Int -> (A.Array Int, A.Array Int) #-}
 merge :: HasPrimOrd a => A.Array a -> A.Array a -> A.Array a -> (A.Array a, A.Array a)
-merge src1 src2 dst = merge' src1 src2 dst 0 0 0   -- the 0's are relative to the current
+merge src1 src2 dst = merge' 0 0 0 src1 src2 dst   -- the 0's are relative to the current
                                                    --   slices, not absolute indices
 
 
