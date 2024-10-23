@@ -46,8 +46,8 @@ library
       -- disabling for now due to difficulty with proof style
 
       DpsMerge
-      -- DpsMergePar
-      -- DpsMergeParSeqFallback
+      DpsMergePar
+      DpsMergeParSeqFallback
       -- DpsMergeSort
       DpsMergeSort4
       -- DpsMergeSortPar

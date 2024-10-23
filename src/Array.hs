@@ -173,14 +173,15 @@ generate_loop arr idx end f =
     else let arr1 = set arr idx (f idx)
          in generate_loop arr1 (idx+1) end f
 
-{-@ copy2_par :: xs:_ -> { xi:Nat | xi <= size xs } -> ys:_
-              -> { yi:Nat | yi <= size ys }
-              -> { n:Nat  | xi + n <= size xs && yi + n <= size ys }
+{-@ copy2_par :: xi:Nat -> yi:Nat -> n:Nat
+              -> { xs:_ | xi <= size xs } -> { ys:_ | yi <= size ys
+                                                      && xi + n <= size xs && yi + n <= size ys }
               -> { zs:_   | xs == fst zs && snd zs == copy xs xi ys yi n &&
                             size (snd zs) == size ys && token (snd zs) == token ys &&
                             left (snd zs) == left ys && right (snd zs) == right ys } @-}
-copy2_par :: HasPrim a =>  Array a -> Int -> Array a -> Int -> Int -> (Array a, Array a)
-copy2_par src0 src_offset0 dst0 dst_offset0 len0 = (src0, copy_par src0 src_offset0 dst0 dst_offset0 len0)
+copy2_par :: HasPrim a =>  Int -> Int -> Int -> Array a -. Array a -. (Array a, Array a)
+copy2_par src_offset0 dst_offset0 len0 = 
+  Unsafe.toLinear (\src0 ->  Unsafe.toLinear (\dst0 -> (src0, copy_par src0 src_offset0 dst0 dst_offset0 len0)))
 
 --TODO: src_offset0 and dst_offset0 are not respected.
 {- @ ignore copy_par @-}

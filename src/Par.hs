@@ -4,6 +4,7 @@
 
 module Par where
 
+import           Linear.Common
 import           Control.DeepSeq ( NFData(..) )
 import           GHC.Conc ( par, pseq )
 
@@ -37,7 +38,7 @@ tuple4 f1 x f2 y f3 z f4 a  = p `par` q `par` r `par` s `pseq` ((p,q), (r,s))
 
 {-# INLINE (.||.) #-}
 (.||.) :: (NFData a, NFData b) => a -> b -> (a,b)
-a .||. b = a `par` b `pseq` (a,b)
+(.||.) = (a `par` b `pseq` (a,b))
 
 {-
 tuple2 :: (NFData a, NFData b) => (a -> b) -> a -> (a -> b) -> a -> (b, b)
@@ -84,6 +85,6 @@ tuple4 :: (a -> b) -> a -> (a -> b) -> a
 tuple4 f x g y h z j w = ((f x, g y), (h z, j w))
 
 {-@ (.||.) :: x:a -> y:b -> { tup:_ | x == fst tup && y = snd tup } @-}
-(.||.) :: a -> b -> (a,b)
+(.||.) :: a -. b -. (a,b)
 a .||. b = (a,b)
 #endif

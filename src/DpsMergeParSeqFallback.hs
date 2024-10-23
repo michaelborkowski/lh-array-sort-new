@@ -13,6 +13,7 @@ import Properties.Order
 
 import           Par
 
+import           Linear.Common
 #ifdef MUTABLE_ARRAYS
 import           Array.Mutable as A
 #else
@@ -232,10 +233,10 @@ lem_merge_func_inv_right src1 src2 dst piv i1 i2 j =
 -- | Sequential Fallback: Implementation
 --------------------------------------------------------------------------------    
              -- unneeded:            fst (fst t) == xs1 && snd (fst t) == xs2 &&
-{-@ merge' :: xs1:(Array a) -> { xs2:(Array a) | token xs1 == token xs2 }
-           -> { zs:(Array a) | size xs1 + size xs2 == size zs }
-           -> { i1:Nat | i1 <= size xs1 } -> { i2:Nat | i2 <= size xs2 }
-           -> { j:Nat  | i1 + i2 == j && j <= size zs }
+{-@ merge' :: i1:Nat -> i2:Nat -> { j:Nat  | i1 + i2 == j }
+           -> { xs1:(Array a) | i1 <= size xs1 }
+           -> { xs2:(Array a) | token xs1 == token xs2 && i2 <= size xs2 }
+           -> { zs:(Array a) | size xs1 + size xs2 == size zs && j <= size zs }
            -> { t:_    | t == ((xs1, xs2), merge_func xs1 xs2 zs i1 i2 j) &&
                          token (fst (fst t)) == token xs1 && token (snd (fst t)) == token xs2 &&
                          left (fst (fst t)) == left xs1 && right (fst (fst t)) == right xs1 &&
@@ -243,27 +244,27 @@ lem_merge_func_inv_right src1 src2 dst piv i1 i2 j =
                          size (snd t) == size zs && token (snd t) == token zs &&
                          left (snd t) == left zs && right (snd t) == right zs  } / [size zs - j] @-}
 merge' :: HasPrimOrd a =>
-  A.Array a -> A.Array a -> A.Array a ->
   Int -> Int -> Int ->
+  A.Array a -. A.Array a -. A.Array a -.
   ((A.Array a, A.Array a), A.Array a)
-merge' !src1 !src2 !dst i1 i2 j =
-  let !(len1, src1') = A.size2 src1
-      !(len2, src2') = A.size2 src2 in
+merge' i1 i2 j !src1 !src2 !dst =
+  let !(Ur len1, src1') = A.size2 src1
+      !(Ur len2, src2') = A.size2 src2 in
   if i1 >= len1
   then
-    let !(src2'1, dst') = A.copy2_par src2' i2 dst j (len2-i2) in ((src1', src2'1), dst')
+    let !(src2'1, dst') = A.copy2_par i2 j (len2-i2) src2' dst in ((src1', src2'1), dst')
   else if i2 >= len2
   then
-    let !(src1'1, dst') = A.copy2_par src1' i1 dst j (len1-i1) in ((src1'1, src2'), dst')
+    let !(src1'1, dst') = A.copy2_par i1 j (len1-i1) src1' dst in ((src1'1, src2'), dst')
   else
-    let !(v1, src1'1) = A.get2 src1' i1
-        !(v2, src2'1) = A.get2 src2' i2 in
+    let !(Ur v1, src1'1) = A.get2 i1 src1'
+        !(Ur v2, src2'1) = A.get2 i2 src2' in
     if v1 < v2
-    then let dst' = A.set dst j v1
-             !(src_tup, dst'') =  merge' src1'1 src2'1 dst' (i1 + 1) i2 (j + 1) in
+    then let dst' = A.setLin j v1 dst
+             !(src_tup, dst'') =  merge' (i1 + 1) i2 (j + 1) src1'1 src2'1 dst' in
          (src_tup, dst'') 
-    else let dst' = A.set dst j v2
-             !(src_tup, dst'') =  merge' src1'1 src2'1 dst' i1 (i2 + 1) (j + 1) in
+    else let dst' = A.setLin j v2 dst
+             !(src_tup, dst'') =  merge' i1 (i2 + 1) (j + 1) src1'1 src2'1 dst' in
          (src_tup, dst'') 
 
 {-@ merge :: { xs1:(Array a) | isSorted' xs1 }
@@ -278,11 +279,11 @@ merge' !src1 !src2 !dst i1 i2 j =
                                left (snd t) == left zs  && right (snd t) == right zs  &&
                                size (snd t) == size zs } @-}
 {-# INLINE merge #-}
-{-# SPECIALISE merge :: A.Array Float -> A.Array Float -> A.Array Float
-                                      -> ((A.Array Float, A.Array Float), A.Array Float) #-}
-{-# SPECIALISE merge :: A.Array Int -> A.Array Int -> A.Array Int
-                                    -> ((A.Array Int, A.Array Int), A.Array Int) #-}
-merge :: HasPrimOrd a => A.Array a -> A.Array a -> A.Array a -> ((A.Array a, A.Array a), A.Array a)
-merge src1 src2 dst = merge' src1 src2 dst 0 0 0   -- the 0's are relative to the current
+{-# SPECIALISE merge :: A.Array Float -. A.Array Float -. A.Array Float
+                                      -. ((A.Array Float, A.Array Float), A.Array Float) #-}
+{-# SPECIALISE merge :: A.Array Int -. A.Array Int -. A.Array Int
+                                    -. ((A.Array Int, A.Array Int), A.Array Int) #-}
+merge :: HasPrimOrd a => A.Array a -. A.Array a -. A.Array a -. ((A.Array a, A.Array a), A.Array a)
+merge src1 src2 dst = merge' 0 0 0 src1 src2 dst   -- the 0's are relative to the current
                     ? lem_merge_func_sorted src1 src2 dst 0 0 0  -- slices, not absolute indices
                     ? lem_merge_func_equiv  src1 src2 dst 0 0 0 
