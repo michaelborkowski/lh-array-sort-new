@@ -364,7 +364,7 @@ merge_par' !src1 !src2 !dst =
                       in ((src1'1, src2'), dst'') 
                 else let mid1            = n1 `div` 2
                          !(Ur pivot, src1'1) = A.get2 mid1 src1'
-                         !(mid2,  src2'1) = binarySearch pivot src2' -- src2[mid2] must <= all src1[mid1+1..]
+                         !(Ur mid2,  src2'1) = binarySearch pivot src2' -- src2[mid2] must <= all src1[mid1+1..]
                                                                     --            must >= all src1[0..mid1]
                          !(src1_l, src1_cr) = A.splitAt mid1 src1'1
                          !(src1_c, src1_r)  = A.splitAt 1    src1_cr
@@ -395,21 +395,21 @@ merge_par' !src1 !src2 !dst =
                       in ((src1'3, src2'3), dst''') 
 
 {-@ binarySearch :: query:_ -> ls:_
-                         -> { tup:_ | 0 <= fst tup && fst tup <= size ls &&
-                                      snd tup == ls && tup = (binarySearch_func ls query, ls) } @-}
-binarySearch :: HasPrimOrd a => a -> A.Array a -. (Int, A.Array a) -- must be able to return out of bounds
+                         -> { tup:_ | 0 <= unur (fst tup) && unur (fst tup) <= size ls &&
+                                      snd tup == ls && (unur (fst tup), snd tup) = (binarySearch_func ls query, ls) } @-}
+binarySearch :: HasPrimOrd a => a -> A.Array a -. (Ur Int, A.Array a) -- must be able to return out of bounds
 binarySearch query ls = let !(Ur n, ls')  = A.size2 ls
                          in binarySearch' query 0 n ls'
 
 {-@ binarySearch' :: query:_  -> lo:Nat 
                           -> { hi:Nat | lo <= hi }
                           -> { ls:_ | hi <= size ls }
-                          -> { tup:_ | 0 <= fst tup && fst tup <= size ls &&
+                          -> { tup:_ | 0 <= unur (fst tup) && unur (fst tup) <= size ls &&
                                        snd tup == ls && 
                                       tup = (binarySearch_func' ls query lo hi, ls) } / [hi-lo] @-}
-binarySearch' :: HasPrimOrd a => a -> Int -> Int -> A.Array a -. (Int, A.Array a)
+binarySearch' :: HasPrimOrd a => a -> Int -> Int -> A.Array a -. (Ur Int, A.Array a)
 binarySearch' query lo hi ls = if lo == hi
-                               then (lo, ls)
+                               then (Ur lo, ls)
                                else let mid          = lo + (hi - lo) `div` 2
                                         !(Ur midElt, ls') = A.get2 mid ls
                                      in if query < midElt
