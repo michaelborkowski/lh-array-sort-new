@@ -14,6 +14,7 @@ import           DpsMergeParSeqFallback
 
 import           Par
 
+import           Linear.Common
 #ifdef MUTABLE_ARRAYS
 import           Array.Mutable as A
 import           Control.DeepSeq ( NFData(..) )
@@ -347,33 +348,33 @@ merge_par' :: (Show a, HasPrimOrd a, NFData a) =>
 #else
 merge_par' :: (Show a, HasPrimOrd a) =>
 #endif                   
-   A.Array a -> A.Array a -> A.Array a -> ((A.Array a, A.Array a), A.Array a)
+   A.Array a -. (A.Array a -. (A.Array a -. ((A.Array a, A.Array a), A.Array a)))
 merge_par' !src1 !src2 !dst =
-  if A.size dst < goto_seqmerge
-  then merge' src1 src2 dst 0 0 0
+  let !(Ur n3, dst')  = A.size2 dst in
+  if n3 < goto_seqmerge
+  then merge' 0 0 0 src1 src2 dst'
      ? toProof (merge_par_func src1 src2 dst === merge_func src1 src2 dst 0 0 0)
-  else let !(n1, src1') = A.size2 src1
-           !(n2, src2') = A.size2 src2
-           !(n3, dst')  = A.size2 dst
+  else let !(Ur n1, src1') = A.size2 src1
+           !(Ur n2, src2') = A.size2 src2
         in if n1 == 0
-           then let !(src2'1, dst'') = A.copy2_par src2' 0 dst' 0 n2
+           then let !(src2'1, dst'') = A.copy2_par 0 0 n2 src2' dst'
                  in ((src1', src2'1), dst'') 
            else if n2 == 0
-                then let !(src1'1, dst'') = A.copy2_par src1' 0 dst' 0 n1
+                then let !(src1'1, dst'') = A.copy2_par 0 0 n1 src1' dst'
                       in ((src1'1, src2'), dst'') 
                 else let mid1            = n1 `div` 2
-                         (pivot, src1'1) = A.get2 src1' mid1
-                         (mid2,  src2'1) = binarySearch src2' pivot -- src2[mid2] must <= all src1[mid1+1..]
+                         !(Ur pivot, src1'1) = A.get2 mid1 src1'
+                         !(mid2,  src2'1) = binarySearch pivot src2' -- src2[mid2] must <= all src1[mid1+1..]
                                                                     --            must >= all src1[0..mid1]
-                         (src1_l, src1_cr) = A.splitAt mid1 src1'1
-                         (src1_c, src1_r)  = A.splitAt 1    src1_cr
-                         (src2_l, src2_r)  = A.splitAt mid2 src2'1
+                         !(src1_l, src1_cr) = A.splitAt mid1 src1'1
+                         !(src1_c, src1_r)  = A.splitAt 1    src1_cr
+                         !(src2_l, src2_r)  = A.splitAt mid2 src2'1
 
-                         (dst_l, dst_cr)   = A.splitAt (mid1+mid2) dst'
-                         (dst_c, dst_r)    = A.splitAt 1           dst_cr
-                         !dst_c'           = A.set dst_c 0 pivot
+                         !(dst_l, dst_cr)   = A.splitAt (mid1+mid2) dst'
+                         !(dst_c, dst_r)    = A.splitAt 1           dst_cr
+                         !dst_c'           = A.setLin 0 pivot dst_c
 
-                         (!((src1_l',src2_l'), dst_l'), !((src1_r',src2_r'), dst_r')) 
+                         !(((src1_l',src2_l'), dst_l'), ((src1_r',src2_r'), dst_r')) 
                             = (merge_par' src1_l src2_l dst_l) .||. (merge_par' src1_r src2_r dst_r)
                                                                               {-
                          (left, right) = tuple2 (merge_par' src1_l src2_l) dst_l
@@ -386,33 +387,34 @@ merge_par' !src1 !src2 !dst =
 --                                           , (src2_r ? lem_isSortedBtw_slice src2'1 mid2 n2) )
 --                                         , dst_r )
                         -}
-                         src1_cr'     = A.append src1_c  src1_r'
-                         src1'3       = A.append src1_l' src1_cr'
-                         src2'3       = A.append src2_l' src2_r'
-                         dst''        = A.append dst_l' dst_c'
-                         dst'''       = A.append dst''  dst_r' 
+                         !src1_cr'     = A.append src1_c  src1_r'
+                         !src1'3       = A.append src1_l' src1_cr'
+                         !src2'3       = A.append src2_l' src2_r'
+                         !dst''        = A.append dst_l' dst_c'
+                         !dst'''       = A.append dst''  dst_r' 
                       in ((src1'3, src2'3), dst''') 
 
-{-@ binarySearch :: ls:_ -> query:_
+{-@ binarySearch :: query:_ -> ls:_
                          -> { tup:_ | 0 <= fst tup && fst tup <= size ls &&
                                       snd tup == ls && tup = (binarySearch_func ls query, ls) } @-}
-binarySearch :: HasPrimOrd a => A.Array a -> a -> (Int, A.Array a) -- must be able to return out of bounds
-binarySearch ls query = let (n, ls')  = A.size2 ls
-                         in binarySearch' ls' query 0 n
+binarySearch :: HasPrimOrd a => a -> A.Array a -. (Int, A.Array a) -- must be able to return out of bounds
+binarySearch query ls = let !(Ur n, ls')  = A.size2 ls
+                         in binarySearch' query 0 n ls'
 
-{-@ binarySearch' :: ls:_ -> query:_  -> lo:Nat 
-                          -> { hi:Nat | lo <= hi && hi <= size ls }
+{-@ binarySearch' :: query:_  -> lo:Nat 
+                          -> { hi:Nat | lo <= hi }
+                          -> { ls:_ | hi <= size ls }
                           -> { tup:_ | 0 <= fst tup && fst tup <= size ls &&
                                        snd tup == ls && 
                                       tup = (binarySearch_func' ls query lo hi, ls) } / [hi-lo] @-}
-binarySearch' :: HasPrimOrd a => A.Array a -> a -> Int -> Int -> (Int, A.Array a)
-binarySearch' ls query lo hi = if lo == hi
+binarySearch' :: HasPrimOrd a => a -> Int -> Int -> A.Array a -. (Int, A.Array a)
+binarySearch' query lo hi ls = if lo == hi
                                then (lo, ls)
                                else let mid          = lo + (hi - lo) `div` 2
-                                        (midElt, ls') = A.get2 ls mid
+                                        !(Ur midElt, ls') = A.get2 mid ls
                                      in if query < midElt
-                                        then binarySearch' ls' query lo      mid
-                                        else binarySearch' ls' query (mid+1) hi
+                                        then binarySearch' query lo mid ls'
+                                        else binarySearch' query (mid+1) hi ls'
                                         
 {-@ merge_par :: { xs1:(Array a) | isSorted' xs1 }
               -> { xs2:(Array a) | isSorted' xs2 && token xs1 == token xs2 && right xs1 == left xs2 }
@@ -425,14 +427,14 @@ binarySearch' ls query lo hi = if lo == hi
                                    size (fst t) == size xs1 + size xs2 &&
                                    size (snd t) == size zs } / [size xs1] @-} 
 {-# INLINE merge_par #-}
-{-# SPECIALISE merge_par :: A.Array Float -> A.Array Float -> A.Array Float -> (A.Array Float, A.Array Float) #-}
-{-# SPECIALISE merge_par :: A.Array Int -> A.Array Int -> A.Array Int -> (A.Array Int, A.Array Int) #-}
+{-# SPECIALISE merge_par :: A.Array Float -. A.Array Float -. A.Array Float -. (A.Array Float, A.Array Float) #-}
+{-# SPECIALISE merge_par :: A.Array Int -. A.Array Int -. A.Array Int -. (A.Array Int, A.Array Int) #-}
 #ifdef MUTABLE_ARRAYS
 merge_par :: (Show a, HasPrimOrd a, NFData a) =>
 #else
 merge_par :: (Show a, HasPrimOrd a) =>
 #endif                   
-   A.Array a -> A.Array a -> A.Array a -> (A.Array a, A.Array a)
+   A.Array a -. (A.Array a -. (A.Array a -. (A.Array a, A.Array a)))
 merge_par !src1 !src2 !dst =
   let !((src1', src2'), dst') = merge_par' src1  src2  dst
       src'                    = A.append   src1' src2'
