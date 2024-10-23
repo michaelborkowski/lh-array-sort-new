@@ -406,7 +406,7 @@ binarySearch query ls = let !(Ur n, ls')  = A.size2 ls
                           -> { ls:_ | hi <= size ls }
                           -> { tup:_ | 0 <= unur (fst tup) && unur (fst tup) <= size ls &&
                                        snd tup == ls && 
-                                      tup = (binarySearch_func' ls query lo hi, ls) } / [hi-lo] @-}
+                                      (unur (fst tup), snd tup) = (binarySearch_func' ls query lo hi, ls) } / [hi-lo] @-}
 binarySearch' :: HasPrimOrd a => a -> Int -> Int -> A.Array a -. (Ur Int, A.Array a)
 binarySearch' query lo hi ls = if lo == hi
                                then (Ur lo, ls)
