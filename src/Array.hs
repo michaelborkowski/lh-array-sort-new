@@ -304,3 +304,4 @@ lma_gns arr n m x = lma_gns_list (toList arr) n m x
 --          -> { pf:_ | fst (get2 (set xs n x) m) == fst (get2 xs m) } @-}
 --lma_gns2 :: Array a -> Int -> Int -> a -> Proof
 --lma_gns2 xs n m x = lma_gns xs n m x
+

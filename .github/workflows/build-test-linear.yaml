@@ -1,4 +1,4 @@
-name: Build the main package (lh-array-sort)
+name: Build/test lh-array-sort in linear mode
 
 # See: https://docs.github.com/en/actions/reference/workflow-syntax-for-github-actions#concurrency.
 concurrency:
@@ -17,8 +17,8 @@ on:
   workflow_dispatch:
 
 jobs:
-  build:
-    name: Build
+  main:
+    name: Main
     runs-on: ubuntu-latest
     steps:
 
@@ -30,7 +30,7 @@ jobs:
       - uses: haskell-actions/setup@v2
         with:
           ghc-version: 9.10.1
-          cabal-version: 3.12.1.0
+          cabal-version: 3.14
 
       #  See the following link for a breakdown of the following step
       #  https://github.com/haskell/actions/issues/7#issuecomment-745697160
@@ -43,8 +43,12 @@ jobs:
           key: ${{ runner.os }}-${{ matrix.ghc }}-${{ github.sha }}
           restore-keys: ${{ runner.os }}-${{ matrix.ghc }}-
 
-      - name: Build in liquid mode
-        run: cabal build lh-array-sort
+      - name: Configure
+        run: cabal configure --enable-tests -f-liquid-checks
 
       - name: Build in linear mode
-        run: cabal build lh-array-sort -f-liquid-checks
+        run: cabal build lh-array-sort
+
+      - name: Run tests
+        run: cabal test
+        #optional --flag=verbose-tests for printing additional debug information when running tests

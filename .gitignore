@@ -29,12 +29,7 @@ cabal.project.local~
 
 # Liquid Haskell
 # ~~~~~~~~~~~~~~~~~~~~
-src/.liquid/
-src/Array/.liquid
-src/Array/Mutable/.liquid
-src/Properties/.liquid
-src/Algorithms/.liquid
-src/Linear/.liquid
+**/.liquid
 
 # C
 # ~~~~~~~~~~~~~~~~~~~~

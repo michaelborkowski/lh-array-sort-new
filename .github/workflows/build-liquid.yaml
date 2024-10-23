@@ -1,0 +1,48 @@
+name: Build lh-array-sort with liquid checking
+
+# See: https://docs.github.com/en/actions/reference/workflow-syntax-for-github-actions#concurrency.
+concurrency:
+  group: ${{ github.ref }}-${{ github.workflow }}
+  cancel-in-progress: true
+
+on:
+  push:
+    paths-ignore:
+      - "**/README.md"
+    branches:
+      - main
+  pull_request:
+    paths-ignore:
+      - "**/README.md"
+  workflow_dispatch:
+
+jobs:
+  main:
+    name: Main
+    runs-on: ubuntu-latest
+    steps:
+
+      - uses: actions/checkout@v4
+
+      - name: Setup Z3
+        uses: cda-tum/setup-z3@v1
+
+      - uses: haskell-actions/setup@v2
+        with:
+          ghc-version: 9.10.1
+          cabal-version: 3.14
+
+      #  See the following link for a breakdown of the following step
+      #  https://github.com/haskell/actions/issues/7#issuecomment-745697160
+      - uses: actions/cache@v4
+        with:
+          # validate.sh uses a special build dir
+          path: |
+            ${{ steps.setup-haskell.outputs.cabal-store }}
+            dist-*
+          key: ${{ runner.os }}-${{ matrix.ghc }}-${{ github.sha }}
+          restore-keys: ${{ runner.os }}-${{ matrix.ghc }}-
+
+      - name: Build in liquid mode
+        run: cabal build lh-array-sort
+
