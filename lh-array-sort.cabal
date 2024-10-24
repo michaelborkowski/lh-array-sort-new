@@ -41,17 +41,16 @@ library
       Properties.Partitions
       Properties.RangeProperties
 
-      -- Re-enable sorts as refactoring completes
+      -- Add sorts here
       Insertion  
-      -- disabling for now due to difficulty with proof style
 
       DpsMerge
       DpsMergePar
       DpsMergeParSeqFallback
-      -- DpsMergeSort
+      -- DpsMergeSort     -- don't necessarily need for paper
       DpsMergeSort4
-      -- DpsMergeSortPar
-      -- DpsMergeSort4Par
+      -- DpsMergeSortPar  -- don't necessarily need for paper
+      DpsMergeSort4Par
 
       -- Microbench
 

@@ -73,8 +73,6 @@ swap2 i j xs =
     xs3 = setLin i xj xs2
     xs4 = setLin j xi xs3
   in {- xi `pseq` xj `pseq` -} xs4
-  -- JZ: if `pseq` is really needed here, it poses a massive difficulty since
-  -- I don't know of an easy way to cast it linear in its second argument
 
 
 {-@ reflect splitMid @-}
@@ -86,8 +84,8 @@ swap2 i j xs =
                 size (fst t) == div (size xs) 2 &&
                 size (snd t) == size xs - div (size xs) 2 &&
                 size xs = (size (fst t)) + (size (snd t)) } @-}
-splitMid :: {- Ord a => -} Array a -> (Array a, Array a)
-splitMid = {- Unsafe.toLinear -} go
+splitMid :: {- Ord a => -} Array a -. (Array a, Array a)
+splitMid = Unsafe.toLinear go
   where
     {-@ go :: xs:(Array a)
           -> {t:_ | token (fst t) == token xs && token (snd t) == token xs &&

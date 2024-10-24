@@ -110,9 +110,9 @@ merge' i1 i2 j !src1 !src2 !dst =
                                left (snd t) == left zs  && right (snd t) == right zs  &&
                                size (snd t) == size zs } @-}
 {-# INLINE merge #-}
-{-# SPECIALISE merge :: A.Array Float -> A.Array Float -> A.Array Float -> (A.Array Float, A.Array Float) #-}
-{-# SPECIALISE merge :: A.Array Int -> A.Array Int -> A.Array Int -> (A.Array Int, A.Array Int) #-}
-merge :: HasPrimOrd a => A.Array a -> A.Array a -> A.Array a -> (A.Array a, A.Array a)
+{-# SPECIALISE merge :: A.Array Float -. A.Array Float -. A.Array Float -. (A.Array Float, A.Array Float) #-}
+{-# SPECIALISE merge :: A.Array Int -. A.Array Int -. A.Array Int -. (A.Array Int, A.Array Int) #-}
+merge :: HasPrimOrd a => A.Array a -. A.Array a -. A.Array a -. (A.Array a, A.Array a)
 merge src1 src2 dst = merge' 0 0 0 src1 src2 dst   -- the 0's are relative to the current
                                                    --   slices, not absolute indices
 
