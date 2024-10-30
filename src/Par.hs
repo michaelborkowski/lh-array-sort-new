@@ -5,6 +5,7 @@
 module Par where
 
 import           Linear.Common
+import qualified Unsafe.Linear as Unsafe
 import           Control.DeepSeq ( NFData(..) )
 import           GHC.Conc ( par, pseq )
 
@@ -37,8 +38,8 @@ tuple4 f1 x f2 y f3 z f4 a  = p `par` q `par` r `par` s `pseq` ((p,q), (r,s))
     s = f4 a
 
 {-# INLINE (.||.) #-}
-(.||.) :: (NFData a, NFData b) => a -> b -> (a,b)
-(.||.) = (a `par` b `pseq` (a,b))
+(.||.) :: (NFData a, NFData b) => a -. b -. (a,b)
+(.||.) = Unsafe.toLinear (\a -> Unsafe.toLinear (\b -> (a `par` b `pseq` (a,b))))
 
 {-
 tuple2 :: (NFData a, NFData b) => (a -> b) -> a -> (a -> b) -> a -> (b, b)

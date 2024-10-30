@@ -23,6 +23,7 @@ import qualified Unsafe.Linear as Unsafe
 import           Control.DeepSeq ( NFData(..) )
 import qualified GHC.Exts as GHC
 
+import           ProofCombinators
 #ifdef PRIM_MUTABLE_ARRAYS
 import           Array.Mutable.PrimUnlifted
 import qualified Data.Primitive.Types as P
@@ -129,17 +130,8 @@ copy s@(Array (GHC.I# lo1) _hi1 src) (GHC.I# src_offset)
 
 
 {-# INLINE copy2 #-}
-copy2 :: HasPrim a => Array a -> Int -> Array a -> Int -> Int -> (Array a, Array a)
-copy2 s@(Array (GHC.I# lo1) _hi1 src) (GHC.I# src_offset)
-      d@(Array (GHC.I# lo2) _hi2 dst) (GHC.I# dst_offset)
-      (GHC.I# n) =
-#ifdef PRIM_MUTABLE_ARRAYS
-  case copy# (get s 0) src (lo1 GHC.+# src_offset) dst (lo2 GHC.+# dst_offset) n of
-    dst_arr' -> (s, d { array = dst_arr' })
-#else
-  case copy# src (lo1 GHC.+# src_offset) dst (lo2 GHC.+# dst_offset) n of
-    dst_arr' -> (s, d { array = dst_arr' })
-#endif
+copy2 :: HasPrim a => Int -> Int -> Int -> (Array a -. (Array a -. (Array a, Array a)))
+copy2 xi yi n = Unsafe.toLinear (\xs -> Unsafe.toLinear (\ys -> (xs, copy xs xi ys yi n)))
 
 {-# INLINE slice #-}
 slice :: Array a -> Int -> Int -> Array a
@@ -150,26 +142,30 @@ slice2 :: Array a -> Int -> Int -> (Array a, Array a)
 slice2 !ar l' r' = (slice ar l' r', ar)
 
 {-# INLINE splitAt #-}
-splitAt :: Int -> Array a -> (Array a, Array a)
-splitAt m xs = (slice xs 0 m, slice xs m n)
-  where
-    n = size xs
+splitAt :: Int -> (Array a -. (Array a, Array a))
+splitAt m = Unsafe.toLinear (\xs -> (slice xs 0 m, slice xs m (size xs)))
 
 -- PRE-CONDITION: the two slices are backed by the same array and should be contiguous.
-append :: Array a -> Array a -> Array a
-append (Array l1 _r1 !a1) (Array _l2 r2 _a2) = Array l1 r2 a1
+append :: Array a -. Array a -. Array a
+append = Unsafe.toLinear (\xs -> case xs of 
+  (Array l1 _r1 !a1) -> Unsafe.toLinear (\ys -> case ys of
+    (Array _l2 r2 _a2) -> Array l1 r2 a1))
 
 -- token xs == token ys
 -- lem_slice_append :: Array a -> Array a -> ()
 -- lem_slice_append xs ys  = ()
 
-size2 :: Array a -. (Int, Array a)
-size2 = Unsafe.toLinear go
-  where
-    go !ar = (size ar, ar)
+{-# INLINE size2 #-}
+size2 :: Array a -. (Ur Int, Array a)
+size2 = Unsafe.toLinear (\ar -> (Ur (size ar), ar))
 
-get2 :: HasPrim a => Array a -> Int -> (a, Array a)
-get2 !ar i = (get ar i, ar)
+{-# INLINE get2 #-}
+get2 :: HasPrim a => Int -> (Array a -. (Ur a, Array a))
+get2 i = Unsafe.toLinear (\ar -> (Ur (get ar i), ar))
+
+{-# INLINE setLin #-}
+setLin :: HasPrim a => Int -> a -> (Array a -. Array a)
+setLin n y = Unsafe.toLinear (\ar -> set ar n y)
 
 fromList :: HasPrim a => [a] -> Array a
 fromList [] = Array 0 0 undefined
