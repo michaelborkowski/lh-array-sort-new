@@ -14,10 +14,8 @@ import qualified Data.Primitive.Types as P
 import qualified Measure as M
 import qualified Insertion as I
 import qualified QuickSort as Q
-import qualified DpsMergeSort as DMS
-import qualified DpsMergeSort4 as DMS4
-import qualified DpsMergeSortPar as DMSP
-import qualified DpsMergeSort4Par as DMS4P
+import qualified DpsMergeSort4 as DMS
+import qualified DpsMergeSort4Par as DMSP
 import qualified Microbench as MB
 import qualified Array as A
 

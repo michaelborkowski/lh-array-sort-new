@@ -52,7 +52,7 @@ library
       -- DpsMergeSortPar  -- don't necessarily need for paper
       DpsMergeSort4Par
 
-      -- Microbench
+      Microbench
 
       QuickSort
       -- QuickSortCilk
