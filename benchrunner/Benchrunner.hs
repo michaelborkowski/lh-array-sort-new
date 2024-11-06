@@ -84,9 +84,10 @@ isSorted [_]      = True
 isSorted (x:y:xs) = x <= y && isSorted (y:xs)
 
 
-dobench :: Benchmark -> ParOrSeq -> Maybe Int -> IO ()
-dobench bench parorseq mb_size = do
-  let iters = 9 :: Int
+-- dobench :: Benchmark -> ParOrSeq -> Maybe Int -> IO ()
+dobench :: Benchmark -> ParOrSeq -> Maybe Int -> Int -> IO ()
+dobench bench parorseq mb_size iters = do
+  let
   putStrLn $ "Running " ++ show bench ++ " (" ++ show parorseq ++ ")"
              ++ "\n========================================"
   (size, res, tmed, tall) <-
@@ -176,16 +177,18 @@ dobench bench parorseq mb_size = do
 main :: IO ()
 main = do
   allargs <- getArgs
-  let usage = "USAGE: benchrunner -- BENCH_ARGS -- CRITERION_ARGS"
-  let (benchmark, parorseq, size, _rst) =
+  -- let usage = "USAGE: benchrunner -- BENCH_ARGS -- CRITERION_ARGS"
+  let usage = "USAGE: benchrunner ITERS SORT PAR SIZE"
+  let (benchmark, parorseq, size, _rst, iters) =
         case splitOn ["--"] allargs of
-          [] -> (Insertionsort,Seq,Just 10,[])
-          [(bnch:parorseq0:sz:_)] ->
-            (read bnch :: Benchmark, read parorseq0 :: ParOrSeq, Just (read sz :: Int), [])
-          [(bnch:sz:_)] ->
-            (read bnch :: Benchmark, Seq, Just (read sz :: Int), [])
-          [(bnch:_)] ->
-            (read bnch :: Benchmark, Seq, Nothing, [])
+          -- [] -> (Insertionsort,Seq,Just 10,[])
+          -- [(bnch:parorseq0:sz:_)] ->
+          --   (read bnch :: Benchmark, read parorseq0 :: ParOrSeq, Just (read sz :: Int), [])
+          -- [(bnch:sz:_)] ->
+          --   (read bnch :: Benchmark, Seq, Just (read sz :: Int), [])
+          -- [(bnch:_)] ->
+          --   (read bnch :: Benchmark, Seq, Nothing, [])
+          [[its,bnch,md,sz]] -> (read bnch :: Benchmark, read md :: ParOrSeq, Just (read sz :: Int), [], read its)
 
           _ -> error usage
-  dobench benchmark parorseq size
+  dobench benchmark parorseq size iters
