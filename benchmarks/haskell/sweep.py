@@ -2,22 +2,35 @@
 import os
 import numpy as np
 
-LO = 8
-HI = 16
-
 names = ["Insertionsort", "Quicksort", "Mergesort"]
-NAME = names[2]
+
+DENSITY = 4
+def bounds(name): 
+    match name: 
+        case "Insertionsort": 
+            lo = 3  # 2**n ...
+            hi = 16
+        case "Quicksort": 
+            lo = 3
+            hi = 22
+        case "Mergesort": 
+            lo = 12
+            hi = 24
+    return lo, hi, (hi-lo)*DENSITY+1
 
 def dotrial(name, size):
-    os.system("criterion-external benchrunner %d Seq %d -- --csv %s.csv" % (name, size, name))
+    os.system("criterion-external benchrunner %s Seq %d -- --csv %s.csv" % (name, size, name))
     with open("%s.csv" % name, "r") as f:
-        tmp = np.loadtxt(f, delimiter=",", skiprows=1, usecols=1)
+        tmp = np.loadtxt(f, delimiter=",", skiprows=1, usecols=(1,4))
         os.remove("%s.csv" % name)
         return tmp
 
 if __name__ == "__main__": 
-    np.savetxt(
-        "%s%d_out.csv" % (NAME, k), np.array([np.insert(dotrial(NAME, 2**k), 0, int(2**k)) for k in range(LO, HI)])
-        , delimiter="\t"
-        , header="size\tmean\tmeanLB\tmeanUB\tstddev\tstddevLB\tstddevUB"
-    )
+    for name in names: 
+        lo, hi, pts = bounds(name)
+        np.savetxt(
+            "%s_out.csv" % name, np.array([np.insert(dotrial(name, i), 0, int(i)) for i in np.logspace(lo, hi, pts, base=2)])
+            , delimiter="\t"
+            # , header="size\tmean\tmeanLB\tmeanUB\tstddev\tstddevLB\tstddevUB"
+            , header="size\tmean\tstddev"
+        )
