@@ -37,7 +37,7 @@ bool CILKSORT = false;
 void *cilksort(void *const pbase, size_t total_elems, size_t size, __compar_fn_t cmp)
 {
     CILKSORT = true;
-    void *sorted = mergesort(pbase, total_elems, size, cmp);
+    void *sorted = smergesort(pbase, total_elems, size, cmp);
     CILKSORT = false;
     return sorted;
 }
