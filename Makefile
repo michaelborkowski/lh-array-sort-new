@@ -28,22 +28,22 @@ all: checkdeps build bench
 bench: bench_verified bench_canonical_c bench_gibbon_c
 
 bench_verified:
-	$(HCTOOL) $(HCTOOLEXEC)  benchrunner $(RTFLAGS) -- FillArray 10000000
-	$(HCTOOL) $(HCTOOLEXEC)  benchrunner $(RTFLAGS) -- Insertionsort 10
-	$(HCTOOL) $(HCTOOLEXEC)  benchrunner $(RTFLAGS) -- Insertionsort 100
-	$(HCTOOL) $(HCTOOLEXEC)  benchrunner $(RTFLAGS) -- Insertionsort 1000
-	$(HCTOOL) $(HCTOOLEXEC)  benchrunner $(RTFLAGS) -- Mergesort 20
-	$(HCTOOL) $(HCTOOLEXEC)  benchrunner $(RTFLAGS) -- Mergesort 100
-	$(HCTOOL) $(HCTOOLEXEC)  benchrunner $(RTFLAGS) -- Mergesort 10000
-	$(HCTOOL) $(HCTOOLEXEC)  benchrunner $(RTFLAGS) -- Mergesort 100000
-	$(HCTOOL) $(HCTOOLEXEC)  benchrunner $(RTFLAGS) -- Mergesort 1000000
-	$(HCTOOL) $(HCTOOLEXEC)  benchrunner $(RTFLAGS) -- Mergesort 4000000
+	#$(HCTOOL) $(HCTOOLEXEC)  benchrunner $(RTFLAGS) -- FillArray 10000000      {-Errors out-}
+	$(HCTOOL) $(HCTOOLEXEC)  benchrunner $(RTFLAGS) -- 1 Insertionsort Seq 10
+	$(HCTOOL) $(HCTOOLEXEC)  benchrunner $(RTFLAGS) -- 1 Insertionsort Seq 100
+	$(HCTOOL) $(HCTOOLEXEC)  benchrunner $(RTFLAGS) -- 1 Insertionsort Seq 1000
+	$(HCTOOL) $(HCTOOLEXEC)  benchrunner $(RTFLAGS) -- 1 Mergesort Seq 20
+	$(HCTOOL) $(HCTOOLEXEC)  benchrunner $(RTFLAGS) -- 1 Mergesort Seq 100
+	$(HCTOOL) $(HCTOOLEXEC)  benchrunner $(RTFLAGS) -- 1 Mergesort Seq 10000
+	$(HCTOOL) $(HCTOOLEXEC)  benchrunner $(RTFLAGS) -- 1 Mergesort Seq 100000
+	$(HCTOOL) $(HCTOOLEXEC)  benchrunner $(RTFLAGS) -- 1 Mergesort Seq 1000000
+	$(HCTOOL) $(HCTOOLEXEC)  benchrunner $(RTFLAGS) -- 1 Mergesort Seq 4000000
 #	$(HCTOOL) $(HCTOOLEXEC)  benchrunner $(RTFLAGS) -- Quicksort 1000
 #	$(HCTOOL) $(HCTOOLEXEC)  benchrunner $(RTFLAGS) -- Quicksort 10000
 #	$(HCTOOL) $(HCTOOLEXEC)  benchrunner $(RTFLAGS) -- Quicksort 100000
-	$(HCTOOL) $(HCTOOLEXEC)  benchrunner $(RTFLAGS) -- Cilksort 1000
-	$(HCTOOL) $(HCTOOLEXEC)  benchrunner $(RTFLAGS) -- Cilksort 10000
-	$(HCTOOL) $(HCTOOLEXEC)  benchrunner $(RTFLAGS) -- Cilksort 100000
+	$(HCTOOL) $(HCTOOLEXEC)  benchrunner $(RTFLAGS) -- 1 Cilksort Seq 1000
+	$(HCTOOL) $(HCTOOLEXEC)  benchrunner $(RTFLAGS) -- 1 Cilksort Seq 10000
+	$(HCTOOL) $(HCTOOLEXEC)  benchrunner $(RTFLAGS) -- 1 Cilksort Seq 100000
 
 bench_gibbon_c:
 	$(HCTOOL) $(HCTOOLEXEC) criterion-interactive ./benchmarks/c/cbench.exe gib_fillarray int64 10000000
