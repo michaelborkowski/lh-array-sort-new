@@ -114,7 +114,7 @@ int bench_main(int argc, char** argv)
         }
     } else if (prefix("sort", argv[1])) {
         b->tag = SORT;
-        b->sort_setup = fill_array_rand_seq;
+        b->sort_setup = (sort_setup_fn_t) fill_array_rand_seq;
         b->sort_teardown = free;
         b->sort_run = insertionsort_glibc;
         b->sort_total_elems = total_elems;

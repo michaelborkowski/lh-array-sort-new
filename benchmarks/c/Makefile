@@ -2,7 +2,8 @@ CFILES   = $(wildcard *.c)
 OBJFILES = $(CFILES:.c=.o)
 OUT      = cbench.exe
 
-CLANG       := clang-14
+USECLANG    := 1
+CLANG       := clang-16
 CLANG_FLAGS := -std=gnu11 -fopencilk
 GCC         := gcc-7
 GCC_FLAGS   := -std=gnu11 -lm -fcilkplus
