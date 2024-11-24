@@ -69,7 +69,7 @@ def make_plots(results, benchmarks, threads, inputs):
                 par_runtimes = results[par_key]
                 par_mean = stat.mean(par_runtimes)
 
-                plot_inputs[thread] = par_mean / seq_mean
+                plot_inputs[int(thread)] = par_mean / seq_mean
 
             
             #plot 
@@ -78,7 +78,8 @@ def make_plots(results, benchmarks, threads, inputs):
 
 
 def plot(plot_inputs, bench, input):
-
+    
+    plt.figure()
     lists = sorted(plot_inputs.items())
     x, y = zip(*lists)
     plt.plot(x, y)
@@ -87,12 +88,11 @@ def plot(plot_inputs, bench, input):
 
 if __name__ == "__main__":
 
-    threads = ["1", "2", "4", "8", "16", "32", "64"]
-    inputs = ["10", "100", "1000"]
+    threads = ["1", "2", "4", "8", "16"]
+    inputs = ["10", "100", "1000", "10000", "100000", "1000000"]
     modes = ["Seq", "Par"]
     benchmarks = ["Mergesort"]
     iterations = "9"
-
 
     results = run(threads, inputs, modes, benchmarks, iterations)
     make_plots(results, benchmarks, threads, inputs)
