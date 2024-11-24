@@ -69,7 +69,7 @@ def make_plots(results, benchmarks, threads, inputs):
                 par_runtimes = results[par_key]
                 par_mean = stat.mean(par_runtimes)
 
-                plot_inputs[int(thread)] = par_mean / seq_mean
+                plot_inputs[int(thread)] = seq_mean / par_mean
 
             
             #plot 
