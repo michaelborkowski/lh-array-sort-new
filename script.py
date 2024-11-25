@@ -37,10 +37,11 @@ def run(threads, array_size, modes, benchmarks, iterations):
                     runtimes = []
                     for line in lines:
                         print(line)
-                        time = re.search(r'(\d+(\.\d+)?)([eE][+-]?\d+)', line)
+                        time = re.search(r"iter time: ([-+]?\d*\.?\d+(?:[eE][-+]?\d+)?\b)", line)
+
                         if time:
-                            print(time.group())
-                            runtimes.append(float(time.group()))
+                            print(time[1])
+                            runtimes.append(float(time[1]))
                     print(runtimes)
 
                     key = (bench, mode, size, thread)
