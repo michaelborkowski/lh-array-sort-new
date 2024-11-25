@@ -7,17 +7,16 @@ import matplotlib.pylab as plt
 benchrunner_path = "/local/scratch/a/singhav/lh-array-sort/dist-newstyle/build/x86_64-linux/ghc-9.10.1/benchrunner-0.1/x/benchrunner/build/benchrunner/benchrunner"
 
 def run(threads, array_size, modes, benchmarks, iterations):
-    
-    results = {}
 
-    for mode in modes:
+    for bench in benchmarks:
+        for size in array_size:
+            results = {}
+            for mode in modes:
 
-        threads_default = ["1"]
-        if (mode == "Par"):
-            threads_default = threads
-
-        for bench in benchmarks:
-            for size in array_size:
+                threads_default = ["1"]
+                if (mode == "Par"):
+                    threads_default = threads
+                
                 for thread in threads_default:
 
                     f = open("out.txt", "w")
@@ -47,7 +46,8 @@ def run(threads, array_size, modes, benchmarks, iterations):
                     key = (bench, mode, size, thread)
                     results[key] = runtimes
 
-    return results
+
+            make_plots(results, [bench], threads, [size])
 
 
 
@@ -83,7 +83,11 @@ def plot(plot_inputs, bench, input):
     lists = sorted(plot_inputs.items())
     x, y = zip(*lists)
     plt.plot(x, y)
-    plt.savefig(bench + "_" + input + ".pdf")
+
+    if not os.path.isdir("./plots"):
+        os.mkdir("./plots")
+
+    plt.savefig("./plots/" + bench + "_" + input + ".pdf")
 
 
 if __name__ == "__main__":
@@ -94,8 +98,7 @@ if __name__ == "__main__":
     benchmarks = ["Mergesort"]
     iterations = "9"
 
-    results = run(threads, inputs, modes, benchmarks, iterations)
-    make_plots(results, benchmarks, threads, inputs)
+    run(threads, inputs, modes, benchmarks, iterations)
 
 
 
