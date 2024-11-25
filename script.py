@@ -84,6 +84,9 @@ def plot(plot_inputs, bench, input):
     lists = sorted(plot_inputs.items())
     x, y = zip(*lists)
     plt.plot(x, y)
+    plt.xlabel("Threads")
+    plt.ylabel("Speedup")
+    plt.title(bench + " Seq vs Parallel for input: " + input)
 
     if not os.path.isdir("./plots"):
         os.mkdir("./plots")
