@@ -93,7 +93,7 @@ def plot(plot_inputs, bench, input):
 
 if __name__ == "__main__":
 
-    threads = ["1", "2", "4", "8", "16"]
+    threads = ["1", "2", "4", "8", "16", "32", "64", "128"]
     inputs = ["10", "100", "1000", "10000", "100000", "1000000"]
     modes = ["Seq", "Par"]
     benchmarks = ["Mergesort"]
