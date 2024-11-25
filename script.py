@@ -12,13 +12,13 @@ def run(threads, array_size, modes, benchmarks, iterations):
 
     for mode in modes:
 
-        threads_default = "1"
+        threads_default = ["1"]
         if (mode == "Par"):
             threads_default = threads
 
         for bench in benchmarks:
             for size in array_size:
-                for thread in threads:
+                for thread in threads_default:
 
                     f = open("out.txt", "w")
 
