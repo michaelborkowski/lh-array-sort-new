@@ -86,7 +86,7 @@ def plot(plot_inputs, bench, input):
     plt.plot(x, y)
     plt.xlabel("Threads")
     plt.ylabel("Speedup")
-    plt.title(bench + " Seq vs Parallel for input: " + input)
+    plt.title(bench + " Parallel speedup for input: " + input)
 
     if not os.path.isdir("./plots"):
         os.mkdir("./plots")
