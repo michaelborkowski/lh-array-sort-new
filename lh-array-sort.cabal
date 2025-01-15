@@ -55,7 +55,7 @@ library
       Microbench
 
       QuickSort
-      -- QuickSortCilk
+      -- PiecewiseFallbackSort
 
       -- JZ: Add Parallel Cilksort
       -- Current Cilksort is entirely sequential
