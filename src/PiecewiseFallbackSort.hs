@@ -21,19 +21,20 @@ import           Array.List as A
 #endif
 
 -- DPS mergesort -- unfold twice, merge twice
--- {-@ msortInplace :: cutoff:Nat ->  xs:Array a
---       -> { ys:(Array a ) | A.size ys  == A.size xs   && left xs == left ys &&
---                            right xs == right ys }
---       -> (Array a, Array a)<{\zs ts -> toBag xs == toBag zs && isSorted' zs &&
---                                        token xs == token zs && token ys == token ts &&
---                                        A.size xs == A.size zs && A.size ys == A.size ts &&
---                                        left zs == left xs && right zs == right xs &&
---                                        left ts == left ys && right ts == right ys }>
---        / [A.size xs] @-}
+{-@ msortInplace :: cutoff:Int ->  xs:Array a
+      -> { ys:(Array a ) | A.size ys  == A.size xs   && left xs == left ys &&
+                           right xs == right ys }
+      -> (Array a, Array a)<{\zs ts -> toBag xs == toBag zs && isSorted' zs &&
+                                       token xs == token zs && token ys == token ts &&
+                                       A.size xs == A.size zs && A.size ys == A.size ts &&
+                                       left zs == left xs && right zs == right xs &&
+                                       left ts == left ys && right ts == right ys }>
+       / [A.size xs] @-}
 msortInplace :: (Show a, HasPrimOrd a) => Int -> A.Array a -. A.Array a -. (A.Array a, A.Array a)
 msortInplace cutoff src tmp =  -- cutoff > 0, though it may not be necessary to show sorting correctness
   let !(Ur len, src') = A.size2 src in
-  if len <= cutoff then (isort_top' src', tmp)
+  if len <= 1 then (src', tmp)                        -- MHB added
+  else if len <= cutoff then (isort_top' src', tmp)
   else
     let !(srcA, srcB)     = splitMid src'
         !(tmpA, tmpB)     = splitMid tmp
@@ -66,8 +67,10 @@ pfsort' :: (Show a, HasPrimOrd a) => a -> A.Array a -. A.Array a
 pfsort' anyVal src =
   let !(Ur len, src') = A.size2 src  -- below expression is always in the interval [28, 708] (interval changed from meeting doc). 
       !(src'', _tmp) = msortInplace (if len <= 708 then 708  -- this can be any number >= 708 without affecting semantics, including `len`
-                                     else if len < 451776 then truncate((18820.2738 / sqrt (fromIntegral len)) :: Float)
-                                     else 28) src' (A.make len anyVal) in
+                                     else if len < 451776 
+                                          -- this is the same as truncate (18820.2738 / sqrt (fromIntegral len)) per GHC.Float
+                                          then truncate((18820.2738 / (exp ((log (fromIntegral len)) * 0.5) )) :: Float)
+                                          else 28) src' (A.make len anyVal) in
   case A.free _tmp of !() -> src''
 
 {-@ pfsort :: { xs:(A.Array a) | left xs == 0 && right xs == size xs }

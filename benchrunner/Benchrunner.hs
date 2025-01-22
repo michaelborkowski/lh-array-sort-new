@@ -16,6 +16,7 @@ import qualified Insertion as I
 import qualified QuickSort as Q
 import qualified DpsMergeSort4 as DMS
 import qualified DpsMergeSort4Par as DMSP
+import qualified PiecewiseFallbackSort as PFS
 import qualified Microbench as MB
 import qualified Array as A
 
@@ -30,7 +31,7 @@ data Benchmark
   | Insertionsort
   | Mergesort
   | Quicksort
-  | Cilksort
+  | Optsort  -- piecewise fallback
   deriving (Eq, Show, Read)
 
 data ParOrSeq = Seq | Par | ParM
@@ -54,7 +55,7 @@ getInput bench mb_size = case bench of
   Insertionsort -> ArrayIn <$> randArray (Proxy :: Proxy Int64) (mb 100)
   Quicksort     -> ArrayIn <$> randArray (Proxy :: Proxy Int64) (mb 1000000)
   Mergesort     -> ArrayIn <$> randArray (Proxy :: Proxy Int64) (mb 8000000)
-  Cilksort      -> ArrayIn <$> randArray (Proxy :: Proxy Int64) (mb 8000000)
+  Optsort       -> ArrayIn <$> randArray (Proxy :: Proxy Int64) (mb 8000000)
   where
     mb x = case mb_size of
       Nothing -> x
@@ -74,6 +75,7 @@ sortFn bench parorseq = case (bench,parorseq) of
   (Quicksort, Seq)     -> Q.quickSort'
   (Mergesort, Seq) -> DMS.msort
   (Mergesort, Par) -> DMSP.msort
+  (Optsort,   Seq) -> PFS.pfsort
   oth -> error $ "sortFn: " ++ show oth
 
 --------------------------------------------------------------------------------
