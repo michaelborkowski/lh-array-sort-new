@@ -89,7 +89,7 @@ pfsort' anyVal src =
                                      else if len < 451776 
                                           -- this is the same as truncate (18820.2738 / sqrt (fromIntegral len)) per GHC.Float
                                           then truncate((18820.2738 / (exp ((log (fromIntegral len)) * 0.5) )) :: Float)
-                                          else 28) src' (A.make len anyVal) in
+                                          else 28) src' (A.makeArray len anyVal) in
   case A.free _tmp of !() -> src''
 
 {-@ pfsort :: { xs:(A.Array a) | left xs == 0 && right xs == size xs }
