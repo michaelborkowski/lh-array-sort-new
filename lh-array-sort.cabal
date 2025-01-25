@@ -56,6 +56,7 @@ library
 
       QuickSort
       PiecewiseFallbackSort
+      PiecewiseFallbackSortPar
 
       -- JZ: Add Parallel Cilksort
       -- Current Cilksort is entirely sequential
