@@ -17,6 +17,7 @@ import qualified QuickSort as Q
 import qualified DpsMergeSort4 as DMS
 import qualified DpsMergeSort4Par as DMSP
 import qualified PiecewiseFallbackSort as PFS
+import qualified PiecewiseFallbackSortPar as PFSP
 import qualified Microbench as MB
 import qualified Array as A
 
@@ -76,6 +77,7 @@ sortFn bench parorseq = case (bench,parorseq) of
   (Mergesort, Seq) -> DMS.msort
   (Mergesort, Par) -> DMSP.msort
   (Optsort,   Seq) -> PFS.pfsort
+  (Optsort,   Par) -> PFSP.pfsort
   oth -> error $ "sortFn: " ++ show oth
 
 --------------------------------------------------------------------------------
