@@ -1,4 +1,4 @@
-HC = ghc-9.10.1
+HC = ghc
 CC = gcc
 RTFLAGS = +RTS -N6
 
@@ -65,7 +65,8 @@ ifeq ($(STACK),1)
 # CSK: verify that this does indeed build everything, including criterion-external.
 	$(STK) build $(F_MUTABLE_ARRAYS)
 	$(STK) build criterion-external
-else
+else    
+	#$(CABAL) configure --enable-library-profiling --enable-profiling
 	$(CABAL) v2-build all $(F_MUTABLE_ARRAYS)
 	$(CABAL) v2-build criterion-external
 endif

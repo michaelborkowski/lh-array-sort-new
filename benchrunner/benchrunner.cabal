@@ -26,6 +26,6 @@ executable benchrunner
                         ScopedTypeVariables
                         DeriveGeneric
     ghc-options:        -Wall -Wcompat
-                        -threaded -rtsopts
+                        -threaded -eventlog -rtsopts
                         -fdefer-typed-holes
                         -O2

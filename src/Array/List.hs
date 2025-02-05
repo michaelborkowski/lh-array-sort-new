@@ -145,9 +145,8 @@ get (Arr lst _ _ _) n = getList lst n
 {-@ get2 :: n:Nat -> {xs:Array a | n < size xs }
               -> (Ur a, Array a)<{\ x zs -> unur x == get xs n && xs == zs }> @-}
 get2 :: Int -> (Array a -. (Ur a, Array a))
-get2 i = Unsafe.toLinear (\xs -> (Ur (get xs i), xs))
-
-  -- set
+get2 i = Unsafe.toLinear (\xs -> let xs' = get xs i 
+                                  in (Ur xs', xs))
 
 {-@ reflect setList @-}
 {-@ setList :: xs:_ -> {n:Nat | n < len xs } -> x:_

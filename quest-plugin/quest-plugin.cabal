@@ -25,5 +25,5 @@ test-suite example
   build-depends:
     , base
     , quest-plugin
-  ghc-options: -fplugin=QuestPlugin
+  ghc-options: -rtsopts -fplugin=QuestPlugin
   -- if comment out the above line, the example will blow up with `undefined`
