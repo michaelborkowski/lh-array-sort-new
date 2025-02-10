@@ -9,7 +9,6 @@
 {-# LANGUAGE GADTs         #-}
 {-# LANGUAGE DeriveGeneric #-}
 
-
 module Array.List {-
   (
     -- * Array type
@@ -38,7 +37,6 @@ import qualified Linear.Unsafe  as Unsafe
 
 import           Language.Haskell.Liquid.ProofCombinators hiding ((?))
 import           ProofCombinators
-
 --------------------------------------------------------------------------------
 
 -- nice trick from: https://github.com/leftaroundabout/trivial-constraint
@@ -88,7 +86,13 @@ token xs = tok xs
 {-@ make' :: n:Nat -> x:_ -> xs:{(size xs) = n && left xs == 0 && right xs == n} @-}
 make' :: Int -> a -> Array a
 make' 0 x = Arr [] 0 0 0
-make' n x = let Arr lst l r _ = make' (n-1) x in Arr (x:lst) l (r+1) 0
+make' n x = let Arr lst l r _ = make' (n-1) x
+             in Arr (lst `seq` (x:lst)) l (r+1) 0
+
+
+--make' :: Int -> a -> Array a
+--make' 0 x = Arr [] 0 0 0
+--make' n x = let Arr lst l r _ = make' (n-1) x in Arr (x:lst) l (r+1) 0
 
 {-@ make :: n:Nat -> x:_ -> xs:{(size xs) = n && left xs == 0 && right xs == n} @-}
 make :: Int -> a -> Array a
@@ -152,15 +156,19 @@ get2 i = Unsafe.toLinear (\xs -> let xs' = get xs i
 {-@ setList :: xs:_ -> {n:Nat | n < len xs } -> x:_
                     -> { nxs:_ | (len nxs) == (len xs) } @-}
 setList :: [a] -> Int -> a -> [a]
-setList (x:xs) 0 y = (y:xs)
-setList (x:xs) n y = x:(setList xs (n-1) y)
+setList (x:xs) 0 y = y : xs
+setList (x:xs) n y = let rest = setList xs (n-1) y
+                       in rest `seq` x:rest
+
+--x `seq` (x : setList xs (n-1) y)
 
 {-@ reflect set @-}
 {-@ set :: xs:_ -> { n:Nat | n < size xs } -> x:_
                 -> { nxs:(Array a) | left xs == left nxs && right xs == right nxs &&
                                      token xs == token nxs && size xs == size nxs } @-}
 set :: Array a -> Int -> a -> Array a
-set (Arr arr l r t) n y = Arr (setList arr n y) l r t
+set (Arr arr l r t) n y = let newArr = setList arr n y 
+			    in newArr `seq` Arr newArr l r t
 
 {-@ reflect setLin @-}
 {-@ setLin :: n:Nat -> x:_ -> { xs:_ | n < size xs }
@@ -233,13 +241,13 @@ splitAt m = Unsafe.toLinear (\xs -> (slice xs 0 m, slice xs m (size xs)))
 {-@ conc :: xs:_ -> ys:_ -> { zs:_ | len zs == len xs + len ys } @-}
 conc :: [a] -> [a] -> [a]
 conc []     ys = ys
-conc (x:xs) ys = x:(conc xs ys)
+conc (x:xs) ys = x `seq` (x : conc xs ys)
 
 {-@ reflect take @-}
 {-@ take :: n:Nat -> { xs:_ | n <= len xs } -> { zs:_ | len zs == n } @-}
 take :: Int -> [a] -> [a]
 take 0 _      = []
-take n (x:xs) = x:(take (n-1) xs)
+take n (x:xs) = x `seq` (x : take (n-1) xs)
 
 {-@ reflect drop @-}
 {-@ drop :: n:Nat -> { xs:_ | n <= len xs } -> { zs:_ | len zs == len xs - n } @-}

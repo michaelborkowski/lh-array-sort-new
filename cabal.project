@@ -7,15 +7,15 @@ packages: .
 with-compiler: ghc
 
 package lh-array-sort
-    ghc-options: -O2
+    ghc-options: -O2 -eventlog -finfo-table-map -fdistinct-constructor-tables -rtsopts 
     -- ghc-options: -ddump-simpl -ddump-to-file -dsuppress-all
 
 package benchrunner
-    ghc-options: -O2
+    ghc-options: -O2 -eventlog -finfo-table-map -fdistinct-constructor-tables -rtsopts
     ghc-options: -ddump-simpl -ddump-to-file -dsuppress-all 
 
 package prof
-    ghc-options: -O2
+    ghc-options: -O2 -eventlog -finfo-table-map -fdistinct-constructor-tables -rtsopts
     ghc-options: -ddump-simpl -ddump-to-file -dsuppress-all -with-rtsopts="-p"
     -- ghc-options: -with-rtsopts="-p"
     profiling: False
