@@ -88,8 +88,7 @@ library
       parallel,
       monad-par,
       linear-base,
-      primitive, 
-      hs-speedscope
+      primitive
   default-language: GHC2021
   ghc-options: -Wall -Wcompat
                -fdefer-typed-holes

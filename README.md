@@ -8,7 +8,66 @@ Array are implemented using { List, left: Int, right: Int } with slice api
 Checking time should not exceed 2min for any single file. Slightly faster than List implementation of Array (main branch)
 
 
-## Building and benchmarking
+## Cabal-based building and benchmarking
+
+
+### Building
+
+
+- Pure list backend:
+
+  - Liquid checks but no linear checks:
+
+    ```shellsession
+      cabal build lh-array-sort
+    ```
+
+  - Linear checks but no liquid checks:
+
+    ```shellsession
+      cabal build lh-array-sort -f-liquid-checks
+    ```
+
+- Mutable arrays backend, no checks:
+
+    ```shellsession
+     cabal build lh-array-sort -fmutable-arrays
+    ```
+     
+### Benchmarking
+
+The `benchrunner` package in the repository provides an executable to run benchmarks.
+But
+
+First, you need to make sure that you compiled the mutable-arrays backend. 
+You can either add `--constraint="lh-array-sort +mutable-arrays"` to every call
+to `cabal run` below (add it right after "run") or call
+
+``` shellsession
+cabal configure --constraint="lh-array-sort +mutable-arrays"
+```
+
+once before benchmarking. This command will create a `cabal.project.local` file
+asserting the mutable-arrays constraint. Note that this constraint will be in
+action until you remove the file.
+
+
+The interface for `benchrunner` is:
+
+```shellsession
+benchrunner ITERS SORT PAR SIZE
+```
+
+For instance:
+
+```shellsession
+cabal run benchrunner -- 5 Mergesort Seq 10000
+cabal run benchrunner -- 5 Mergesort Par 10000 +RTS -N4
+cabal run benchrunner -- 5 Insertionsort Seq 10000
+```
+
+
+## Make-based building and benchmarking (somewhat outdated in February 2025)
 
 Note: for an explanation of how building with LiquidHaskell v. Linear-Haskell checks works, see
 https://github.com/michaelborkowski/lh-array-sort/pull/5
