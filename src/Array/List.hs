@@ -312,7 +312,7 @@ lma_gs_list (x:xs) 0 x'
   *** QED
 lma_gs_list (x:xs) n x'
   =  getList (setList (x:xs) n x') n
-  -- === getList (x:(setList xs (n-1) x')) n
+  === getList (x:(setList xs (n-1) x')) n
   -- === getList (setList xs (n-1) x') (n-1)
     ? lma_gs_list xs (n-1) x'
   === x'
@@ -331,14 +331,14 @@ lma_gns_list (x:xs) 0 m x'
 
 lma_gns_list (x:xs) n 0 x'
   = getList (setList (x:xs) n x') 0
-  -- === getList (x:(setList xs (n-1) x')) 0
+  === getList (x:(setList xs (n-1) x')) 0
   -- === x
   === getList (x:xs) 0
   *** QED
 
 lma_gns_list (x:xs) n m x'
   = getList (setList (x:xs) n x') m
-  -- === getList (x:(setList xs (n-1) x')) m
+  === getList (x:(setList xs (n-1) x')) m
   -- === getList (setList xs (n-1) x') (m-1)
     ? lma_gns_list xs (n-1) (m-1) x'
   -- === getList xs (m-1)
@@ -349,8 +349,16 @@ lma_gns_list (x:xs) n m x'
         -> { j:Nat | i < j && j < len xs } -> xj:_
         -> { pf:_ | setList (setList xs j xj) i xi == setList (setList xs i xi) j xj } @-}
 lem_setList_commute :: [a] -> Int -> a -> Int -> a -> Proof
-lem_setList_commute (x:xs) 0 xi j xj = ()
-lem_setList_commute (x:xs) i xi j xj = () ? lem_setList_commute xs (i-1) xi (j-1) xj 
+lem_setList_commute (x:xs) 0 xi j xj = toProof (
+      seq (setList xs (j-1) xj) (x:(setList xs (j-1) xj)) === x:(setList xs (j-1) xj)
+    )
+lem_setList_commute (x:xs) i xi j xj = lem_setList_commute xs (i-1) xi (j-1) xj 
+                                     ? toProof (
+      seq (setList xs (j-1) xj) (x:(setList xs (j-1) xj)) === x:(setList xs (j-1) xj)
+                                     ) 
+                                     ? toProof (
+      seq (setList xs (i-1) xi) (x:(setList xs (i-1) xi)) === x:(setList xs (i-1) xi)
+                                     )
 
 {-@ lem_set_commute :: xs:_ -> { i:Nat | i < size xs } -> xi:_
         -> { j:Nat | not (i = j) && j < size xs } -> xj:_
@@ -364,7 +372,10 @@ lem_set_commute (Arr arr _ _ _) i xi j xj
         -> { pf:_ | setList (setList xs i xi') i xi == setList xs i xi } @-}
 lem_setList_twice :: [a] -> Int -> a -> a -> Proof
 lem_setList_twice (x:xs) 0 xi xi' = ()
-lem_setList_twice (x:xs) i xi xi' = () ? lem_setList_twice xs (i-1) xi xi'
+lem_setList_twice (x:xs) i xi xi' = lem_setList_twice xs (i-1) xi xi' 
+                                  ? toProof (
+      seq (setList xs (i-1) xi') (x:(setList xs (i-1) xi')) === x:(setList xs (i-1) xi')
+                                  )
 
 {-@ lem_set_twice :: xs:_ -> { i:Nat | i < size xs } -> xi:_ -> xi':_ 
         -> { pf:_ | set (set xs i xi') i xi == set xs i xi } @-}
