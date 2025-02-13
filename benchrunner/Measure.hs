@@ -1,4 +1,4 @@
-module Measure ( bench, benchPar, benchParIO ) where
+module Measure ( benchOnArrays, bench, benchPar, benchParIO ) where
 
 import Control.Exception (evaluate)
 import Control.Monad.Par hiding (runParIO)
@@ -8,6 +8,7 @@ import Data.Int
 import Data.List
 import System.Mem (performMajorGC)
 import Data.Time.Clock (getCurrentTime, diffUTCTime)
+import qualified Array as A
 
 --------------------------------------------------------------------------------
 
@@ -21,7 +22,8 @@ benchPar :: (NFData a, NFData b) =>
             (a -> Par b) -> a -> Int -> IO (b, Double, Double)
 benchPar f arg iters = do
     let !arg2 = force arg
-    tups <- mapM (\_ -> dotrialPar f arg2) [1..iters]
+    let !argsCopied = replicate iters arg2
+    tups <- mapM (\arg2' -> dotrialPar f arg2') argsCopied
     let (results, times) = unzip tups
     -- print times
     let  selftimed = median times
@@ -93,6 +95,17 @@ bench :: (NFData a, Show b, NFData b) => (a -> b) -> a -> Int -> IO (b, Double, 
 bench f arg iters = do
     let !arg2 = force arg
     !tups <- mapM (\_ -> dotrial f arg2) [1..iters]
+    let (results, times) = unzip tups
+    let selftimed = median times
+        batchtime = sum times
+    return $! (last results, selftimed, batchtime)
+
+benchOnArrays :: (NFData a, Show b, NFData b) => (A.Array a -> b) -> A.Array a -> Int -> IO (b, Double, Double)
+benchOnArrays f arrArg iters = do 
+    let !arg2 = force arrArg
+    let arg2Size = A.size arg2 
+    let !argsCopied = map (\_ -> A.copy arg2 0 (A.make arg2Size (A.get arg2 0)) 0 arg2Size) [1..iters]
+    !tups <- mapM (\arg2' -> dotrial f arg2') argsCopied
     let (results, times) = unzip tups
     let selftimed = median times
         batchtime = sum times

@@ -160,7 +160,7 @@ dobench bench parorseq mb_size iters = do
         (ArrayIn arr) <- getInput bench mb_size
         let fn = sortFn bench parorseq
         putStrLn $ "array size = " ++ show (A.size arr)
-        (res0, tmed0, tall0) <- M.bench fn arr iters
+        (res0, tmed0, tall0) <- M.benchOnArrays fn arr iters
         unless (isSorted (A.toList res0)) (error $ show bench ++ ": result not sorted.")
         putStrLn "Sorted: OK"
         pure (A.size arr, A.size res0, tmed0, tall0)
