@@ -5,10 +5,10 @@ module Main where
 import           Data.Int           ( Int64 )
 import           System.Random      ( Random, newStdGen, randoms )
 import           Data.Proxy         ( Proxy(..) )
-import           Control.DeepSeq    ( NFData, force)
+import           Control.DeepSeq    ( NFData, force, deepseq)
 import           Data.List.Split    ( splitOn )
 import           System.Environment ( getArgs, withArgs )
-import           Control.Monad      ( unless )
+import           Control.Monad      ( unless, replicateM)
 import qualified Data.Primitive.Types as P
 
 import qualified Measure as M
@@ -61,6 +61,22 @@ getInput bench mb_size = case bench of
     mb x = case mb_size of
       Nothing -> x
       Just y  -> y
+
+
+copyInput :: Maybe Int -> (Input Int64) -> IO (Input Int64)
+copyInput mb_size i = case i of
+  ArrayIn arr -> pure $ ArrayIn (A.copy arr 0 (A.make (A.size arr) (A.get arr 0)) 0 (A.size arr))
+  _ -> error "TODO: copyInput not implemented!"
+  where
+    mb x = case mb_size of
+      Nothing -> x
+      Just y  -> y
+
+copyInputIterTimes :: Maybe Int -> Input Int64 -> Int -> IO [A.Array Int64]
+copyInputIterTimes mb_size inp iters = do
+  copiedInputs <- replicateM iters (copyInput mb_size inp)
+  return [arr | ArrayIn arr <- copiedInputs]
+
 
 randArray :: forall a. (Random a, NFData a, P.Prim a) => Proxy a -> Int -> IO (A.Array a)
 randArray _ty size = do
@@ -157,10 +173,11 @@ dobench bench parorseq mb_size iters = do
             putStrLn "Copied: OK"
             pure (A.size arr, A.size res0, tmed0, tall0)
       _ -> do
-        (ArrayIn arr) <- getInput bench mb_size
+        ArrayIn arr <- getInput bench mb_size
+        arrs <- copyInputIterTimes mb_size (ArrayIn arr) iters
         let fn = sortFn bench parorseq
         putStrLn $ "array size = " ++ show (A.size arr)
-        (res0, tmed0, tall0) <- M.benchOnArrays fn arr iters
+        (res0, tmed0, tall0) <- M.benchOnArrays fn arrs iters
         unless (isSorted (A.toList res0)) (error $ show bench ++ ": result not sorted.")
         putStrLn "Sorted: OK"
         pure (A.size arr, A.size res0, tmed0, tall0)

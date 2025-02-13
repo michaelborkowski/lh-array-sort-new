@@ -100,12 +100,10 @@ bench f arg iters = do
         batchtime = sum times
     return $! (last results, selftimed, batchtime)
 
-benchOnArrays :: (NFData a, Show b, NFData b) => (A.Array a -> b) -> A.Array a -> Int -> IO (b, Double, Double)
-benchOnArrays f arrArg iters = do 
-    let !arg2 = force arrArg
-    let arg2Size = A.size arg2 
-    let !argsCopied = map (\_ -> A.copy arg2 0 (A.make arg2Size (A.get arg2 0)) 0 arg2Size) [1..iters]
-    !tups <- mapM (\arg2' -> dotrial f arg2') argsCopied
+benchOnArrays :: (NFData a, Show b, NFData b, Show a) => (A.Array a -> b) -> [A.Array a] -> Int -> IO (b, Double, Double)
+benchOnArrays f arrArgs iters = do 
+    let !arg2s = force arrArgs
+    !tups <- mapM (\arg2' -> dotrial f (force arg2')) arg2s
     let (results, times) = unzip tups
     let selftimed = median times
         batchtime = sum times
