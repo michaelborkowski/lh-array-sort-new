@@ -110,7 +110,7 @@ size2 xs = Unsafe.toLinear go (xs ? toProof (Unsafe.toLinear go xs === go xs))
   where
     {-@ go :: xs:(Array a)
                -> { tup:_ | unur (fst tup) == size xs && snd tup == xs } @-}
-    go xs = (Ur (size xs), xs) 
+    go ys = (Ur (size ys), ys)
 
 {-@ reflect listSize @-}
 {-@ listSize :: xs:_ -> Nat @-}

@@ -31,9 +31,9 @@ import Language.Haskell.Liquid.ProofCombinators (Proof)
 
 import Linear.Common
 #ifdef MUTABLE_ARRAYS
-import           Array.Mutable (Array, HasPrim(..))
+import           Array.Mutable (Array, HasPrim)
 #else
-import           Array.List    (Array, HasPrim(..))
+import           Array.List    (Array, HasPrim)
 #endif
 
 --------------------------------------------------------------------------------

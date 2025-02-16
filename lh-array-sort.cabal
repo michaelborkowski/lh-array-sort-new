@@ -104,11 +104,10 @@ library
   default-language: GHC2021
 
   ghc-options: -Wall -Wcompat
-               -fdefer-typed-holes
-               -ddump-simpl
-               -ddump-to-file
+               -- TODO: -Wno-blah below should be irradicated
+               -Wno-unused-matches -Wno-unused-imports -Wno-unused-local-binds
+               -Wno-incomplete-patterns -Wno-x-partial
                -O2
-               -w
 
   -- the plugin stuff
   build-depends: quest-plugin

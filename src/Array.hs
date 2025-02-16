@@ -17,6 +17,7 @@ module Array
   , alloc, make, generate, generate_par, generate_par_m, makeArray
   , copy, copy_par, copy_par_m
   , size, get, set, slice, append
+  , splitAt
 
     -- * Linear versions
   , size2, get2, slice2, copy2, copy2_par, free
@@ -24,19 +25,13 @@ module Array
     -- * Convert to/from lists
   , fromList, toList
 
-  , HasPrimOrd(..), HasPrim(..)
+  , HasPrimOrd, HasPrim
 
     -- * LiqidHaskell lemmas
   , lma_gs, lma_gns
   , lem_slice_append, lem_get_slice
   , lem_get_append_left, lem_get_append_right
   , lem_set_commute, lem_set_twice
-
-#ifdef MUTABLE_ARRAYS
-  , module Array.Mutable
-#else
-  , module Array.List
-#endif
 
   ) where
 
@@ -45,11 +40,6 @@ import qualified Linear.Unsafe as Unsafe
 import           ProofCombinators ( ur, unur )
 import           Prelude hiding (take, drop, splitAt)
 import           GHC.Conc ( numCapabilities, par, pseq )
-import           Array.List ( lma_gs_list, lma_gns_list
-                            , lem_take_conc, lem_drop_conc, lem_take_all
-                            , lem_getList_take, lem_getList_drop
-                            , take, drop
-                            )
 import           Control.Parallel.Strategies (runEval, rpar, rseq)
 import qualified Control.Monad.Par as P (Par, runPar, spawnP, spawn_, get, fork, put, new)
 
@@ -117,9 +107,9 @@ defaultGrainSize n =
 {-@ ignore generate_par @-}
 generate_par :: HasPrim a => Int -> (Int -> a) -> Array a
 {-# INLINE generate_par #-}
-generate_par n f =
-    let n'  = n `max` 0
-        arr  = make n' (f 0)
+generate_par m f =
+    let n  = m `max` 0
+        arr  = make n (f 0)
         -- cutoff = defaultGrainSize n'
         cutoff = 4096
     in go cutoff arr
@@ -138,9 +128,9 @@ generate_par n f =
 {-@ ignore generate_par_m @-}
 generate_par_m :: HasPrim a => Int -> (Int -> a) -> P.Par (Array a)
 {-# INLINE generate_par_m #-}
-generate_par_m n f =
-    let n'  = n `max` 0
-        arr  = make n' (f 0)
+generate_par_m m f =
+    let n  = m `max` 0
+        arr  = make n (f 0)
         -- cutoff = defaultGrainSize n'
         cutoff = 4096
     in go cutoff arr
@@ -227,14 +217,14 @@ copy_par_m !src0 src_offset0 !dst0 dst_offset0 !len0 = copy_par_m' src0 src_offs
            !left <- P.get left_f
            pure $ append left right
 
-{-@ ignore foldl1_par @-}
-foldl1_par :: Int -> (a -> a -> a) -> a -> Array a -> a
-foldl1_par = _todo
+-- {-@ ignore foldl1_par @-}
+-- foldl1_par :: Int -> (a -> a -> a) -> a -> Array a -> a
+-- foldl1_par = _todo
 
--- (?) how do we do parallel fill array?
-{-@ ignore make_par @-}
-make_par :: Int -> a -> Array a
-make_par = _todo
+-- -- (?) how do we do parallel fill array?
+-- {-@ ignore make_par @-}
+-- make_par :: Int -> a -> Array a
+-- make_par = _todo
 
 --------------------------------------------------------------------------------
 
