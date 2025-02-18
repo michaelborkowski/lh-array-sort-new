@@ -18,7 +18,6 @@ on:
 
 jobs:
   main:
-    name: Main
     runs-on: ubuntu-latest
     steps:
 
@@ -46,9 +45,17 @@ jobs:
       - name: Configure
         run: cabal configure --enable-tests -f-liquid-checks
 
-      - name: Build in linear mode
+      - name: Build in linear mode with mutable arrays
+        run: cabal build lh-array-sort -fmutable-arrays
+
+      # TODO: primitive configuration is currently broken
+      # - name: Build in linear mode with primitive mutable arrays
+      #   run: cabal build lh-array-sort -fprim-mutable-arrays
+
+      - name: Build in linear mode with pure arrays
         run: cabal build lh-array-sort
 
-      - name: Run tests
+      # TODO: tests only build with pure arrays right now (e.g. no Eq instance for mutable)
+      - name: Run tests with pure arrays
         run: cabal test
         #optional --flag=verbose-tests for printing additional debug information when running tests

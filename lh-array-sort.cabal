@@ -14,14 +14,16 @@ build-type:     Simple
 
 Flag mutable-arrays
    Description: Use mutable arrays.
+   Manual: True
    Default: False
 
 Flag prim-mutable-arrays
    Description: Use mutable arrays of primitive types.
+   Manual: True
    Default: False
 
 Flag liquid-checks
-   Description: Perform liquid checks. If False, we instead perform linear checks (unless we use mutable arrays.)
+   Description: Perform liquid checks. This is currently mutually exclusive with mutable arrays (see TODO in Array.hs)
    Default: True
   
 Flag verbose-tests
@@ -106,26 +108,29 @@ library
   ghc-options: -Wall -Wcompat
                -- TODO: -Wno-blah below should be irradicated
                -Wno-unused-matches -Wno-unused-imports -Wno-unused-local-binds
-               -Wno-incomplete-patterns -Wno-x-partial
+               -Wno-incomplete-patterns -Wno-x-partial -Wno-simplifiable-class-constraints
                -O2
 
   -- the plugin stuff
   build-depends: quest-plugin
   ghc-options: -fplugin=QuestPlugin
 
-  -- Turn on Liquid Haskell conditionally; else, turn on Linear Haskell
-  if !(flag(mutable-arrays) || flag(prim-mutable-arrays))
-    if flag(liquid-checks)
-      ghc-options: -fplugin=LiquidHaskell
-                   -fplugin-opt=LiquidHaskell:--ple
-                   -fplugin-opt=LiquidHaskell:--ple-with-undecided-guards
-                   -fplugin-opt=LiquidHaskell:--reflection
-                   -fplugin-opt=LiquidHaskell:--short-names
-      ghc-options: -fplugin-opt=QuestPlugin:liquid
-    else
-      default-extensions: LinearTypes
-      cpp-options: -DLINEAR
-      ghc-options: -fplugin-opt=QuestPlugin:linear
+  -- Linear and liquid checking are currently mutually exclusive (sadly)
+  if flag(liquid-checks)
+    ghc-options: -fplugin=LiquidHaskell
+                  -fplugin-opt=LiquidHaskell:--ple
+                  -fplugin-opt=LiquidHaskell:--ple-with-undecided-guards
+                  -fplugin-opt=LiquidHaskell:--reflection
+                  -fplugin-opt=LiquidHaskell:--short-names
+    ghc-options: -fplugin-opt=QuestPlugin:liquid
+  else
+    default-extensions: LinearTypes
+    cpp-options: -DLINEAR
+    ghc-options: -fplugin-opt=QuestPlugin:linear
+
+  -- We can't liquid-check the mutable configurations at the moment (see TODO in Array.hs)
+  if (flag(mutable-arrays) || flag(prim-mutable-arrays)) && flag(liquid-checks)
+    buildable: False
 
 test-suite test
   default-language:

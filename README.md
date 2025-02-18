@@ -1,11 +1,13 @@
-# lh-array-sort
-Various "in place" sorting algorithms verified with LH
+# lh-array-sort: verified and performant sorting algorithms
+
+Various "in place" sorting algorithms verified with Liquid Haskell.
 
 Now have: Proof of Sortedness for Merge, Linear Merge and Insertion, Proof of Equivalence for all using Bag
 
-Array are implemented using { List, left: Int, right: Int } with slice api
+Array are implemented using { List, left: Int, right: Int } with slice api.
+There are three arrays backends: pure, mutable, primitive-mutable.
 
-Checking time should not exceed 2min for any single file. Slightly faster than List implementation of Array (main branch)
+Checking time should not exceed 2min for any single file. Slightly faster than List implementation of Array (main branch).
 
 
 ## Cabal-based building and benchmarking
@@ -16,7 +18,7 @@ Checking time should not exceed 2min for any single file. Slightly faster than L
 
 - Pure list backend:
 
-  - Liquid checks but no linear checks:
+  - Liquid checks but no linear checks
 
     ```shellsession
       cabal build lh-array-sort
@@ -28,11 +30,18 @@ Checking time should not exceed 2min for any single file. Slightly faster than L
       cabal build lh-array-sort -f-liquid-checks
     ```
 
-- Mutable arrays backend, no checks:
+- Mutable arrays backend (enables linear checks):
 
     ```shellsession
      cabal build lh-array-sort -fmutable-arrays
     ```
+
+- Primitive-mutable arrays backend (currently broken):
+
+    ```shellsession
+     cabal build lh-array-sort -fmutable-arrays
+    ```
+
      
 ### Benchmarking
 
@@ -44,7 +53,7 @@ You can either add `--constraint="lh-array-sort +mutable-arrays"` to every call
 to `cabal run` below (add it right after "run") or call
 
 ``` shellsession
-cabal configure --constraint="lh-array-sort +mutable-arrays"
+cabal configure --constraint="lh-array-sort +mutable-arrays -liquid-checks"
 ```
 
 once before benchmarking. This command will create a `cabal.project.local` file
