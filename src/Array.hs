@@ -43,6 +43,13 @@ import           GHC.Conc ( numCapabilities, par, pseq )
 import           Control.Parallel.Strategies (runEval, rpar, rseq)
 import qualified Control.Monad.Par as P (Par, runPar, spawnP, spawn_, get, fork, put, new)
 
+-- These things are needed in any mode, MUTABLE or not.
+import           Array.List ( lma_gs_list, lma_gns_list
+                            , lem_take_conc, lem_drop_conc, lem_take_all
+                            , lem_getList_take, lem_getList_drop
+                            , take, drop
+                            )
+
 #ifdef MUTABLE_ARRAYS
 import           Array.Mutable
 #else
@@ -246,26 +253,30 @@ These won't pass the Liquid checker of course, so I'm disabling it for now.
 Relevant commit:
 https://github.com/ucsd-progsys/lh-array-sort/commit/6bd6b8936e3367a9365fc1f5cdf666f65b0575c7
 
+TODO: these lemmas are currently an evidence that we can't liquid-check the
+      mutable configuration (-f(prim-)mutable-arrays). We must either fill them in or
+      give up on liquid-checking mutable (which should allow to remove these stubs)
+
 -}
 
 #ifdef MUTABLE_ARRAYS
 lem_slice_append :: Array a -> Array a -> Proof
-lem_slice_append = _todo
+lem_slice_append = undefined
 
 lem_get_slice :: Array a -> Int -> Int -> Int -> Proof
-lem_get_slice = _todo
+lem_get_slice = undefined
 
 lem_get_append_left :: Array a -> Array a -> Int -> Proof
-lem_get_append_left = _todo
+lem_get_append_left = undefined
 
 lem_get_append_right :: Array a -> Array a -> Int -> Proof
-lem_get_append_right = _todo
+lem_get_append_right = undefined
 
 lem_set_commute :: Array a -> Int -> a -> Int -> a -> Proof
-lem_set_commute = _todo
+lem_set_commute = undefined
 
 lem_set_twice :: Array a -> Int -> a -> a -> Proof
-lem_set_twice = _todo
+lem_set_twice = undefined
 #endif
 
 
