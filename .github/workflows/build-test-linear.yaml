@@ -1,4 +1,4 @@
-name: Build/test lh-array-sort in linear mode
+name: Build/test/"bench" lh-array-sort in linear mode
 
 # See: https://docs.github.com/en/actions/reference/workflow-syntax-for-github-actions#concurrency.
 concurrency:
@@ -59,3 +59,12 @@ jobs:
       - name: Run tests with pure arrays
         run: cabal test
         #optional --flag=verbose-tests for printing additional debug information when running tests
+
+      - name: Make sure benchrunner builds and runs
+        run: |
+          rm cabal.project.local
+          cabal configure -f-liquid-checks -fmutable-arrays # (benchrunner must use mutable arrays)
+          cabal build benchrunner
+          cabal run benchrunner -- 5 Insertionsort Seq 100
+          cabal run benchrunner -- 5 Mergesort Seq 100
+          cabal run benchrunner -- 5 Mergesort Par 100 +RTS -N2

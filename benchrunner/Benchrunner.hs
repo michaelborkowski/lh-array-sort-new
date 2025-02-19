@@ -20,6 +20,7 @@ import qualified PiecewiseFallbackSort as PFS
 import qualified PiecewiseFallbackSortPar as PFSP
 import qualified Microbench as MB
 import qualified Array as A
+import           Linear.Common
 
 --------------------------------------------------------------------------------
 
@@ -86,7 +87,7 @@ randArray _ty size = do
       !arr = force (A.fromList ls)
   pure arr
 
-sortFn :: (Show a, A.HasPrimOrd a, NFData a) => Benchmark -> ParOrSeq -> (A.Array a -> A.Array a)
+sortFn :: (Show a, A.HasPrimOrd a, NFData a) => Benchmark -> ParOrSeq -> (A.Array a -. A.Array a)
 sortFn bench parorseq = case (bench,parorseq) of
   (Insertionsort, Seq) -> I.isort_top'
   (Quicksort, Seq)     -> Q.quickSort'
@@ -94,7 +95,7 @@ sortFn bench parorseq = case (bench,parorseq) of
   (Mergesort, Par) -> DMSP.msort
   (Optsort,   Seq) -> PFS.pfsort
   (Optsort,   Par) -> PFSP.pfsort
-  oth -> error $ "sortFn: " ++ show oth
+  oth -> error $ "sortFn: unknown configuration: " ++ show oth
 
 --------------------------------------------------------------------------------
 

@@ -9,6 +9,7 @@ import Data.List
 import System.Mem (performMajorGC)
 import Data.Time.Clock (getCurrentTime, diffUTCTime)
 import qualified Array as A
+import Linear.Common
 
 --------------------------------------------------------------------------------
 
@@ -91,7 +92,7 @@ dotrialIO f arg = do
 
 --------------------------------------------------------------------------------
 
-bench :: (NFData a, Show b, NFData b) => (a -> b) -> a -> Int -> IO (b, Double, Double)
+bench :: (NFData a, Show b, NFData b) => (a %p -> b) -> a -> Int -> IO (b, Double, Double)
 bench f arg iters = do
     let !arg2 = force arg
     !tups <- mapM (\_ -> dotrial f arg2) [1..iters]
@@ -100,7 +101,7 @@ bench f arg iters = do
         batchtime = sum times
     return $! (last results, selftimed, batchtime)
 
-benchOnArrays :: (NFData a, Show b, NFData b, Show a) => (A.Array a -> b) -> [A.Array a] -> Int -> IO (b, Double, Double)
+benchOnArrays :: (NFData a, Show b, NFData b, Show a) => (A.Array a %p -> b) -> [A.Array a] -> Int -> IO (b, Double, Double)
 benchOnArrays f arrArgs iters = do 
     let !arg2s = force arrArgs
     !tups <- mapM (\arg2' -> dotrial f (force arg2')) arg2s
@@ -110,7 +111,7 @@ benchOnArrays f arrArgs iters = do
     return $! (last results, selftimed, batchtime)
 
 {-# NOINLINE dotrial #-}
-dotrial :: (NFData a, Show b, NFData b) => (a -> b) -> a -> IO (b, Double)
+dotrial :: (NFData a, Show b, NFData b) => (a %p -> b) -> a -> IO (b, Double)
 dotrial f arg = do
     performMajorGC
     t1 <- getCurrentTime
