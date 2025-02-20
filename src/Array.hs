@@ -27,7 +27,7 @@ module Array
 
   , HasPrimOrd, HasPrim
 
-    -- * LiqidHaskell lemmas
+    -- * LiquidHaskell lemmas
   , lma_gs, lma_gns
   , lem_slice_append, lem_get_slice
   , lem_get_append_left, lem_get_append_right
