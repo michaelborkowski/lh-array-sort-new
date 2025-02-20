@@ -11,7 +11,6 @@ def read():
     return slow, fast
 
 def plot(slow, fast): 
-    fast = fast[:171]
     x = slow[:,0]  # assume same x values
     speedup = slow[:,1] / fast[:,1]
     # plt.figure(constrained_layout=True)
