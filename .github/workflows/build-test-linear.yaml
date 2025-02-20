@@ -43,14 +43,14 @@ jobs:
           restore-keys: ${{ runner.os }}-${{ matrix.ghc }}-
 
       - name: Configure
-        run: cabal configure --enable-tests -f-liquid-checks
+        run: cabal configure --enable-tests --constraint="lh-array-sort -liquid-checks"
 
       - name: Build in linear mode with mutable arrays
-        run: cabal build lh-array-sort -fmutable-arrays
+        run: cabal build lh-array-sort --constraint="lh-array-sort +mutable-arrays"
 
       # TODO: primitive configuration is currently broken
       # - name: Build in linear mode with primitive mutable arrays
-      #   run: cabal build lh-array-sort -fprim-mutable-arrays
+      #   run: cabal build lh-array-sort --constraint="lh-array-sort +prim-mutable-arrays"
 
       - name: Build in linear mode with pure arrays
         run: cabal build lh-array-sort
@@ -63,7 +63,7 @@ jobs:
       - name: Make sure benchrunner builds and runs
         run: |
           rm cabal.project.local
-          cabal configure -f-liquid-checks -fmutable-arrays # (benchrunner must use mutable arrays)
+          cabal configure --constraint="lh-array-sort +mutable-arrays -liquid-checks" # (benchrunner must use mutable arrays)
           cabal build benchrunner
           cabal run benchrunner -- 5 Insertionsort Seq 100
           cabal run benchrunner -- 5 Mergesort Seq 100
