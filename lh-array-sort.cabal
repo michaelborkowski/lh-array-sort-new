@@ -118,7 +118,7 @@ library
   -- This is the dreaded if... Here are our constraints:
   -- - Linear and liquid checking are currently mutually exclusive (sadly)
   -- - We can't liquid-check the mutable configurations at the moment (see TODO in Array.hs)
-  if flag(liquid-checks) && !flag(mutable-arrays) && !flag(mutable-arrays)
+  if flag(liquid-checks) && !flag(mutable-arrays) && !flag(prim-mutable-arrays)
     ghc-options: -fplugin=LiquidHaskell
                   -fplugin-opt=LiquidHaskell:--ple
                   -fplugin-opt=LiquidHaskell:--ple-with-undecided-guards
