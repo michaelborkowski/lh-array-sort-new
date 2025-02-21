@@ -115,8 +115,10 @@ library
   build-depends: quest-plugin
   ghc-options: -fplugin=QuestPlugin
 
-  -- Linear and liquid checking are currently mutually exclusive (sadly)
-  if flag(liquid-checks)
+  -- This is the dreaded if... Here are our constraints:
+  -- - Linear and liquid checking are currently mutually exclusive (sadly)
+  -- - We can't liquid-check the mutable configurations at the moment (see TODO in Array.hs)
+  if flag(liquid-checks) && !flag(mutable-arrays) && !flag(mutable-arrays)
     ghc-options: -fplugin=LiquidHaskell
                   -fplugin-opt=LiquidHaskell:--ple
                   -fplugin-opt=LiquidHaskell:--ple-with-undecided-guards
@@ -127,10 +129,6 @@ library
     default-extensions: LinearTypes
     cpp-options: -DLINEAR
     ghc-options: -fplugin-opt=QuestPlugin:linear
-
-  -- We can't liquid-check the mutable configurations at the moment (see TODO in Array.hs)
-  if (flag(mutable-arrays) || flag(prim-mutable-arrays)) && flag(liquid-checks)
-    buildable: False
 
 test-suite test
   default-language:

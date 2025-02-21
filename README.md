@@ -30,7 +30,7 @@ Checking time should not exceed 2min for any single file. Slightly faster than L
       cabal build lh-array-sort -f-liquid-checks
     ```
 
-- Mutable arrays backend (enables linear checks):
+- Mutable arrays backend (enables linear checks, disables liquid checks):
 
     ```shellsession
      cabal build lh-array-sort -fmutable-arrays
