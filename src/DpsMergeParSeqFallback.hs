@@ -35,7 +35,7 @@ import qualified Array as A
       -> { j:Nat  | i1 + i2 == j && j <= size zs }
       -> { zs':_  | size zs' == size zs && token zs' == token zs &&
                     left zs' == left zs && right zs' == right zs  } / [size zs - j] @-} 
-merge_func :: Ord a => A.Array a -> A.Array a -> A.Array a ->
+merge_func :: HasPrimOrd a => A.Array a -> A.Array a -> A.Array a ->
                 Int -> Int -> Int -> A.Array a 
 merge_func src1 src2 dst i1 i2 j =
     if i1 >= len1
@@ -55,7 +55,7 @@ merge_func src1 src2 dst i1 i2 j =
       -> { j:Nat  | i1 + i2 == j && j <= size zs }
       -> { pf:_   | toSlice zs 0 j == toSlice (merge_func xs1 xs2 zs i1 i2 j) 0 j } 
        / [size zs - j] @-} 
-lem_merge_func_untouched :: Ord a => A.Array a -> A.Array a -> A.Array a ->
+lem_merge_func_untouched :: HasPrimOrd a => A.Array a -> A.Array a -> A.Array a ->
                            Int -> Int -> Int -> Proof
 lem_merge_func_untouched src1 src2 dst i1 i2 j 
     | i1 >= len1  = lem_copy_equal_slice  src2 i2 dst j (len2-i2)
@@ -87,7 +87,7 @@ lem_merge_func_untouched src1 src2 dst i1 i2 j
                    ( j == 0 || i1 == size xs1 || A.get xs1 i1 >= A.get zs (j-1) ) &&
                    ( j == 0 || i2 == size xs2 || A.get xs2 i2 >= A.get zs (j-1) ) }
       -> { pf:_   | isSortedBtw (merge_func xs1 xs2 zs i1 i2 j) 0 (size zs) } / [size zs - j] @-} 
-lem_merge_func_sorted :: Ord a => A.Array a -> A.Array a -> A.Array a ->
+lem_merge_func_sorted :: HasPrimOrd a => A.Array a -> A.Array a -> A.Array a ->
                            Int -> Int -> Int -> Proof
 lem_merge_func_sorted src1 src2 dst i1 i2 j 
     | i1 >= len1  = lem_isSorted_copy src2 i2 dst (i1+i2) (len2-i2) 
@@ -134,7 +134,7 @@ lem_merge_func_sorted src1 src2 dst i1 i2 j
                     B.union (toBagBtw xs1 0 i1) (toBagBtw xs2 0 i2) == toBagBtw zs 0 j }
       -> { pf:_   | B.union (toBag xs1) (toBag xs2) == 
                         toBag (merge_func xs1 xs2 zs i1 i2 j) } / [size zs - j] @-} 
-lem_merge_func_equiv :: Ord a => A.Array a -> A.Array a -> A.Array a ->
+lem_merge_func_equiv :: HasPrimOrd a => A.Array a -> A.Array a -> A.Array a ->
                          Int -> Int -> Int -> Proof
 lem_merge_func_equiv src1 src2 dst i1 i2 j 
     | i1 >= len1  = let dst' = A.copy src2 i2 dst j (len2-i2) in

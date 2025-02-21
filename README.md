@@ -36,7 +36,7 @@ Checking time should not exceed 2min for any single file. Slightly faster than L
      cabal build lh-array-sort -fmutable-arrays
     ```
 
-- Primitive-mutable arrays backend (currently broken):
+- Primitive-mutable arrays backend (checks are the same as with mutable-arrays):
 
     ```shellsession
      cabal build lh-array-sort -fmutable-arrays

@@ -38,6 +38,7 @@ import qualified Linear.Unsafe  as Unsafe
 
 import           Language.Haskell.Liquid.ProofCombinators hiding ((?))
 import           ProofCombinators
+import qualified Data.Primitive.Types as P
 
 --------------------------------------------------------------------------------
 

@@ -48,9 +48,8 @@ jobs:
       - name: Build in linear mode with mutable arrays
         run: cabal build lh-array-sort --constraint="lh-array-sort +mutable-arrays"
 
-      # TODO: primitive configuration is currently broken
-      # - name: Build in linear mode with primitive mutable arrays
-      #   run: cabal build lh-array-sort --constraint="lh-array-sort +prim-mutable-arrays"
+      - name: Build in linear mode with primitive mutable arrays
+        run: cabal build lh-array-sort --constraint="lh-array-sort +prim-mutable-arrays"
 
       - name: Build in linear mode with pure arrays
         run: cabal build lh-array-sort
