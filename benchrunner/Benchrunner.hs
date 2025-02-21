@@ -5,12 +5,14 @@ module Main where
 import           Data.Int           ( Int64 )
 import           System.Random      ( Random, newStdGen, randoms )
 import           Data.Proxy         ( Proxy(..) )
-import           Control.DeepSeq    ( NFData, force, deepseq)
+import           Control.DeepSeq    ( NFData, force )
 import           Data.List.Split    ( splitOn )
-import           System.Environment ( getArgs, withArgs )
-import           Control.Monad      ( unless, replicateM)
-import qualified Data.Primitive.Types as P
+import           System.Environment ( getArgs )
+import           Control.Monad      ( unless, replicateM )
+import           Text.Read
+import           Linear.Common
 
+import qualified Data.Primitive.Types as P
 import qualified Measure as M
 import qualified Insertion as I
 import qualified QuickSort as Q
@@ -20,7 +22,10 @@ import qualified PiecewiseFallbackSort as PFS
 import qualified PiecewiseFallbackSortPar as PFSP
 import qualified Microbench as MB
 import qualified Array as A
-import           Linear.Common
+import qualified Data.Vector.Unboxed as V 
+import qualified Data.Vector.Algorithms.Insertion as ISDVS
+import qualified Data.Vector.Algorithms.Merge as MSDVS 
+import qualified Data.Vector.Algorithms.Intro as QSDVS
 
 --------------------------------------------------------------------------------
 
@@ -30,10 +35,15 @@ data Benchmark
   | CopyArray
   | SumArray
   | Fib
-  | Insertionsort
-  | Mergesort
-  | Quicksort
-  | Optsort  -- piecewise fallback
+  | OurSort SortAlgo
+  | VectorSort SortAlgo
+  deriving (Eq, Show, Read)
+
+data SortAlgo 
+  = Insertionsort 
+  | Mergesort 
+  | Quicksort 
+  | Optsort -- piecewise fallback 
   deriving (Eq, Show, Read)
 
 data ParOrSeq = Seq | Par | ParM
@@ -54,31 +64,38 @@ getInput bench mb_size = case bench of
   CopyArray     -> pure $ ArrayIn (A.make (mb 10000000) 1)
   SumArray      -> pure $ ArrayIn (A.make (mb 10000000) 1)
   Fib           -> pure $ IntIn (mb 45)
-  Insertionsort -> ArrayIn <$> randArray (Proxy :: Proxy Int64) (mb 100)
-  Quicksort     -> ArrayIn <$> randArray (Proxy :: Proxy Int64) (mb 1000000)
-  Mergesort     -> ArrayIn <$> randArray (Proxy :: Proxy Int64) (mb 8000000)
-  Optsort       -> ArrayIn <$> randArray (Proxy :: Proxy Int64) (mb 8000000)
+  OurSort alg -> case alg of 
+    Insertionsort -> ArrayIn <$> randArray (Proxy :: Proxy Int64) (mb 100)
+    Quicksort     -> ArrayIn <$> randArray (Proxy :: Proxy Int64) (mb 1000000)
+    Mergesort     -> ArrayIn <$> randArray (Proxy :: Proxy Int64) (mb 8000000)
+    Optsort       -> ArrayIn <$> randArray (Proxy :: Proxy Int64) (mb 8000000)
+  _ -> error "getInput: Unexpected Input!"
   where
     mb x = case mb_size of
       Nothing -> x
       Just y  -> y
 
+getInputAsDataVector :: SortAlgo -> Maybe Int -> IO M.Vec
+getInputAsDataVector bench mb_size = case bench of 
+  Insertionsort -> V.fromList <$> randList (Proxy :: Proxy Int64) (mb 100)
+  Quicksort -> V.fromList <$> randList (Proxy :: Proxy Int64) (mb 1000000)
+  Mergesort -> V.fromList <$> randList (Proxy :: Proxy Int64) (mb 8000000)
+  _ -> error "getInputAsDataVector: TODO sort function not implemented!"  
+  where 
+    mb x = case mb_size of 
+      Nothing -> x 
+      Just y -> y
 
-copyInput :: Maybe Int -> (Input Int64) -> IO (Input Int64)
-copyInput mb_size i = case i of
+copyInput :: (Input Int64) -> IO (Input Int64)
+copyInput i = case i of
   ArrayIn arr -> pure $ ArrayIn (A.copy arr 0 (A.make (A.size arr) (A.get arr 0)) 0 (A.size arr))
   _ -> error "TODO: copyInput not implemented!"
-  where
-    mb x = case mb_size of
-      Nothing -> x
-      Just y  -> y
 
-copyInputIterTimes :: Maybe Int -> Input Int64 -> Int -> IO [A.Array Int64]
-copyInputIterTimes mb_size inp iters = do
-  copiedInputs <- replicateM iters (copyInput mb_size inp)
+copyInputIterTimes :: Input Int64 -> Int -> IO [A.Array Int64]
+copyInputIterTimes inp iters = do
+  copiedInputs <- replicateM iters (copyInput inp)
   return [arr | ArrayIn arr <- copiedInputs]
-
-
+  
 randArray :: forall a. (Random a, NFData a, P.Prim a) => Proxy a -> Int -> IO (A.Array a)
 randArray _ty size = do
   rng <- newStdGen
@@ -86,8 +103,15 @@ randArray _ty size = do
       ls = take size $ randoms rng
       !arr = force (A.fromList ls)
   pure arr
-
-sortFn :: (Show a, A.HasPrimOrd a, NFData a) => Benchmark -> ParOrSeq -> (A.Array a -. A.Array a)
+  
+randList :: forall a. (Random a, NFData a) => Proxy a -> Int -> IO [a]
+randList _ty size = do 
+  rng <- newStdGen
+  let ls :: [a]
+      ls = take size $ randoms rng 
+  pure (force ls)
+  
+sortFn :: (Show a, A.HasPrimOrd a, NFData a) => SortAlgo -> ParOrSeq -> (A.Array a -. A.Array a)
 sortFn bench parorseq = case (bench,parorseq) of
   (Insertionsort, Seq) -> I.isort_top'
   (Quicksort, Seq)     -> Q.quickSort'
@@ -95,6 +119,13 @@ sortFn bench parorseq = case (bench,parorseq) of
   (Mergesort, Par) -> DMSP.msort
   (Optsort,   Seq) -> PFS.pfsort
   (Optsort,   Par) -> PFSP.pfsort
+  oth -> error $ "sortFn: unknown configuration: " ++ show oth
+  
+vectorSortFn :: SortAlgo -> ParOrSeq -> M.VecSort
+vectorSortFn bench parorseq = case (bench,parorseq) of
+  (Insertionsort, Seq) -> ISDVS.sort
+  (Mergesort,     Seq) -> MSDVS.sort
+  (Quicksort,     Seq) -> QSDVS.sort
   oth -> error $ "sortFn: unknown configuration: " ++ show oth
 
 --------------------------------------------------------------------------------
@@ -104,6 +135,12 @@ isSorted []       = True
 isSorted [_]      = True
 isSorted (x:y:xs) = x <= y && isSorted (y:xs)
 
+readBench :: String -> Benchmark
+readBench s = case readMaybe s of
+  Just b -> b
+  Nothing -> case readMaybe s of
+    Just srt -> OurSort srt
+    Nothing -> read s
 
 -- dobench :: Benchmark -> ParOrSeq -> Maybe Int -> IO ()
 dobench :: Benchmark -> ParOrSeq -> Maybe Int -> Int -> IO ()
@@ -149,6 +186,7 @@ dobench bench parorseq mb_size iters = do
           Par -> do
             (res0, tmed0, tall0) <- M.bench (MB.sumArray_par 4096) arr iters
             pure (A.size arr, fromIntegral res0, tmed0, tall0)
+          _ -> error "dobench: ParM case not expected for SumArray!"
       CopyArray -> do
         (ArrayIn arr) <- getInput bench mb_size
         case parorseq of
@@ -173,15 +211,25 @@ dobench bench parorseq mb_size iters = do
             unless ((A.toList res0) == (A.toList arr)) (error $ show bench ++ ": result not equal to source.")
             putStrLn "Copied: OK"
             pure (A.size arr, A.size res0, tmed0, tall0)
-      _ -> do
+      VectorSort alg -> do
+        inPutVec <- getInputAsDataVector alg mb_size
+        let fn = vectorSortFn alg parorseq
+        putStrLn $ "array size = " ++ show (V.length inPutVec)
+        (res0, tmed0, tall0) <- M.benchAndRunDataVecSorts fn inPutVec iters
+        unless (isSorted (V.toList res0)) (error $ show alg ++ ": result not sorted.")
+        putStrLn "Sorted: OK"
+        pure (V.length inPutVec, V.length res0, tmed0, tall0)   
+      OurSort alg -> do
         ArrayIn arr <- getInput bench mb_size
-        arrs <- copyInputIterTimes mb_size (ArrayIn arr) iters
-        let fn = sortFn bench parorseq
+        arrs <- copyInputIterTimes (ArrayIn arr) iters
+        let fn = sortFn alg parorseq
         putStrLn $ "array size = " ++ show (A.size arr)
-        (res0, tmed0, tall0) <- M.benchOnArrays fn arrs iters
+        (res0, tmed0, tall0) <- M.benchOnArrays fn arrs
         unless (isSorted (A.toList res0)) (error $ show bench ++ ": result not sorted.")
         putStrLn "Sorted: OK"
         pure (A.size arr, A.size res0, tmed0, tall0)
+      _ -> error "dobench: case not implemented!"
+
 
 {-
       FillArray -> do (EltsIn total_elems elt) <- getInput bench mb_size
@@ -210,7 +258,6 @@ main = do
           --   (read bnch :: Benchmark, Seq, Just (read sz :: Int), [])
           -- [(bnch:_)] ->
           --   (read bnch :: Benchmark, Seq, Nothing, [])
-          [[its,bnch,md,sz]] -> (read bnch :: Benchmark, read md :: ParOrSeq, Just (read sz :: Int), [], read its)
-
+          [[its,bnch,md,sz]] -> (readBench bnch, read md :: ParOrSeq, Just (read sz :: Int), [], read its)
           _ -> error usage
   dobench benchmark parorseq size iters

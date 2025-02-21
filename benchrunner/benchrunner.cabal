@@ -18,6 +18,8 @@ executable benchrunner
                       , monad-par
                       , time
                       , primitive
+                      , vector
+                      , vector-algorithms
     default-language:   GHC2021
     default-extensions: TupleSections
                         BangPatterns

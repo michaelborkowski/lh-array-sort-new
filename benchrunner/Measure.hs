@@ -1,20 +1,28 @@
-module Measure ( benchOnArrays, bench, benchPar, benchParIO ) where
+module Measure (benchAndRunDataVecSorts, benchOnArrays, bench, benchPar, dotrialIO, benchIO, benchParIO, MVec, Vec, VecSort) where
 
 import Control.Exception (evaluate)
 import Control.Monad.Par hiding (runParIO)
 import Control.Monad.Par.IO
 import Control.DeepSeq
 import Data.Int
-import Data.List
 import System.Mem (performMajorGC)
 import Data.Time.Clock (getCurrentTime, diffUTCTime)
 import qualified Array as A
-import Linear.Common
+import Control.Monad.Primitive (PrimState)
+
+import qualified Data.Vector.Unboxed as V
+import qualified Data.Vector.Unboxed.Mutable as MV
+import qualified Data.List as L
+
+
+type MVec = MV.MVector (PrimState IO) Int64
+type Vec = V.Vector Int64
+type VecSort = MVec -> IO ()
 
 --------------------------------------------------------------------------------
 
 median :: [Double] -> Double
-median ls = (sort ls) !! (length ls `div` 2)
+median ls = (L.sort ls) !! (length ls `div` 2)
 
 --------------------------------------------------------------------------------
 
@@ -101,8 +109,8 @@ bench f arg iters = do
         batchtime = sum times
     return $! (last results, selftimed, batchtime)
 
-benchOnArrays :: (NFData a, Show b, NFData b, Show a) => (A.Array a %p -> b) -> [A.Array a] -> Int -> IO (b, Double, Double)
-benchOnArrays f arrArgs iters = do 
+benchOnArrays :: (NFData a, Show b, NFData b, Show a) => (A.Array a %p -> b) -> [A.Array a] -> IO (b, Double, Double)
+benchOnArrays f arrArgs = do 
     let !arg2s = force arrArgs
     !tups <- mapM (\arg2' -> dotrial f (force arg2')) arg2s
     let (results, times) = unzip tups
@@ -120,3 +128,29 @@ dotrial f arg = do
     let delt = fromRational (toRational (diffUTCTime t2 t1))
     putStrLn ("iter time: " ++ show delt)
     return $! (a,delt)
+
+
+benchAndRunDataVecSorts :: VecSort -> Vec -> Int ->  IO (Vec, Double, Double)
+benchAndRunDataVecSorts sortFn inVec iters = do 
+  !tups <- mapM (\_ -> do 
+                       mvec <- V.thaw inVec
+                       mvecCopy <- MV.new (MV.length mvec) 
+                       MV.copy mvecCopy mvec
+                       res <- dotrialLocal sortFn mvecCopy
+                       pure res
+                ) [1..iters]             
+  let (results, times) = unzip tups
+  -- print times
+  let  selftimed = median times
+       batchtime = sum times
+  return $! (last results, selftimed, batchtime)
+  where 
+    dotrialLocal f arg = do
+      performMajorGC
+      t1 <- getCurrentTime
+      _ <- f arg
+      t2 <- getCurrentTime
+      let delt = fromRational (toRational (diffUTCTime t2 t1))
+      putStrLn ("iter time: " ++ show delt)
+      arg' <- V.freeze arg
+      return $! (arg', delt)  
