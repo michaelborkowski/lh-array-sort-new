@@ -25,10 +25,6 @@ Flag prim-mutable-arrays
 Flag liquid-checks
    Description: Perform liquid checks. This is currently mutually exclusive with mutable arrays (see TODO in Array.hs)
    Default: True
-  
-Flag verbose-tests
-   Description: Output extra information when running the test cases
-   Default: False
 
 library
 
@@ -138,10 +134,13 @@ test-suite test
   hs-source-dirs:
     tests
   main-is:
-    test.hs
+    Main.hs
   other-modules:
     ArrayTests
     SortTests
+    Infra
+    InvalidSorts
+    Properties
   build-depends:
     base >= 4.7 && < 5,
     array,
@@ -152,8 +151,3 @@ test-suite test
     tasty-smallcheck,
     tasty-quickcheck,
     lh-array-sort
-
-  if flag(verbose-tests)
-    cpp-options: -DVERBOSE_TESTS
-  else
-    cpp-options: -DNO_VERBOSE_TESTS
