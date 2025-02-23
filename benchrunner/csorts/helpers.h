@@ -9,7 +9,6 @@
 #include <errno.h>
 #include <time.h>
 #include <assert.h>
-#include <cilk/cilk.h>
 
 #ifndef HAVE_GLIBC_COMPAR_FN_T
 typedef int (*__compar_fn_t)(const void *, const void *);
@@ -17,11 +16,7 @@ typedef int (*__compar_fn_t)(const void *, const void *);
 
 // -----------------------------------------------------------------------------
 
-static inline double difftimespecs(struct timespec* t0, struct timespec* t1)
-{
-    return (double)(t1->tv_sec - t0->tv_sec)
-            + ((double)(t1->tv_nsec - t0->tv_nsec) / 1000000000.0);
-}
+static inline int compare_int64s(const void* a, const void* b);
 
 static inline int compare_int64s(const void* a, const void* b)
 {
@@ -33,6 +28,13 @@ static inline int compare_int64s(const void* a, const void* b)
     return 0;
 }
 
+
+static inline double difftimespecs(struct timespec* t0, struct timespec* t1)
+{
+    return (double)(t1->tv_sec - t0->tv_sec)
+            + ((double)(t1->tv_nsec - t0->tv_nsec) / 1000000000.0);
+}
+
 static inline bool prefix(const char *pre, const char *str)
 {
     return strncmp(pre, str, strlen(pre)) == 0;
@@ -42,9 +44,6 @@ static inline void our_memcpy(void *dst, void *src, size_t nbytes)
 {
     memcpy(dst, src, nbytes);
 }
-
-void our_memcpy_par(void *dst, void *src, size_t nbytes);
-
 
 // Taken from glibc.
 static inline void SWAP(void *a, void *b, size_t elt_size)
@@ -85,12 +84,6 @@ static inline void *slice_nth(const slice_t *sl, size_t n)
 static inline void slice_copy(slice_t *src, slice_t *dst)
 {
     our_memcpy(dst->base, src->base, (src->total_elems * src->elt_size));
-    return;
-}
-
-static inline void slice_copy_par(slice_t *src, slice_t *dst)
-{
-    our_memcpy_par(dst->base, src->base, (src->total_elems * src->elt_size));
     return;
 }
 

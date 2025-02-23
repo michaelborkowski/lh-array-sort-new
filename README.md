@@ -75,6 +75,20 @@ cabal run benchrunner -- 5 Mergesort Par 10000 +RTS -N4
 cabal run benchrunner -- 5 Insertionsort Seq 10000
 ```
 
+To run the sorting algorithms from vector-algorithms, use the following commands: 
+
+    $ cabal run benchrunner -- ITERS "VectorSort Insertionsort" ParOrSeq NUM_ELTS
+    $ cabal run benchrunner -- ITERS "VectorSort Mergesort" ParOrSeq NUM_ELTS
+    $ cabal run benchrunner -- ITERS "VectorSort Quicksort" ParOrSeq NUM_ELTS
+
+
+To run the sorting algorithms from the csorts directory which consist of hand written C sorting benchmarks:  
+
+    $ cabal run benchrunner -- ITERS "CSort Insertionsort" ParOrSeq NUM_ELTS
+    $ cabal run benchrunner -- ITERS "CSort Mergesort" ParOrSeq NUM_ELTS
+    $ cabal run benchrunner -- ITERS "CSort Quicksort" ParOrSeq NUM_ELTS
+
+
 
 ## Make-based building and benchmarking (somewhat outdated in February 2025)
 

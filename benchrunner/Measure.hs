@@ -1,4 +1,4 @@
-module Measure (benchAndRunDataVecSorts, benchOnArrays, bench, benchPar, dotrialIO, benchIO, benchParIO, MVec, Vec, VecSort) where
+module Measure (benchAndRunCSorts, benchAndRunDataVecSorts, benchOnArrays, bench, benchPar, dotrialIO, benchIO, benchParIO) where
 
 import Control.Exception (evaluate)
 import Control.Monad.Par hiding (runParIO)
@@ -7,17 +7,14 @@ import Control.DeepSeq
 import Data.Int
 import System.Mem (performMajorGC)
 import Data.Time.Clock (getCurrentTime, diffUTCTime)
+
+import Foreign as F
 import qualified Array as A
-import Control.Monad.Primitive (PrimState)
-
-import qualified Data.Vector.Unboxed as V
-import qualified Data.Vector.Unboxed.Mutable as MV
+import Types as T (SortAlgo(..), Vec, VecSort)
 import qualified Data.List as L
-
-
-type MVec = MV.MVector (PrimState IO) Int64
-type Vec = V.Vector Int64
-type VecSort = MVec -> IO ()
+import qualified Data.Vector.Unboxed as V
+import qualified ForeignFunctionImports as FFI
+import qualified Data.Vector.Unboxed.Mutable as MV
 
 --------------------------------------------------------------------------------
 
@@ -25,7 +22,6 @@ median :: [Double] -> Double
 median ls = (L.sort ls) !! (length ls `div` 2)
 
 --------------------------------------------------------------------------------
-
 
 benchPar :: (NFData a, NFData b) =>
             (a -> Par b) -> a -> Int -> IO (b, Double, Double)
@@ -129,7 +125,6 @@ dotrial f arg = do
     putStrLn ("iter time: " ++ show delt)
     return $! (a,delt)
 
-
 benchAndRunDataVecSorts :: VecSort -> Vec -> Int ->  IO (Vec, Double, Double)
 benchAndRunDataVecSorts sortFn inVec iters = do 
   !tups <- mapM (\_ -> do 
@@ -154,3 +149,38 @@ benchAndRunDataVecSorts sortFn inVec iters = do
       putStrLn ("iter time: " ++ show delt)
       arg' <- V.freeze arg
       return $! (arg', delt)  
+
+sortFnC :: SortAlgo -> FFI.SortFn
+sortFnC alg = case alg of
+                    Insertionsort -> FFI.c_insertionsort
+                    Mergesort -> FFI.c_mergesort
+                    Quicksort -> FFI.c_quicksort
+                    _ -> error "sortFnC: Csort not implemented!"
+
+-- return type : IO ([Int64], Double, Double) 
+-- [Int64]: sorted output array from the last iteration that was run
+-- Double: median runtime from the iterations that were run (selftimed)
+-- Double: Total time taken to run all the iterations (batchtime) 
+benchAndRunCSorts :: SortAlgo -> [Int64] -> Int -> IO ([Int64], Double, Double)
+benchAndRunCSorts salg arr iters = do 
+  !tups <- mapM (\_ -> do
+                       ptr <- newArray arr
+                       res <- dotrialLocal2 salg (length arr) ptr
+                       pure res
+                ) [1..iters]             
+  let (results, times) = unzip tups
+  -- print times
+  let  selftimed = median times
+       batchtime = sum times
+  return $! (last results, selftimed, batchtime)
+  where 
+    dotrialLocal2 alg arrLength ptr = do 
+        performMajorGC
+        let fn = sortFnC alg
+        t1 <- getCurrentTime
+        !sortedPtr <- fn ptr (fromIntegral arrLength) (fromIntegral $ F.sizeOf (undefined :: Int64))
+        t2 <- getCurrentTime
+        let delt = fromRational (toRational (diffUTCTime t2 t1))
+        putStrLn ("iter time: " ++ show delt)
+        !sortedArr <- peekArray arrLength (castPtr sortedPtr :: Ptr Int64)
+        return $! (sortedArr, delt)

@@ -1,4 +1,5 @@
 {-# LANGUAGE Strict   #-}
+{-# LANGUAGE ForeignFunctionInterface #-}
 
 module Main where
 
@@ -14,6 +15,7 @@ import           Linear.Common
 
 import qualified Data.Primitive.Types as P
 import qualified Measure as M
+import qualified Types as T
 import qualified Insertion as I
 import qualified QuickSort as Q
 import qualified DpsMergeSort4 as DMS
@@ -29,72 +31,55 @@ import qualified Data.Vector.Algorithms.Intro as QSDVS
 
 --------------------------------------------------------------------------------
 
-data Benchmark
-  = GenerateArray
-  | FillArray
-  | CopyArray
-  | SumArray
-  | Fib
-  | OurSort SortAlgo
-  | VectorSort SortAlgo
-  deriving (Eq, Show, Read)
-
-data SortAlgo 
-  = Insertionsort 
-  | Mergesort 
-  | Quicksort 
-  | Optsort -- piecewise fallback 
-  deriving (Eq, Show, Read)
-
-data ParOrSeq = Seq | Par | ParM
-  deriving (Eq, Show, Read)
-
-data Input a
-  = EltsIn
-     Int {- number of elements -}
-     a   {- element            -}
-  | ArrayIn (A.Array a)
-  | IntIn Int
-  deriving Show
-
-getInput :: Benchmark -> Maybe Int -> IO (Input Int64)
+getInput :: T.Benchmark -> Maybe Int -> IO (T.Input Int64)
 getInput bench mb_size = case bench of
-  GenerateArray -> pure $ IntIn (mb 10000000)
-  FillArray     -> pure $ EltsIn (mb 10000000) 1024
-  CopyArray     -> pure $ ArrayIn (A.make (mb 10000000) 1)
-  SumArray      -> pure $ ArrayIn (A.make (mb 10000000) 1)
-  Fib           -> pure $ IntIn (mb 45)
-  OurSort alg -> case alg of 
-    Insertionsort -> ArrayIn <$> randArray (Proxy :: Proxy Int64) (mb 100)
-    Quicksort     -> ArrayIn <$> randArray (Proxy :: Proxy Int64) (mb 1000000)
-    Mergesort     -> ArrayIn <$> randArray (Proxy :: Proxy Int64) (mb 8000000)
-    Optsort       -> ArrayIn <$> randArray (Proxy :: Proxy Int64) (mb 8000000)
+  T.GenerateArray -> pure $ T.IntIn (mb 10000000)
+  T.FillArray     -> pure $ T.EltsIn (mb 10000000) 1024
+  T.CopyArray     -> pure $ T.ArrayIn (A.make (mb 10000000) 1)
+  T.SumArray      -> pure $ T.ArrayIn (A.make (mb 10000000) 1)
+  T.Fib           -> pure $ T.IntIn (mb 45)
+  T.OurSort alg -> case alg of 
+    T.Insertionsort -> T.ArrayIn <$> randArray (Proxy :: Proxy Int64) (mb 100)
+    T.Quicksort     -> T.ArrayIn <$> randArray (Proxy :: Proxy Int64) (mb 1000000)
+    T.Mergesort     -> T.ArrayIn <$> randArray (Proxy :: Proxy Int64) (mb 8000000)
+    T.Optsort       -> T.ArrayIn <$> randArray (Proxy :: Proxy Int64) (mb 8000000)
   _ -> error "getInput: Unexpected Input!"
   where
     mb x = case mb_size of
       Nothing -> x
       Just y  -> y
 
-getInputAsDataVector :: SortAlgo -> Maybe Int -> IO M.Vec
+getInputAsDataVector :: T.SortAlgo -> Maybe Int -> IO T.Vec
 getInputAsDataVector bench mb_size = case bench of 
-  Insertionsort -> V.fromList <$> randList (Proxy :: Proxy Int64) (mb 100)
-  Quicksort -> V.fromList <$> randList (Proxy :: Proxy Int64) (mb 1000000)
-  Mergesort -> V.fromList <$> randList (Proxy :: Proxy Int64) (mb 8000000)
+  T.Insertionsort -> V.fromList <$> randList (Proxy :: Proxy Int64) (mb 100)
+  T.Quicksort -> V.fromList <$> randList (Proxy :: Proxy Int64) (mb 1000000)
+  T.Mergesort -> V.fromList <$> randList (Proxy :: Proxy Int64) (mb 8000000)
   _ -> error "getInputAsDataVector: TODO sort function not implemented!"  
   where 
     mb x = case mb_size of 
       Nothing -> x 
       Just y -> y
 
-copyInput :: (Input Int64) -> IO (Input Int64)
+getInputAsList :: T.SortAlgo -> Maybe Int -> IO [Int64]
+getInputAsList bench mb_size = case bench of 
+  T.Insertionsort -> randList (Proxy :: Proxy Int64) (mb 100)
+  T.Quicksort -> randList (Proxy :: Proxy Int64) (mb 1000000)
+  T.Mergesort -> randList (Proxy :: Proxy Int64) (mb 8000000)
+  _ -> error "getInputAsDataVector: TODO sort function not implemented!"  
+  where 
+    mb x = case mb_size of 
+      Nothing -> x 
+      Just y -> y
+
+copyInput :: (T.Input Int64) -> IO (T.Input Int64)
 copyInput i = case i of
-  ArrayIn arr -> pure $ ArrayIn (A.copy arr 0 (A.make (A.size arr) (A.get arr 0)) 0 (A.size arr))
+  T.ArrayIn arr -> pure $ T.ArrayIn (A.copy arr 0 (A.make (A.size arr) (A.get arr 0)) 0 (A.size arr))
   _ -> error "TODO: copyInput not implemented!"
 
-copyInputIterTimes :: Input Int64 -> Int -> IO [A.Array Int64]
+copyInputIterTimes :: T.Input Int64 -> Int -> IO [A.Array Int64]
 copyInputIterTimes inp iters = do
   copiedInputs <- replicateM iters (copyInput inp)
-  return [arr | ArrayIn arr <- copiedInputs]
+  return [arr | T.ArrayIn arr <- copiedInputs]
   
 randArray :: forall a. (Random a, NFData a, P.Prim a) => Proxy a -> Int -> IO (A.Array a)
 randArray _ty size = do
@@ -111,21 +96,21 @@ randList _ty size = do
       ls = take size $ randoms rng 
   pure (force ls)
   
-sortFn :: (Show a, A.HasPrimOrd a, NFData a) => SortAlgo -> ParOrSeq -> (A.Array a -. A.Array a)
+sortFn :: (Show a, A.HasPrimOrd a, NFData a) => T.SortAlgo -> T.ParOrSeq -> (A.Array a -. A.Array a)
 sortFn bench parorseq = case (bench,parorseq) of
-  (Insertionsort, Seq) -> I.isort_top'
-  (Quicksort, Seq)     -> Q.quickSort'
-  (Mergesort, Seq) -> DMS.msort
-  (Mergesort, Par) -> DMSP.msort
-  (Optsort,   Seq) -> PFS.pfsort
-  (Optsort,   Par) -> PFSP.pfsort
+  (T.Insertionsort, T.Seq) -> I.isort_top'
+  (T.Quicksort, T.Seq)     -> Q.quickSort'
+  (T.Mergesort, T.Seq) -> DMS.msort
+  (T.Mergesort, T.Par) -> DMSP.msort
+  (T.Optsort,   T.Seq) -> PFS.pfsort
+  (T.Optsort,   T.Par) -> PFSP.pfsort
   oth -> error $ "sortFn: unknown configuration: " ++ show oth
   
-vectorSortFn :: SortAlgo -> ParOrSeq -> M.VecSort
+vectorSortFn :: T.SortAlgo -> T.ParOrSeq -> T.VecSort
 vectorSortFn bench parorseq = case (bench,parorseq) of
-  (Insertionsort, Seq) -> ISDVS.sort
-  (Mergesort,     Seq) -> MSDVS.sort
-  (Quicksort,     Seq) -> QSDVS.sort
+  (T.Insertionsort, T.Seq) -> ISDVS.sort
+  (T.Mergesort,     T.Seq) -> MSDVS.sort
+  (T.Quicksort,     T.Seq) -> QSDVS.sort
   oth -> error $ "sortFn: unknown configuration: " ++ show oth
 
 --------------------------------------------------------------------------------
@@ -135,83 +120,83 @@ isSorted []       = True
 isSorted [_]      = True
 isSorted (x:y:xs) = x <= y && isSorted (y:xs)
 
-readBench :: String -> Benchmark
+readBench :: String -> T.Benchmark
 readBench s = case readMaybe s of
   Just b -> b
   Nothing -> case readMaybe s of
-    Just srt -> OurSort srt
+    Just srt -> T.OurSort srt
     Nothing -> read s
 
 -- dobench :: Benchmark -> ParOrSeq -> Maybe Int -> IO ()
-dobench :: Benchmark -> ParOrSeq -> Maybe Int -> Int -> IO ()
+dobench :: T.Benchmark -> T.ParOrSeq -> Maybe Int -> Int -> IO ()
 dobench bench parorseq mb_size iters = do
   let
   putStrLn $ "Running " ++ show bench ++ " (" ++ show parorseq ++ ")"
              ++ "\n========================================"
   (size, res, tmed, tall) <-
     case bench of
-      Fib -> do
-        (IntIn i) <- getInput bench mb_size
+      T.Fib -> do
+        (T.IntIn i) <- getInput bench mb_size
         case parorseq of
-          Seq -> do
+          T.Seq -> do
             (res0, tmed0, tall0) <- M.bench MB.seqfib (fromIntegral i) iters
             pure (i, fromIntegral res0, tmed0, tall0)
-          Par -> do
+          T.Par -> do
             (res0, tmed0, tall0) <- M.bench MB.parfib (fromIntegral i) iters
             pure (i, fromIntegral res0, tmed0, tall0)
-          ParM -> do
+          T.ParM -> do
             (res0, tmed0, tall0) <- M.benchPar MB.parfib1 (fromIntegral i) iters
             pure (i, fromIntegral res0, tmed0, tall0)
-      GenerateArray -> do
-        (IntIn i) <- getInput bench mb_size
+      T.GenerateArray -> do
+        (T.IntIn i) <- getInput bench mb_size
         case parorseq of
-          Seq -> do
+          T.Seq -> do
             let gen n = A.generate n id
             (res0, tmed0, tall0) <- M.bench gen (fromIntegral i) iters
             pure (i, A.size res0, tmed0, tall0)
-          Par -> do
+          T.Par -> do
             let gen n = A.generate_par n id
             (res0, tmed0, tall0) <- M.bench gen (fromIntegral i) iters
             pure (i, A.size res0, tmed0, tall0)
-          ParM -> do
+          T.ParM -> do
             let gen n = A.generate_par_m n id
             (res0, tmed0, tall0) <- M.benchPar gen (fromIntegral i) iters
             pure (i, A.size res0, tmed0, tall0)
-      SumArray  -> do
-        (ArrayIn arr) <- getInput bench mb_size
+      T.SumArray  -> do
+        (T.ArrayIn arr) <- getInput bench mb_size
         case parorseq of
-          Seq -> do
+          T.Seq -> do
             (res0, tmed0, tall0) <- M.bench MB.sumArray arr iters
             pure (A.size arr, fromIntegral res0, tmed0, tall0)
-          Par -> do
+          T.Par -> do
             (res0, tmed0, tall0) <- M.bench (MB.sumArray_par 4096) arr iters
             pure (A.size arr, fromIntegral res0, tmed0, tall0)
           _ -> error "dobench: ParM case not expected for SumArray!"
-      CopyArray -> do
-        (ArrayIn arr) <- getInput bench mb_size
+      T.CopyArray -> do
+        (T.ArrayIn arr) <- getInput bench mb_size
         case parorseq of
-          Seq -> do
+          T.Seq -> do
             let dst = A.make (A.size arr) (A.get arr 0)
             let docopy input = A.copy input 0 dst 0 (A.size arr)
             (res0, tmed0, tall0) <- M.bench docopy arr iters
             unless ((A.toList res0) == (A.toList arr)) (error $ show bench ++ ": result not equal to source.")
             putStrLn "Copied: OK"
             pure (A.size arr, A.size res0, tmed0, tall0)
-          Par ->  do
+          T.Par ->  do
             let dst = A.make (A.size arr) (A.get arr 0)
             let docopy_par input = A.copy_par input 0 dst 0 (A.size arr)
             (res0, tmed0, tall0) <- M.bench docopy_par arr iters
             unless ((A.toList res0) == (A.toList arr)) (error $ show bench ++ ": result not equal to source.")
             putStrLn "Copied: OK"
             pure (A.size arr, A.size res0, tmed0, tall0)
-          ParM -> do
+          T.ParM -> do
             let dst = A.make (A.size arr) (A.get arr 0)
             let docopy_par_m input = A.copy_par_m input 0 dst 0 (A.size arr)
             (res0, tmed0, tall0) <- M.benchPar docopy_par_m arr iters
             unless ((A.toList res0) == (A.toList arr)) (error $ show bench ++ ": result not equal to source.")
             putStrLn "Copied: OK"
             pure (A.size arr, A.size res0, tmed0, tall0)
-      VectorSort alg -> do
+      T.VectorSort alg -> do
         inPutVec <- getInputAsDataVector alg mb_size
         let fn = vectorSortFn alg parorseq
         putStrLn $ "array size = " ++ show (V.length inPutVec)
@@ -219,15 +204,21 @@ dobench bench parorseq mb_size iters = do
         unless (isSorted (V.toList res0)) (error $ show alg ++ ": result not sorted.")
         putStrLn "Sorted: OK"
         pure (V.length inPutVec, V.length res0, tmed0, tall0)   
-      OurSort alg -> do
-        ArrayIn arr <- getInput bench mb_size
-        arrs <- copyInputIterTimes (ArrayIn arr) iters
+      T.OurSort alg -> do
+        T.ArrayIn arr <- getInput bench mb_size
+        arrs <- copyInputIterTimes (T.ArrayIn arr) iters
         let fn = sortFn alg parorseq
         putStrLn $ "array size = " ++ show (A.size arr)
         (res0, tmed0, tall0) <- M.benchOnArrays fn arrs
         unless (isSorted (A.toList res0)) (error $ show bench ++ ": result not sorted.")
         putStrLn "Sorted: OK"
         pure (A.size arr, A.size res0, tmed0, tall0)
+      T.CSort alg -> do 
+        arr <- getInputAsList alg mb_size
+        (res0, tmed0, tall0) <- M.benchAndRunCSorts alg arr iters
+        unless (isSorted (res0)) (error $ show bench ++ ": result not sorted.")
+        putStrLn "Sorted: OK"
+        pure (length arr, length res0, tmed0, tall0)
       _ -> error "dobench: case not implemented!"
 
 
@@ -258,6 +249,6 @@ main = do
           --   (read bnch :: Benchmark, Seq, Just (read sz :: Int), [])
           -- [(bnch:_)] ->
           --   (read bnch :: Benchmark, Seq, Nothing, [])
-          [[its,bnch,md,sz]] -> (readBench bnch, read md :: ParOrSeq, Just (read sz :: Int), [], read its)
+          [[its,bnch,md,sz]] -> (readBench bnch, read md :: T.ParOrSeq, Just (read sz :: Int), [], read its)
           _ -> error usage
   dobench benchmark parorseq size iters

@@ -1,6 +1,9 @@
 HC = ghc
 CC = gcc
 RTFLAGS = +RTS -N6
+CSORTS_DIR = $(PWD)/benchrunner/csorts/
+CSORTS_EXEC = cbench.exe
+CSORTS_EXEC_FULL := $(CSORTS_DIR)$(CSORTS_EXEC) 
 
 # Flag to decide whether we're using stack or cabal.
 ifeq ($(STACK),1)
@@ -46,17 +49,17 @@ bench_verified:
 	$(HCTOOL) $(HCTOOLEXEC)  benchrunner $(RTFLAGS) -- 1 Cilksort Seq 100000
 
 bench_gibbon_c:
-	$(HCTOOL) $(HCTOOLEXEC) criterion-interactive ./benchmarks/c/cbench.exe gib_fillarray int64 10000000
-	$(HCTOOL) $(HCTOOLEXEC) criterion-interactive ./benchmarks/c/cbench.exe gib_insertionsort2 int64 10
-	$(HCTOOL) $(HCTOOLEXEC) criterion-interactive ./benchmarks/c/cbench.exe gib_insertionsort2 int64 100
-	$(HCTOOL) $(HCTOOLEXEC) criterion-interactive ./benchmarks/c/cbench.exe gib_insertionsort2 int64 1000
+	$(HCTOOL) $(HCTOOLEXEC) criterion-interactive $(CSORTS_EXEC_FULL) gib_fillarray int64 10000000
+	$(HCTOOL) $(HCTOOLEXEC) criterion-interactive $(CSORTS_EXEC_FULL) gib_insertionsort2 int64 10
+	$(HCTOOL) $(HCTOOLEXEC) criterion-interactive $(CSORTS_EXEC_FULL) gib_insertionsort2 int64 100
+	$(HCTOOL) $(HCTOOLEXEC) criterion-interactive $(CSORTS_EXEC_FULL) gib_insertionsort2 int64 1000
 
 bench_canonical_c:
-	$(HCTOOL) $(HCTOOLEXEC) criterion-interactive ./benchmarks/c/cbench.exe fillarray int64 10000000
-	$(HCTOOL) $(HCTOOLEXEC) criterion-interactive ./benchmarks/c/cbench.exe sumarray int64 10000000
-	$(HCTOOL) $(HCTOOLEXEC) criterion-interactive ./benchmarks/c/cbench.exe insertionsort int64 10
-	$(HCTOOL) $(HCTOOLEXEC) criterion-interactive ./benchmarks/c/cbench.exe insertionsort int64 100
-	$(HCTOOL) $(HCTOOLEXEC) criterion-interactive ./benchmarks/c/cbench.exe insertionsort int64 1000
+	$(HCTOOL) $(HCTOOLEXEC) criterion-interactive $(CSORTS_EXEC_FULL) fillarray int64 10000000
+	$(HCTOOL) $(HCTOOLEXEC) criterion-interactive $(CSORTS_EXEC_FULL) sumarray int64 10000000
+	$(HCTOOL) $(HCTOOLEXEC) criterion-interactive $(CSORTS_EXEC_FULL) insertionsort int64 10
+	$(HCTOOL) $(HCTOOLEXEC) criterion-interactive $(CSORTS_EXEC_FULL) insertionsort int64 100
+	$(HCTOOL) $(HCTOOLEXEC) criterion-interactive $(CSORTS_EXEC_FULL) insertionsort int64 1000
 
 build: build_haskell build_c
 
@@ -73,7 +76,7 @@ endif
 
 
 build_c:
-	@cd benchmarks/c && make
+	@cd $(CSORTS_DIR) && make
 	cabal v2-build criterion-interactive
 
 checkdeps:
@@ -84,6 +87,6 @@ checkdeps:
 
 
 clean:
-	cd benchmarks/c && make clean
+	cd $(CSORTS_DIR) && make clean
 
 .PHONY: all build build_haskell build_c bench bench_verified bench_gibbon_c bench_canonical_c clean

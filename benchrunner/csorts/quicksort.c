@@ -27,7 +27,22 @@ void quicksort_glibc_inplace(void *const pbase, size_t total_elems, size_t size,
     qsort(pbase, total_elems, size, cmp);
 }
 
-void *quicksort(void *const pbase, size_t total_elems, size_t size, __compar_fn_t cmp)
+void *quicksort(void *const pbase, size_t total_elems, size_t size)
+{
+    // Copy into a fresh array.
+    char *cpy = malloc(total_elems * size);
+    if (cpy == NULL) {
+        fprintf(stderr, "insertionsort: couldn't allocate");
+        exit(1);
+    }
+    our_memcpy(cpy, (char *) pbase, (size * total_elems));
+
+    // Sort "cpy" in place.
+    quicksort_inplace(cpy, total_elems, size, compare_int64s);
+    return cpy;
+}
+
+void *quicksort_cmp(void *const pbase, size_t total_elems, size_t size, __compar_fn_t cmp)
 {
     // Copy into a fresh array.
     char *cpy = malloc(total_elems * size);

@@ -7,7 +7,9 @@ synopsis:           Benchmark harness.
 
 executable benchrunner
     main-is:          Benchrunner.hs
-    other-modules:    Measure
+    other-modules:      Measure
+                      , ForeignFunctionImports
+                      , Types
     -- other-extensions:
     build-depends:      base
                       , lh-array-sort
@@ -32,3 +34,15 @@ executable benchrunner
                         -threaded -rtsopts
                         -fdefer-typed-holes
                         -O2
+
+    c-sources:
+                      csorts/insertionsort.c
+                      csorts/insertionsort_glibc.c
+                      csorts/mergesort.c
+                      csorts/quicksort.c
+                      csorts/microbench.c
+
+    -- DNDEBUG disables asserts in cbits/
+    cc-options:        -std=c11 -O3 -DNDEBUG=1
+                       -fno-strict-aliasing
+                       -Werror=undef

@@ -70,3 +70,6 @@ jobs:
           cabal run benchrunner -- 5 "VectorSort Insertionsort" Seq 100
           cabal run benchrunner -- 5 "VectorSort Mergesort" Seq 100 
           cabal run benchrunner -- 5 "VectorSort Quicksort" Seq 100
+          cabal run benchrunner -- 5 "CSort Insertionsort" Seq 100
+          cabal run benchrunner -- 5 "CSort Mergesort" Seq 100
+          cabal run benchrunner -- 5 "CSort Quicksort" Seq 100

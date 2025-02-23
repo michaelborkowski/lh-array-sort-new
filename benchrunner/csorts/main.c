@@ -11,6 +11,10 @@
 #include "helpers.h"
 #include "cbench.h"
 
+#ifdef CILK
+#include "par_helpers.h"
+#endif
+
 // -----------------------------------------------------------------------------
 
 // Number of benchmark iterations.
@@ -45,6 +49,7 @@ int test_main(int argc, char** argv)
     assert(compare_int64s(slice_nth(&(halves.left), 4), slice_nth(&s0, 4)) == 0);
     assert(compare_int64s(slice_nth(&(halves.right), 0), slice_nth(&s0, 5)) == 0);
 
+    #ifdef CILK
     // Test sorting.
     size_t len2 = 8000000;
     void *nums2 = (void*) fill_array_rand_seq(len2);
@@ -52,6 +57,7 @@ int test_main(int argc, char** argv)
     void *sorted = mergesort_par(s2.base, s2.total_elems, s2.elt_size, compare_int64s);
     slice_t sorted_sl = (slice_t) {sorted, len2, sizeof(int64_t)};
     slice_assert_sorted(compare_int64s, &sorted_sl);
+    #endif
 
     return 0;
 }
@@ -78,7 +84,12 @@ int bench_main(int argc, char** argv)
         b->fa_total_elems = total_elems;
         b->fa_val = 12345;
         if (strcmp(argv[1], "fillarray_par") == 0) {
+            #ifdef CILK
             b->fa_run = fill_array_par;
+            #else
+            fprintf(stderr, "Cilk build not enabled!");
+            exit(1);
+            #endif
         }
     } else if (prefix("sumarray", argv[1])) {
         printf("benchmarking C sum array.\n");
@@ -88,7 +99,12 @@ int bench_main(int argc, char** argv)
         b->sa_run = sum_array_seq;
         b->sa_total_elems = total_elems;
         if (strcmp(argv[1], "sumarray_par") == 0) {
+            #ifdef CILK
             b->sa_run = sum_array_par;
+            #else
+            fprintf(stderr, "Cilk build not enabled!");
+            exit(1);
+            #endif
         }
     } else if (prefix("copyarray", argv[1])) {
         printf("benchmarking C copy array.\n");
@@ -102,15 +118,26 @@ int bench_main(int argc, char** argv)
         b->cp_nbytes = nbytes;
         b->cp_total_elems = total_elems;
         if (strcmp(argv[1], "copyarray_par") == 0) {
+            #ifdef CILK
             b->cp_run = copy_par;
+            #else
+            fprintf(stderr, "Cilk build not enabled!");
+            exit(1);
+            #endif
         }
+
     } else if (prefix("fib", argv[1])) {
         printf("benchmarking fib\n");
         b->tag = FIB;
         b->fib_run = fib;
         b->fib_n = total_elems;
         if (strcmp(argv[1], "fib_par") == 0) {
+            #ifdef CILK
             b->fib_run = fib_par;
+            #else
+            fprintf(stderr, "Cilk build not enabled!");
+            exit(1);
+            #endif
         }
     } else if (prefix("sort", argv[1])) {
         b->tag = SORT;
@@ -123,19 +150,29 @@ int bench_main(int argc, char** argv)
         if (strcmp(argv[1], "sort_insertion_glibc") == 0) {
             b->sort_run = insertionsort_glibc;
         } else if (strcmp(argv[1], "sort_insertion") == 0) {
-            b->sort_run = insertionsort;
+            b->sort_run = insertionsort_cmp;
         } else if (strcmp(argv[1], "sort_quick_glibc") == 0) {
             b->sort_run = quicksort_glibc;
         } else if (strcmp(argv[1], "sort_quick") == 0) {
-            b->sort_run = quicksort;
+            b->sort_run = quicksort_cmp;
         } else if (strcmp(argv[1], "sort_merge_seq") == 0) {
-            b->sort_run = smergesort;
+            b->sort_run = smergesort_cmp;
         } else if (strcmp(argv[1], "sort_merge_par") == 0) {
+            #ifdef CILK
             b->sort_run = mergesort_par;
+            #else
+            fprintf(stderr, "Cilk build not enabled!");
+            exit(1);
+            #endif
         } else if (strcmp(argv[1], "sort_cilk_seq") == 0) {
             b->sort_run = cilksort;
         } else if (strcmp(argv[1], "sort_cilk_par") == 0) {
+            #ifdef CILK
             b->sort_run = cilksort_par;
+            #else
+            fprintf(stderr, "Cilk build not enabled!");
+            exit(1);
+            #endif
         } else {
             fprintf(stderr, "Unknown benchmark: %s", argv[1]);
             exit(1);
