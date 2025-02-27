@@ -74,8 +74,8 @@ type HasPrimOrd a =
 
 
 {-# INLINE alloc #-}
-{-@ alloc :: forall <p :: Ur b -> Bool>. n:Nat -> x:_ 
-                -> f:({ ys:(Array a) | size ys == n && left ys == 0 && right ys == n } 
+{-@ alloc :: forall <p :: Ur b -> Bool>. n:Nat -> x:_
+                -> f:({ ys:(Array a) | size ys == n && left ys == 0 && right ys == n }
                             -> Ur<p> b) -> ret:Ur<p> b @-}
 alloc :: HasPrim a => Int -> a -> (Array a -. Ur b) -. Ur b
 #ifdef MUTABLE_ARRAYS
@@ -85,7 +85,7 @@ alloc i a f = f (make i a)
 #endif
 
 {-# INLINE makeArray #-}
-{-@ makeArray :: n:Nat -> x:_ -> 
+{-@ makeArray :: n:Nat -> x:_ ->
       ret:{ ys:(Array a) | size ys == n && left ys == 0 && right ys == n } @-}
 makeArray :: HasPrim a =>  Int -> a -> Array a
 #ifdef MUTABLE_ARRAYS
@@ -177,19 +177,19 @@ generate_loop arr idx end f =
                             size (snd zs) == size ys && token (snd zs) == token ys &&
                             left (snd zs) == left ys && right (snd zs) == right ys } @-}
 copy2_par :: HasPrim a =>  Int -> Int -> Int -> Array a -. Array a -. (Array a, Array a)
-copy2_par src_offset0 dst_offset0 len0 = 
+copy2_par src_offset0 dst_offset0 len0 =
   Unsafe.toLinear (\src0 ->  Unsafe.toLinear (\dst0 -> (src0, copy_par src0 src_offset0 dst0 dst_offset0 len0)))
 
 --TODO: src_offset0 and dst_offset0 are not respected.
 {- @ ignore copy_par @-}
 {-@ copy_par :: xs:_ -> { xi:Nat | xi <= size xs } -> ys:_
-                     -> { yi:Nat | yi <= size ys } 
+                     -> { yi:Nat | yi <= size ys }
                      -> { n:Nat  | xi + n <= size xs && yi + n <= size ys }
                      -> { zs:_   | zs == copy xs xi ys yi n &&
                                    size ys == size zs && token ys == token zs &&
                                    left ys == left zs && right ys == right zs }  @-}
 copy_par :: HasPrim a =>  Array a -> Int -> Array a -> Int -> Int -> Array a
-#ifdef PRIM_MUTABLE_ARRAYS  
+#ifdef PRIM_MUTABLE_ARRAYS
 copy_par src0 src_offset0 dst0 dst_offset0 len0 = copy_par' src0 src_offset0 dst0 dst_offset0 len0
   where
     cutoff = defaultGrainSize len0
@@ -204,7 +204,7 @@ copy_par src0 src_offset0 dst0 dst_offset0 len0 = copy_par' src0 src_offset0 dst
            in left `par` right `pseq` append left right
 #else
 copy_par src0 src_offset0 dst0 dst_offset0 len0 = copy src0 src_offset0 dst0 dst_offset0 len0
-#endif             
+#endif
 
 --TODO: src_offset0 and dst_offset0 are not respected.
 {-@ ignore copy_par_m @-}
@@ -305,4 +305,3 @@ lma_gns arr n m x = lma_gns_list (toList arr) n m x
 --          -> { pf:_ | fst (get2 (set xs n x) m) == fst (get2 xs m) } @-}
 --lma_gns2 :: Array a -> Int -> Int -> a -> Proof
 --lma_gns2 xs n m x = lma_gns xs n m x
-

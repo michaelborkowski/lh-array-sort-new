@@ -8,10 +8,10 @@ import qualified Data.Vector.Unboxed as V
 import qualified Data.Vector.Unboxed.Mutable as MV
 
 data SortAlgo
-  = Insertionsort 
-  | Mergesort 
-  | Quicksort 
-  | Optsort -- piecewise fallback 
+  = Insertionsort
+  | Mergesort
+  | Quicksort
+  | Optsort -- piecewise fallback
   deriving (Eq, Show, Read)
 
 data Benchmark

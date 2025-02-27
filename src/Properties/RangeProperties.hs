@@ -55,7 +55,7 @@ lem_rangeProperty_build_right xs p i j | i > j      = ()
 --    works well for equational reasoning
 {-@ lem_rangeProperty_iff_right :: xs:(Array a) -> p:(Property a) -> { i:Int | 0 <= i }
                                   -> { j:Int | j <= size xs }
-                                  -> { pf:_ | rangeProperty xs i j p && (i>j || p (get xs j)) 
+                                  -> { pf:_ | rangeProperty xs i j p && (i>j || p (get xs j))
                                                 <=> rangeProperty xs i (j+1) p } / [j-i] @-}
 lem_rangeProperty_iff_right :: Array a -> Property a -> Int -> Int -> Proof
 lem_rangeProperty_iff_right xs p i j | i > j      = ()

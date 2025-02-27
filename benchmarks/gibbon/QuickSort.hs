@@ -20,7 +20,7 @@ shuffleBtw :: Vector Int -> (Int -> Int -> Int) -> Int -> Int -> (Vector Int, In
 shuffleBtw xs cmp i j =
   let
       (piv, xs1) = get2 xs (j-1)
-      goShuffle zs jl jr = 
+      goShuffle zs jl jr =
         if jl > jr
         then (zs, jl)
         else let (vl, zs') = get2 zs jl in

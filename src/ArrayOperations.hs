@@ -39,7 +39,7 @@ import qualified Data.Primitive.Types as P
 
 --------------------------------------------------------------------------------
 -- ArrayOperations contain Advanced Operations that live outside of the TCB
---    (so these are implemented once in terms of the TCB API) 
+--    (so these are implemented once in terms of the TCB API)
 --    and theorems about how they work.
 --------------------------------------------------------------------------------
 
@@ -133,6 +133,6 @@ lma_swap_eql xs i j k = () ? lma_gns xs' j k xi
                         -> { j:Int | 0 <= j && j < size xs }
                         -> { pf:_ | swap xs i j == swap xs j i } @-}
 lem_swap_order :: Array a -> Int -> Int -> Proof
-lem_swap_order xs i j 
+lem_swap_order xs i j
   | i == j    = ()
   | otherwise = () ? lem_set_commute xs i (get xs j) j (get xs i)

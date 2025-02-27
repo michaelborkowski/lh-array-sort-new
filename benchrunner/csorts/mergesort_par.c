@@ -5,16 +5,13 @@
 
 
 // Parallel.
-void writesort1_par(slice_t src, slice_t tmp);
-void writesort2_par(slice_t src, slice_t tmp);
-void merge_par(slice_t left, slice_t right, slice_t dst);
-size_t binary_search(slice_t *sl, void *query);
+void writesort1_par(slice_t src, slice_t tmp, __compar_fn_t cmp);
+void writesort2_par(slice_t src, slice_t tmp, __compar_fn_t cmp);
+void merge_par(slice_t left, slice_t right, slice_t dst, __compar_fn_t cmp);
+size_t binary_search(slice_t *sl, void *query, __compar_fn_t cmp);
 
 // Whether this mergesort should actually be cilksort.
 static bool CILKSORT = false;
-
-// Global.
-static __compar_fn_t CMP = NULL;
 
 // Parallel cilksort.
 void *cilksort_par(void *const pbase, size_t total_elems, size_t size, __compar_fn_t cmp)
@@ -46,25 +43,23 @@ void *mergesort_par(void *const pbase, size_t total_elems, size_t size, __compar
     slice_t cpy_sl = (slice_t) {cpy, total_elems, size};
     slice_t tmp_sl = (slice_t) {tmp, total_elems, size};
 
-    CMP = cmp;
-    writesort1_par(cpy_sl, tmp_sl);
-    CMP = NULL;
+    writesort1_par(cpy_sl, tmp_sl, cmp);
 
     return cpy;
 }
 
 // Uses "tmp" to sort "src" in place.
-void writesort1_par(slice_t src, slice_t tmp)
+void writesort1_par(slice_t src, slice_t tmp, __compar_fn_t cmp)
 {
     size_t len = slice_length(&src);
     if (CILKSORT && (len < INSERTIONSIZE)) {
         // insertionsort_inplace(src.base, src.total_elems, src.elt_size, CMP);
-        qsort(src.base, src.total_elems, src.elt_size, CMP);
+        qsort(src.base, src.total_elems, src.elt_size, cmp);
         // quicksort_inplace(src.base, src.total_elems, src.elt_size, CMP);
         return;
     }
     if (len < SEQCUTOFF) {
-        writesort1(src, tmp);
+        writesort1(src, tmp, cmp);
         return;
     }
     if (len == 1) {
@@ -74,28 +69,28 @@ void writesort1_par(slice_t src, slice_t tmp)
     slice_prod_t splitsrc = slice_split_at(&src, half);
     slice_prod_t splittmp = slice_split_at(&tmp, half);
 
-    cilk_spawn writesort2_par(splitsrc.left, splittmp.left);
-    writesort2_par(splitsrc.right, splittmp.right);
+    cilk_spawn writesort2_par(splitsrc.left, splittmp.left, cmp);
+    writesort2_par(splitsrc.right, splittmp.right, cmp);
     cilk_sync;
 
-    merge_par(splittmp.left, splittmp.right, src);
+    merge_par(splittmp.left, splittmp.right, src, cmp);
     return;
 }
 
 // Uses "src" to sort "tmp" in place.
 
-void writesort2_par(slice_t src, slice_t tmp)
+void writesort2_par(slice_t src, slice_t tmp, __compar_fn_t cmp)
 {
     size_t len = slice_length(&src);
     if (CILKSORT && (len < INSERTIONSIZE)) {
         slice_copy(&src, &tmp);
         // insertionsort_inplace(tmp.base, tmp.total_elems, tmp.elt_size, CMP);
-        qsort(tmp.base, tmp.total_elems, tmp.elt_size, CMP);
+        qsort(tmp.base, tmp.total_elems, tmp.elt_size, cmp);
         // quicksort_inplace(src.base, src.total_elems, src.elt_size, CMP);
         return;
     }
     if (len < SEQCUTOFF) {
-        writesort2(src, tmp);
+        writesort2(src, tmp, cmp);
         return;
     }
     if (len == 1) {
@@ -106,21 +101,21 @@ void writesort2_par(slice_t src, slice_t tmp)
     slice_prod_t splitsrc = slice_split_at(&src, half);
     slice_prod_t splittmp = slice_split_at(&tmp, half);
 
-    cilk_spawn writesort1_par(splitsrc.left, splittmp.left);
-    writesort1_par(splitsrc.right, splittmp.right);
+    cilk_spawn writesort1_par(splitsrc.left, splittmp.left, cmp);
+    writesort1_par(splitsrc.right, splittmp.right, cmp);
     cilk_sync;
 
-    merge_par(splitsrc.left, splitsrc.right, tmp);
+    merge_par(splitsrc.left, splitsrc.right, tmp, cmp);
     return;
 }
 
 // -----------------------------------------------------------------------------
 
-void merge_par(slice_t left, slice_t right, slice_t dst)
+void merge_par(slice_t left, slice_t right, slice_t dst, __compar_fn_t cmp)
 {
     size_t len = slice_length(&dst);
     if (len < SEQCUTOFF) {
-        merge(left, right, dst);
+        merge(left, right, dst, cmp);
         return;
     }
     size_t n1 = slice_length(&left);
@@ -131,7 +126,7 @@ void merge_par(slice_t left, slice_t right, slice_t dst)
     }
     size_t mid1 = n1 / 2;
     void *pivot = slice_nth(&left, mid1);
-    size_t mid2 = binary_search(&right, pivot);
+    size_t mid2 = binary_search(&right, pivot, cmp);
     slice_t left_l = slice_narrow(&left, 0, mid1);
     slice_t left_r = slice_narrow(&left, mid1+1, (n1-(mid1+1)));
     slice_t right_l = slice_narrow(&right, 0, mid2);
@@ -140,8 +135,8 @@ void merge_par(slice_t left, slice_t right, slice_t dst)
     slice_t dst_l = slice_narrow(&dst, 0, mid1+mid2);
     slice_t dst_r = slice_narrow(&dst, mid1+mid2+1, len-(mid1+mid2+1));
 
-    cilk_spawn merge_par(left_l, right_l, dst_l);
-    merge_par(left_r, right_r, dst_r);
+    cilk_spawn merge_par(left_l, right_l, dst_l, cmp);
+    merge_par(left_r, right_r, dst_r, cmp);
     cilk_sync;
 
     return;

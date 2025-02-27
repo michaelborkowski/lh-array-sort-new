@@ -61,7 +61,7 @@ toList   :: Array a -> [a]
 -- get2 :: Array a -. Int -> (Ur a, Array a)
 
 
--- This doesn't belong here, and GHC insists it cannot go here because it's not 
+-- This doesn't belong here, and GHC insists it cannot go here because it's not
 --   defined in Array.hs
 -- Parallel tuple combinator.
 -- (.||.) :: a -> b -> (a,b)

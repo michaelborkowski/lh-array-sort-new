@@ -29,7 +29,7 @@ type HasPrimNum a =
 sumArray :: HasPrimNum a => A.Array a -> a
 sumArray arr = go 0 0 (A.size arr)
   where
-    {-@ go :: _ -> i:Nat -> { n:Nat | i <= n && n == A.size arr } 
+    {-@ go :: _ -> i:Nat -> { n:Nat | i <= n && n == A.size arr }
                 -> _ / [n-i] @-}
     go !acc !idx !n =
       if idx == n

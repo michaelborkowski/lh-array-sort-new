@@ -11,17 +11,17 @@ import Language.Haskell.Liquid.ProofCombinators (Proof)
 (?) x _ = x
 
 {- @ reflect pleUnfold @- }
-pleUnfold :: a %1-> a 
+pleUnfold :: a %1-> a
 pleUnfold x = x -}
 
-{-@ data Ur a where 
+{-@ data Ur a where
         Ur :: a -> Ur a @-}
 data Ur a where
   Ur :: a -> Ur a
 
 {-# INLINE unur #-}
 {-@ measure unur @-}
-{- @ assume unur :: forall <p :: a -> Bool>. 
+{- @ assume unur :: forall <p :: a -> Bool>.
         Ur (a<p>) -> a<p> @-} -- a{v : p(v)}
 unur :: Ur a -. a
 unur (Ur a) = a

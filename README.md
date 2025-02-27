@@ -42,13 +42,13 @@ Checking time should not exceed 2min for any single file. Slightly faster than L
      cabal build lh-array-sort -fmutable-arrays
     ```
 
-     
+
 ### Benchmarking
 
 The `benchrunner` package in the repository provides an executable to run benchmarks.
 But
 
-First, you need to make sure that you compiled the mutable-arrays backend. 
+First, you need to make sure that you compiled the mutable-arrays backend.
 You can either add `--constraint="lh-array-sort +mutable-arrays"` to every call
 to `cabal run` below (add it right after "run") or call
 
@@ -75,14 +75,14 @@ cabal run benchrunner -- 5 Mergesort Par 10000 +RTS -N4
 cabal run benchrunner -- 5 Insertionsort Seq 10000
 ```
 
-To run the sorting algorithms from vector-algorithms, use the following commands: 
+To run the sorting algorithms from vector-algorithms, use the following commands:
 
     $ cabal run benchrunner -- ITERS "VectorSort Insertionsort" ParOrSeq NUM_ELTS
     $ cabal run benchrunner -- ITERS "VectorSort Mergesort" ParOrSeq NUM_ELTS
     $ cabal run benchrunner -- ITERS "VectorSort Quicksort" ParOrSeq NUM_ELTS
 
 
-To run the sorting algorithms from the csorts directory which consist of hand written C sorting benchmarks:  
+To run the sorting algorithms from the csorts directory which consist of hand written C sorting benchmarks:
 
     $ cabal run benchrunner -- ITERS "CSort Insertionsort" ParOrSeq NUM_ELTS
     $ cabal run benchrunner -- ITERS "CSort Mergesort" ParOrSeq NUM_ELTS

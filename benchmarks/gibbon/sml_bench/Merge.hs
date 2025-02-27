@@ -3,7 +3,7 @@ module Merge where
 import Gibbon.Vector
 
 merge_ :: (a -> a -> Int) -> Vector a -> Vector a -> Int -> Int -> Vector a
-merge_ cmp xs ys n m = 
+merge_ cmp xs ys n m =
   if n == 0 then
     if m == 0 then generate (size xs + size ys) (\wild -> get xs 0)
     else let zs = merge_ cmp xs ys 0 (m-1) in set zs (m-1) (get ys (m-1))
@@ -22,9 +22,9 @@ merge_ cmp xs ys n m =
            in set zs (m+n-1) xs_n
 
 msort_ :: (a -> a -> Int) -> Vector a -> Vector a
-msort_ cmp xs = 
+msort_ cmp xs =
   if size xs < 2 then xs
-  else 
+  else
     let
       (ls, rs) = splitMid xs
       ls' = msort_ cmp ls

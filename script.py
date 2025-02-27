@@ -1,7 +1,7 @@
-import subprocess 
-import os 
-import re 
-import statistics as stat 
+import subprocess
+import os
+import re
+import statistics as stat
 import matplotlib.pylab as plt
 
 benchrunner_path = "/local/scratch/a/singhav/lh-array-sort/dist-newstyle/build/x86_64-linux/ghc-9.10.1/benchrunner-0.1/x/benchrunner/build/benchrunner/benchrunner"
@@ -16,7 +16,7 @@ def run(threads, array_size, modes, benchmarks, iterations):
                 threads_default = ["1"]
                 if (mode == "Par"):
                     threads_default = threads
-                
+
                 for thread in threads_default:
 
                     f = open("out.txt", "w")
@@ -32,8 +32,8 @@ def run(threads, array_size, modes, benchmarks, iterations):
 
                     #read file
                     fr = open("out.txt", "r")
-                    lines = fr.readlines() 
-                    
+                    lines = fr.readlines()
+
                     runtimes = []
                     for line in lines:
                         print(line)
@@ -53,12 +53,12 @@ def run(threads, array_size, modes, benchmarks, iterations):
 
 
 def make_plots(results, benchmarks, threads, inputs):
-    
+
 
     for bench in benchmarks:
-        
+
         for input in inputs:
-            
+
             plot_inputs = {}
             seq_key = (bench, "Seq", input, "1")
             seq_runtimes = results[seq_key]
@@ -72,14 +72,14 @@ def make_plots(results, benchmarks, threads, inputs):
 
                 plot_inputs[int(thread)] = seq_mean / par_mean
 
-            
-            #plot 
+
+            #plot
             plot(plot_inputs, bench, input)
 
 
 
 def plot(plot_inputs, bench, input):
-    
+
     plt.figure()
     lists = sorted(plot_inputs.items())
     x, y = zip(*lists)
@@ -103,16 +103,3 @@ if __name__ == "__main__":
     iterations = "9"
 
     run(threads, inputs, modes, benchmarks, iterations)
-
-
-
-
-
-
-
-
-
-
-
-
-

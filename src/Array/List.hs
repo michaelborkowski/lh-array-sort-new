@@ -43,7 +43,7 @@ import qualified Data.Primitive.Types as P
 --------------------------------------------------------------------------------
 
 -- nice trick from: https://github.com/leftaroundabout/trivial-constraint
-class Unconstrained t 
+class Unconstrained t
 instance Unconstrained t
 
 type HasPrim a =
@@ -146,7 +146,7 @@ get (Arr lst _ _ _) n = getList lst n
 {-@ get2 :: n:Nat -> {xs:Array a | n < size xs }
               -> (Ur a, Array a)<{\ x zs -> unur x == get xs n && xs == zs }> @-}
 get2 :: Int -> (Array a -. (Ur a, Array a))
-get2 i = Unsafe.toLinear (\xs -> let xs' = get xs i 
+get2 i = Unsafe.toLinear (\xs -> let xs' = get xs i
                                   in (Ur xs', xs))
 
 {-@ reflect setList @-}
@@ -175,7 +175,7 @@ setLin n y = Unsafe.toLinear (\(Arr arr l r t) -> Arr (setList arr n y) l r t)
 
 {-@ reflect copy @-}
 {-@ copy :: xs:_ -> { xi:Nat | xi <= size xs } -> ys:_
-                 -> { yi:Nat | yi <= size ys } 
+                 -> { yi:Nat | yi <= size ys }
                  -> { n:Nat  | xi + n <= size xs && yi + n <= size ys }
                  -> { zs:_   | size ys == size zs && token ys == token zs &&
                                left ys == left zs && right ys == right zs } / [n] @-}
@@ -204,7 +204,7 @@ copy2 xi yi n = Unsafe.toLinear (\xs -> Unsafe.toLinear (\ys -> (xs, copy xs xi 
 {-@ slice :: xs:_ -> { l:Nat | l <= size xs } -> { r:Nat | l <= r && r <= size xs }
                   -> { ys:_ | size ys == r-l         && token xs == token ys &&
                               left ys == left xs + l && right ys == left xs + r &&
-                                                        right ys == right xs - size xs + r && 
+                                                        right ys == right xs - size xs + r &&
                               toList ys == take (r - l) (drop l (toList xs)) } @-}
 slice :: Array a -> Int -> Int -> Array a
 slice (Arr lst l r t) l' r' = Arr lst' (l+l') (l+r') t
@@ -212,7 +212,7 @@ slice (Arr lst l r t) l' r' = Arr lst' (l+l') (l+r') t
     lst' = take (r' - l') (drop l' lst)
 
 {-@ reflect slice2 @-}
-{-@ slice2 :: xs:_ -> { l:Nat | l <= size xs } -> { r:Nat | l <= r && r <= size xs } 
+{-@ slice2 :: xs:_ -> { l:Nat | l <= size xs } -> { r:Nat | l <= r && r <= size xs }
                   -> (Array a, Array a)<{\ ys zs -> xs == zs && ys = slice xs l r &&
                                                     left ys == left xs + l && right ys == left xs + r &&
                                                     right ys == right xs - size xs + r }> @-}
@@ -249,7 +249,7 @@ drop 0 xs     = xs
 drop n (x:xs) = drop (n-1) xs
 
 -- PRE-CONDITION: the two slices are backed by the same array.
--- removed for the parallel merge: 
+-- removed for the parallel merge:
 {-@ reflect append @-}
 {-@ append :: xs:Array a
         -> { ys:Array a | token xs == token ys && right xs == left ys }
@@ -257,7 +257,7 @@ drop n (x:xs) = drop (n-1) xs
                           left xs == left zs && right ys == right zs &&
                           toList zs == conc (toList xs) (toList ys) } @-}
 append :: Array a -. Array a -. Array a
-append = Unsafe.toLinear (\xs -> Unsafe.toLinear (\ys -> 
+append = Unsafe.toLinear (\xs -> Unsafe.toLinear (\ys ->
   case (xs, ys) of ((Arr arr1 l1 _r1 t), (Arr arr2 _l2 r2 _t)) -> Arr (conc arr1 arr2) l1 r2 t))
 
 
@@ -271,7 +271,7 @@ lem_getList_conc_left :: [a] -> [a] -> Int -> Proof
 lem_getList_conc_left (x:xs) ys 0 = ()
 lem_getList_conc_left (x:xs) ys i = lem_getList_conc_left xs ys (i-1)
 
-{-@ lem_getList_conc_right :: xs:_ -> ys:_  
+{-@ lem_getList_conc_right :: xs:_ -> ys:_
         -> { i:Nat | len xs <= i && i < len xs + len ys }
         -> { pf:_ | getList (conc xs ys) i == getList ys (i - len xs) } @-}
 lem_getList_conc_right :: [a] -> [a] -> Int -> Proof
@@ -283,7 +283,7 @@ lem_getList_conc_right (x:xs) ys i = lem_getList_conc_right xs ys (i-1)
         -> { i:Nat | i < size xs }
         -> { pf:_  | get (append xs ys) i == get xs i } @-}
 lem_get_append_left :: Array a -> Array a -> Int -> Proof
-lem_get_append_left (Arr xls _ _ _) (Arr yls _ _ _) i 
+lem_get_append_left (Arr xls _ _ _) (Arr yls _ _ _) i
     = lem_getList_conc_left xls yls i
 
 {-@ lem_get_append_right :: xs:Array a
@@ -343,23 +343,23 @@ lma_gns_list (x:xs) n m x'
         -> { pf:_ | setList (setList xs j xj) i xi == setList (setList xs i xi) j xj } @-}
 lem_setList_commute :: [a] -> Int -> a -> Int -> a -> Proof
 lem_setList_commute (x:xs) 0 xi j xj = ()
-lem_setList_commute (x:xs) i xi j xj = () ? lem_setList_commute xs (i-1) xi (j-1) xj 
+lem_setList_commute (x:xs) i xi j xj = () ? lem_setList_commute xs (i-1) xi (j-1) xj
 
 {-@ lem_set_commute :: xs:_ -> { i:Nat | i < size xs } -> xi:_
         -> { j:Nat | not (i = j) && j < size xs } -> xj:_
         -> { pf:_ | set (set xs j xj) i xi == set (set xs i xi) j xj } @-}
 lem_set_commute :: Array a -> Int -> a -> Int -> a -> Proof
-lem_set_commute (Arr arr _ _ _) i xi j xj 
-  | i < j     = () ? lem_setList_commute arr i xi j xj 
+lem_set_commute (Arr arr _ _ _) i xi j xj
+  | i < j     = () ? lem_setList_commute arr i xi j xj
   | otherwise = () ? lem_setList_commute arr j xj i xi
 
-{-@ lem_setList_twice :: xs:_ -> { i:Nat | i < len xs } -> xi:_ -> xi':_ 
+{-@ lem_setList_twice :: xs:_ -> { i:Nat | i < len xs } -> xi:_ -> xi':_
         -> { pf:_ | setList (setList xs i xi') i xi == setList xs i xi } @-}
 lem_setList_twice :: [a] -> Int -> a -> a -> Proof
 lem_setList_twice (x:xs) 0 xi xi' = ()
 lem_setList_twice (x:xs) i xi xi' = () ? lem_setList_twice xs (i-1) xi xi'
 
-{-@ lem_set_twice :: xs:_ -> { i:Nat | i < size xs } -> xi:_ -> xi':_ 
+{-@ lem_set_twice :: xs:_ -> { i:Nat | i < size xs } -> xi:_ -> xi':_
         -> { pf:_ | set (set xs i xi') i xi == set xs i xi } @-}
 lem_set_twice :: Array a -> Int -> a -> a -> Proof
 lem_set_twice (Arr arr _ _ _) i xi xi' = lem_setList_twice arr i xi xi'
@@ -407,7 +407,7 @@ lem_drop_take (x:xs) i j = lem_drop_take xs (i-1) (j-1)
                   -> { pf:_ | drop j (drop i xs) == drop (j+i) xs } @-}
 lem_drop_drop :: [a] -> Int -> Int -> Proof
 lem_drop_drop _      0 j = ()
-lem_drop_drop (x:xs) i j = lem_drop_drop xs (i-1) j    
+lem_drop_drop (x:xs) i j = lem_drop_drop xs (i-1) j
 
 {-@ lem_get_slice :: xs:_ -> { l:Nat | l <= size xs } -> { r:Nat | l < r && r <= size xs }
                           -> { i:Nat | l <= i && i < r }
@@ -422,28 +422,28 @@ lem_get_slice arr l r i = () ? lem_getList_take (drop l lst) (r - l) (i - l)
                              -> { pf:_ | slice (append xs ys) 0 (size xs) == xs &&
                                          slice (append xs ys) (size xs) (size xs + size ys) == ys } @-}
 lem_slice_append :: Array a -> Array a -> Proof
-lem_slice_append (Arr xls _ _ _) (Arr yls _ _ _)  = () ? lem_take_conc xls yls 
+lem_slice_append (Arr xls _ _ _) (Arr yls _ _ _)  = () ? lem_take_conc xls yls
                                                        ? lem_drop_conc xls yls
                                                        ? lem_take_all      yls
 
 {- don't need this one i think
-{-@ lem_slice_from_right_append :: xs:_ 
+{-@ lem_slice_from_right_append :: xs:_
                       -> { ys:_ | token xs == token ys && right xs == left ys }
                       -> { i:Nat | A.size xs <= i }
                       -> { j:Nat | i <= j && j <= A.size xs + A.size ys }
                       -> { pf:_ | slice (append xs ys) i j == slice ys (i-size xs) (j-size xs)} @-}
 lem_slice_from_right_append :: Array a -> Array a -> Proof
-lem_slice_from_right_append (Arr xls _ _ _) (Arr yls _ _ _) 
+lem_slice_from_right_append (Arr xls _ _ _) (Arr yls _ _ _)
     = lem_drop_drop (conc xls yls) (len xls) (i - len xls)
     ? lem_drop_conc xls yls
 -}
 
-{-@ lem_slice_twice :: xs:_ -> i:Nat  -> { j:Nat  | i <= j && j <= size xs }             
+{-@ lem_slice_twice :: xs:_ -> i:Nat  -> { j:Nat  | i <= j && j <= size xs }
                               -> i':Nat -> { j':Nat | i' <= j' && j' <= j - i }
                               -> {pf:_ | slice (slice xs i j) i' j' == slice xs (i+i') (i+j') }
                                / [j' - i'] @-}
 lem_slice_twice :: Eq a => Array a -> Int -> Int -> Int -> Int -> Proof
-lem_slice_twice (Arr xs _ _ _)  i j i' j' 
+lem_slice_twice (Arr xs _ _ _)  i j i' j'
     | i' == j'  = ()
     | otherwise = lem_drop_take (drop i xs) (j-i) i'
                 ? lem_drop_drop xs i i'

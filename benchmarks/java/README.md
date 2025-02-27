@@ -15,4 +15,3 @@ Benchmarks supported:
  * [X] seqmergesort
  * [X] parmergesort
  * [ ] cilksort
-

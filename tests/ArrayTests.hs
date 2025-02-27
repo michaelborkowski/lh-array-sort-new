@@ -123,12 +123,12 @@ arrayTests = testGroup "Array Tests" [ testMakeArray, testArrayGetSet, testSwap,
         QC.forAll ((,,) <$> QC.chooseInt (1, mediumNumber) <*> QC.chooseInt (1, smallNumber) <*> QC.chooseAny) $ \(size :: Int, numOperations :: Int, startVal :: Int) ->
           QC.forAll (QC.vectorOf numOperations ((,) <$> QC.chooseInt (0, size - 1) <*> QC.chooseAny)) $ \randomUpdates ->
             QC.forAll (QC.vectorOf numOperations (QC.chooseInt (0, size - 1))) $ \randomGetIndices ->
-              let 
+              let
                   -- Helper functions to perform multiple set operations
                   performSetsCustom :: CustomArray.Array Int -> [(Int, Int)] -> CustomArray.Array Int
                   performSetsCustom arr [] = arr
-                  performSetsCustom arr ((index, value):xs) = performSetsCustom (CustomArray.set arr index value) xs  
-  
+                  performSetsCustom arr ((index, value):xs) = performSetsCustom (CustomArray.set arr index value) xs
+
                   performSetsStandard :: StandardArray.Array Int Int -> [(Int, Int)] -> StandardArray.Array Int Int
                   performSetsStandard arr [] = arr
                   performSetsStandard arr ((index, value):xs) = performSetsStandard (arr StandardArray.// [(index, value)]) xs

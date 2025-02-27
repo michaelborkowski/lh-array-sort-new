@@ -86,7 +86,7 @@ pfsort' :: (Show a, HasPrimOrd a) =>
 pfsort' anyVal src =
   let !(Ur len, src') = A.size2 src
       !(src'', _tmp) = msortInplace (if len <= 708 then 708  -- this can be any number >= 708 without affecting semantics, including `len`
-                                     else if len < 451776 
+                                     else if len < 451776
                                           -- this is the same as truncate (18820.2738 / sqrt (fromIntegral len)) per GHC.Float
                                           then truncate((18820.2738 / (exp ((log (fromIntegral len)) * 0.5) )) :: Float)
                                           else 28) src' (A.makeArray len anyVal) in

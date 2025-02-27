@@ -14,6 +14,6 @@
 // -----------------------------------------------------------------------------
 
 // Sequential.
-void writesort1(slice_t src, slice_t tmp);
-void writesort2(slice_t src, slice_t tmp);
-void merge(slice_t left, slice_t right, slice_t dst);
+void writesort1(slice_t src, slice_t tmp, __compar_fn_t cmp);
+void writesort2(slice_t src, slice_t tmp,  __compar_fn_t cmp);
+void merge(slice_t left, slice_t right, slice_t dst, __compar_fn_t cmp);

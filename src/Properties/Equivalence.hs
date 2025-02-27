@@ -146,43 +146,43 @@ lem_toBag_append xs ys
     = () ? lem_toBagBtw_compose' (A.append xs ys) 0 (A.size xs) (A.size xs + A.size ys)
          ? lem_toBag_slice       (A.append xs ys) 0 (A.size xs)
          ? lem_toBag_slice       (A.append xs ys)   (A.size xs) (A.size xs + A.size ys)
-         ? lem_slice_append    xs ys 
+         ? lem_slice_append    xs ys
 
-{-@ lem_toBagBtw_from_left_append :: xs:_ 
+{-@ lem_toBagBtw_from_left_append :: xs:_
                       -> { ys:_ | token xs == token ys && right xs == left ys }
                       -> i:Nat -> { j:Nat | i <= j && j <= A.size xs }
-                      -> { pf:_ | toBagBtw (append xs ys) i j == toBagBtw xs i j } 
+                      -> { pf:_ | toBagBtw (append xs ys) i j == toBagBtw xs i j }
                        / [j - i] @-}
 lem_toBagBtw_from_left_append :: (HasPrimOrd a, Eq a) => Array a -> Array a -> Int -> Int -> Proof
 lem_toBagBtw_from_left_append xs ys i j
     | i >= j    = ()
-    | otherwise = lem_toBagBtw_from_left_append xs ys (i+1) j 
+    | otherwise = lem_toBagBtw_from_left_append xs ys (i+1) j
                 ? lem_get_append_left xs ys i
 
-{-@ lem_toBagBtw_from_right_append :: xs:_ 
+{-@ lem_toBagBtw_from_right_append :: xs:_
                       -> { ys:_ | token xs == token ys && right xs == left ys }
                       -> { i:Nat | A.size xs <= i }
                       -> { j:Nat | i <= j && j <= A.size xs + A.size ys }
-                      -> { pf:_ | toBagBtw (append xs ys) i j == toBagBtw ys (i-A.size xs) (j-A.size xs)} 
+                      -> { pf:_ | toBagBtw (append xs ys) i j == toBagBtw ys (i-A.size xs) (j-A.size xs)}
                        / [j - i] @-}
 lem_toBagBtw_from_right_append :: (HasPrimOrd a, Eq a) => Array a -> Array a -> Int -> Int -> Proof
 lem_toBagBtw_from_right_append xs ys i j
     | i >= j    = ()
-    | otherwise = lem_toBagBtw_from_right_append xs ys (i+1) j 
-                ? lem_get_append_right xs ys i         
-                          
+    | otherwise = lem_toBagBtw_from_right_append xs ys (i+1) j
+                ? lem_get_append_right xs ys i
+
   -- | Lemma: toBag/toBagBtw is preserved under writes that don't change the array (Insertion.hs)
 
-{-@ lem_bag_unchanged :: xs:(Array a) -> { i:Nat | i < A.size xs } 
-                      -> { pf:_  | toBag (A.set xs i (A.get xs i)) == toBag xs } @-} 
+{-@ lem_bag_unchanged :: xs:(Array a) -> { i:Nat | i < A.size xs }
+                      -> { pf:_  | toBag (A.set xs i (A.get xs i)) == toBag xs } @-}
 lem_bag_unchanged :: HasPrimOrd a => Array a -> Int -> Proof
 lem_bag_unchanged xs i = () ? lma_gs xs i (A.get xs i)
                             ? lem_toSlice_set xs i (A.get xs i)
-                            ? lem_toBagBtw_compose xs ys 0 
+                            ? lem_toBagBtw_compose xs ys 0
                                 (i         ? lem_equal_slice_bag xs ys 0     i)
-                                (A.size xs ? lem_equal_slice_bag xs ys (i+1) (A.size xs))                      
+                                (A.size xs ? lem_equal_slice_bag xs ys (i+1) (A.size xs))
   where
-    ys = (A.set xs i (A.get xs i))  
+    ys = (A.set xs i (A.get xs i))
 
 
   -- | Lemmas establishing that toBag/toBagBtw is preserved under swaps
@@ -221,15 +221,15 @@ lem_toBagBtw_swap xs i j | i == j    = () ? lma_swap xs i i
                                           ? lem_toBagBtw_right (swap xs i j) i (j+1)
 
 
-{-@ lem_bag_swap :: xs:(Array a) -> { i:Int | 0 <= i && i < A.size xs } 
+{-@ lem_bag_swap :: xs:(Array a) -> { i:Int | 0 <= i && i < A.size xs }
                                  -> { j:Int | 0 <= j && j < A.size xs }
                                  -> { pf:_  | toBag (swap xs i j) == toBag xs } @-}
 lem_bag_swap :: HasPrimOrd a => Array a -> Int -> Int -> Proof
 lem_bag_swap xs i j
-  | i <= j    = () ? lem_bagBtw_swap xs 0 i j (size xs) 
+  | i <= j    = () ? lem_bagBtw_swap xs 0 i j (size xs)
                    ? toProof (size (swap xs i j) === size xs)
   | otherwise = () ? lem_swap_order xs i j
-                   ? lem_bagBtw_swap xs 0 j i (size xs) 
+                   ? lem_bagBtw_swap xs 0 j i (size xs)
                    ? toProof (size (swap xs i j) === size xs)
 
 {-@ lem_bagBtw_swap :: xs:(Array a) -> { il:Int | 0 <= il } -> { i:Int | il <= i }
@@ -267,10 +267,10 @@ lem_get_toSlice xs ys l i r | l == i     = ()
 {-@ lem_get_toSlice' :: xs:_ ->  ys:(Array a)
           -> l:Nat  -> { i:Nat  | l  <= i } -> { r:Nat  | i  < r  && r  <= A.size xs }
           -> l':Nat -> { i':Nat | l' <= i'} -> { r':Nat | i' < r' && r' <= A.size ys &&
-                                                    r - l == r' - l' && i - l == i' - l' && 
+                                                    r - l == r' - l' && i - l == i' - l' &&
                                                     toSlice xs l r == toSlice ys l' r' }
                             -> { pf:_ | A.get xs i == A.get ys i' } / [r - l] @-}
-lem_get_toSlice' :: Eq a => Array a -> Array a 
+lem_get_toSlice' :: Eq a => Array a -> Array a
                             -> Int -> Int -> Int -> Int -> Int -> Int -> Proof
 lem_get_toSlice' xs ys l i r l' i' r'
     | l == i     = ()
@@ -319,33 +319,33 @@ lem_toSlice_right :: (HasPrimOrd a, Eq a) => Array a -> Int -> Int -> Proof
 lem_toSlice_right xs i j | i + 1 == j  = ()
                          | otherwise   = () ? lem_toSlice_right xs (i+1) j
 
-{-@ lem_toSlice_from_left_append :: xs:_ 
+{-@ lem_toSlice_from_left_append :: xs:_
                       -> { ys:_ | token xs == token ys && right xs == left ys }
                       -> i:Nat -> { j:Nat | i <= j && j <= A.size xs }
-                      -> { pf:_ | toSlice (append xs ys) i j == toSlice xs i j } 
+                      -> { pf:_ | toSlice (append xs ys) i j == toSlice xs i j }
                        / [j - i] @-}
 lem_toSlice_from_left_append :: (HasPrimOrd a, Eq a) => Array a -> Array a -> Int -> Int -> Proof
 lem_toSlice_from_left_append xs ys i j
     | i >= j    = ()
-    | otherwise = lem_toSlice_from_left_append xs ys (i+1) j 
+    | otherwise = lem_toSlice_from_left_append xs ys (i+1) j
                 ? lem_get_append_left xs ys i
 
-{-@ lem_toSlice_from_right_append :: xs:_ 
+{-@ lem_toSlice_from_right_append :: xs:_
                       -> { ys:_ | token xs == token ys && right xs == left ys }
                       -> { i:Nat | A.size xs <= i }
                       -> { j:Nat | i <= j && j <= A.size xs + A.size ys }
-                      -> { pf:_ | toSlice (append xs ys) i j == toSlice ys (i-A.size xs) (j-A.size xs)} 
+                      -> { pf:_ | toSlice (append xs ys) i j == toSlice ys (i-A.size xs) (j-A.size xs)}
                        / [j - i] @-}
 lem_toSlice_from_right_append :: (HasPrimOrd a, Eq a) => Array a -> Array a -> Int -> Int -> Proof
 lem_toSlice_from_right_append xs ys i j
     | i >= j    = ()
-    | otherwise = lem_toSlice_from_right_append xs ys (i+1) j 
+    | otherwise = lem_toSlice_from_right_append xs ys (i+1) j
                 ? lem_get_append_right xs ys i
 
 {-
-{-@ lem_toSlice_slice :: xs:_ -> i:Nat  -> { j:Nat  | i <= j && j <= A.size xs }             
+{-@ lem_toSlice_slice :: xs:_ -> i:Nat  -> { j:Nat  | i <= j && j <= A.size xs }
                              -> i':Nat -> { j':Nat | i' <= j' && j' <= j - i }
-                             -> { pf:_ | toSlice (slice xs i j) i' j' == toSlice xs (i+i') (i+j')} 
+                             -> { pf:_ | toSlice (slice xs i j) i' j' == toSlice xs (i+i') (i+j')}
                              / [j' - i'] @-}
 lem_toSlice_slice :: (HasPrimOrd a, Eq a) => Array a -> Int -> Int -> Int -> Int -> Proof
 lem_toSlice_slice xs i j i' j'

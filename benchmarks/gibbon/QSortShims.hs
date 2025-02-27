@@ -18,7 +18,7 @@ get2 :: Vector Int -> Int -> (Int, Vector Int)
 get2 ar i = (get ar i, ar)
 
 swap :: Vector Int -> Int -> Int -> Vector Int
-swap xs i j = 
+swap xs i j =
   let xi  = get xs i
       xs' = set xs i (get xs j)
       xs'' = set xs' j xi

@@ -2,7 +2,7 @@ module DpsMerge where
 
 import Gibbon.Vector
 
-merge' :: (a -> a -> Int) -> 
+merge' :: (a -> a -> Int) ->
   Vector a -> Vector a -> Vector a ->
   Int -> Int -> Int ->
   (Vector a, Vector a)

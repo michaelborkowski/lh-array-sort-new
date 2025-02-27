@@ -72,7 +72,7 @@ msortInplace !src !tmp =
         !(tmp'', src4') = merge tmp1' tmp2' src3'
     in (src4', tmp'')  ? lem_toBag_splitMid src -- src4' holds the sorted data
                        ? lem_toBag_splitMid tmp
-                                        
+
 {-@ msort' :: { xs:(Array a) | A.size xs > 0 && left xs == 0 && right xs == size xs }
            -> { y:a | y == A.get xs 0 }
            -> { zs:(Array a) | toBag xs == toBag zs && isSorted' zs &&
@@ -95,7 +95,7 @@ msort src =
       if n == 0 then src1
       else let (x0, src2) = A.get2 src1 0
                tmp = A.makeArray n x0
-               {-@ cpy :: { ys:(Array a) | size ys == n && left ys == 0 && right ys == n && 
+               {-@ cpy :: { ys:(Array a) | size ys == n && left ys == 0 && right ys == n &&
                                            toSlice ys 0 n == toSlice src2 0 n } @-}
                cpy = A.copy src2 0 tmp 0 n
                      ? lem_copy_equal_slice  src2 0 tmp 0 n

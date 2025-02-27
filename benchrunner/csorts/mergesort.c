@@ -5,9 +5,6 @@
 // Whether this mergesort should actually be cilksort.
 static bool CILKSORT = false;
 
-// Global.
-static __compar_fn_t CMP = NULL;
-
 // Sequential cilksort.
 void *cilksort(void *const pbase, size_t total_elems, size_t size, __compar_fn_t cmp)
 {
@@ -38,9 +35,7 @@ void *smergesort(void *const pbase, size_t total_elems, size_t size)
     slice_t cpy_sl = (slice_t) {cpy, total_elems, size};
     slice_t tmp_sl = (slice_t) {tmp, total_elems, size};
 
-    CMP = compare_int64s;
-    writesort1(cpy_sl, tmp_sl);
-    CMP = NULL;
+    writesort1(cpy_sl, tmp_sl, compare_int64s);
 
     return cpy;
 }
@@ -66,9 +61,7 @@ void *smergesort_cmp(void *const pbase, size_t total_elems, size_t size, __compa
     slice_t cpy_sl = (slice_t) {cpy, total_elems, size};
     slice_t tmp_sl = (slice_t) {tmp, total_elems, size};
 
-    CMP = cmp;
-    writesort1(cpy_sl, tmp_sl);
-    CMP = NULL;
+    writesort1(cpy_sl, tmp_sl, cmp);
 
     return cpy;
 }
@@ -76,12 +69,12 @@ void *smergesort_cmp(void *const pbase, size_t total_elems, size_t size, __compa
 // -----------------------------------------------------------------------------
 
 // Uses "tmp" to sort "src" in place.
-void writesort1(slice_t src, slice_t tmp)
+void writesort1(slice_t src, slice_t tmp, __compar_fn_t cmp)
 {
     size_t len = slice_length(&src);
     if (CILKSORT && (len < INSERTIONSIZE)) {
         // insertionsort_inplace(src.base, src.total_elems, src.elt_size, CMP);
-        qsort(src.base, src.total_elems, src.elt_size, CMP);
+        qsort(src.base, src.total_elems, src.elt_size, cmp);
         // quicksort_inplace(src.base, src.total_elems, src.elt_size, CMP);
         return;
     }
@@ -91,20 +84,20 @@ void writesort1(slice_t src, slice_t tmp)
     size_t half = len / 2;
     slice_prod_t splitsrc = slice_split_at(&src, half);
     slice_prod_t splittmp = slice_split_at(&tmp, half);
-    writesort2(splitsrc.left, splittmp.left);
-    writesort2(splitsrc.right, splittmp.right);
-    merge(splittmp.left, splittmp.right, src);
+    writesort2(splitsrc.left, splittmp.left, cmp);
+    writesort2(splitsrc.right, splittmp.right, cmp);
+    merge(splittmp.left, splittmp.right, src, cmp);
     return;
 }
 
 // Uses "src" to sort "tmp" in place.
-void writesort2(slice_t src, slice_t tmp)
+void writesort2(slice_t src, slice_t tmp, __compar_fn_t cmp)
 {
     size_t len = slice_length(&src);
     if (CILKSORT && (len < INSERTIONSIZE)) {
         slice_copy(&src, &tmp);
         // insertionsort_inplace(tmp.base, tmp.total_elems, tmp.elt_size, CMP);
-        qsort(tmp.base, tmp.total_elems, tmp.elt_size, CMP);
+        qsort(tmp.base, tmp.total_elems, tmp.elt_size, cmp);
         // quicksort_inplace(tmp.base, tmp.total_elems, tmp.elt_size, CMP);
         return;
     }
@@ -115,13 +108,13 @@ void writesort2(slice_t src, slice_t tmp)
     size_t half = len / 2;
     slice_prod_t splitsrc = slice_split_at(&src, half);
     slice_prod_t splittmp = slice_split_at(&tmp, half);
-    writesort1(splitsrc.left, splittmp.left);
-    writesort1(splitsrc.right, splittmp.right);
-    merge(splitsrc.left, splitsrc.right, tmp);
+    writesort1(splitsrc.left, splittmp.left, cmp);
+    writesort1(splitsrc.right, splittmp.right, cmp);
+    merge(splitsrc.left, splitsrc.right, tmp, cmp);
     return;
 }
 
-size_t binary_search(slice_t *sl, void *query)
+size_t binary_search(slice_t *sl, void *query, __compar_fn_t cmp)
 {
     size_t lo = 0;
     size_t hi = slice_length(sl);
@@ -134,7 +127,7 @@ size_t binary_search(slice_t *sl, void *query)
         n = hi - lo;
         mid = lo + (n/2);
         pivot = slice_nth(sl, mid);
-        tst = (*CMP)(query, pivot);
+        tst = (*cmp)(query, pivot);
         if (tst == 0) {
             return mid;
         }
@@ -148,7 +141,7 @@ size_t binary_search(slice_t *sl, void *query)
     return lo;
 }
 
-void merge(slice_t left, slice_t right, slice_t dst)
+void merge(slice_t left, slice_t right, slice_t dst,  __compar_fn_t cmp)
 {
     size_t i=0, j=0, k=0;
     size_t n1 = slice_length(&left);
@@ -159,7 +152,7 @@ void merge(slice_t left, slice_t right, slice_t dst)
     while (i < n1 && j < n2) {
         elt_l = slice_nth(&left, i);
         elt_r = slice_nth(&right, j);
-        if ((*CMP)(elt_l, elt_r) <= 0) {
+        if ((*cmp)(elt_l, elt_r) <= 0) {
             slice_inplace_update(&dst, k, elt_l);
             i++;
         } else {

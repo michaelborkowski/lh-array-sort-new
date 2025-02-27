@@ -42,15 +42,15 @@ import qualified Array as A
                                                                   toBag  xs == toBag  ys } @-}
 -- quickSort :: (Ord a, Show a) => Array a -> Array a
 quickSort :: (HasPrimOrd a, Show a) => Array a -> Array a
-quickSort xs = 
+quickSort xs =
   let (n, xs1) = A.size2 xs in
       if n == 0 then xs1
       else let (hd, xs2) = A.get2 xs1 0
-               {-@ promise :: { tmp:(Array a) | size tmp == n } 
-                           -> { out:(Ur (Array a)) | size (unur out) == n && 
+               {-@ promise :: { tmp:(Array a) | size tmp == n }
+                           -> { out:(Ur (Array a)) | size (unur out) == n &&
                                                      toSlice (unur out) 0 n == toSlice xs2 0 n} @-}
-               promise tmp = Ur (A.copy xs2 0 tmp 0 n) 
-                           ? lem_copy_equal_slice  xs2 0 tmp 0 n 
+               promise tmp = Ur (A.copy xs2 0 tmp 0 n)
+                           ? lem_copy_equal_slice  xs2 0 tmp 0 n
                {- @ cpy :: { ys:(Array a) | size ys == n && toSlice ys 0 n == toSlice xs2 0 n } @-}
                Ur cpy = A.alloc n hd (Unsafe.toLinear promise)
             in quickSortBtw (cpy ? lem_equal_slice_bag   xs2   cpy 0 n) 0 n
@@ -63,29 +63,29 @@ quickSort xs =
 quickSortBtw :: HasPrimOrd a => Array a -> Int -> Int -> Array a
 quickSortBtw xs i j  =
   if j - i < 2               then xs            else
-  if j - i <= INSERTIONSIZE  
-  then let (xs_l, xs_cr) = A.splitAt i     xs 
+  if j - i <= INSERTIONSIZE
+  then let (xs_l, xs_cr) = A.splitAt i     xs
            (xs_c, xs_r)  = A.splitAt (j-i) xs_cr
            xs_c'         = isort_top' xs_c
            xs_cr'        = A.append   xs_c' xs_r
           in A.append xs_l xs_cr'
            ? toProof ( True
-                   === isSortedBtw xs_c' 0 (j-i)      
-                     ? lem_isSortedBtw_from_left_append  xs_c' xs_r   0 (j-i) 
-                   === isSortedBtw xs_cr' 0 (j-i) 
+                   === isSortedBtw xs_c' 0 (j-i)
+                     ? lem_isSortedBtw_from_left_append  xs_c' xs_r   0 (j-i)
+                   === isSortedBtw xs_cr' 0 (j-i)
                      ? lem_isSortedBtw_from_right_append xs_l  xs_cr' i j
                    === isSortedBtw (A.append xs_l xs_cr') i j
            )
            ? lem_toBagBtw_slice xs_cr 0 (j-i) 0 (j-i)
-           ? lem_toBagBtw_slice xs i (A.size xs) 0 (j-i)          
+           ? lem_toBagBtw_slice xs i (A.size xs) 0 (j-i)
            ? lem_toBagBtw_from_right_append xs_l  xs_cr' i j
            ? lem_toBagBtw_from_left_append  xs_c' xs_r   0 (j-i)
            ? lem_toBagBtw_slice xs_cr 0 (j-i) 0 (j-i)
            ? lem_toBagBtw_slice xs i (A.size xs) 0 (j-i)
-           ? toProof ( toSlice (A.append xs_l xs_cr') 0 i 
-                     ? lem_toSlice_from_left_append xs_l xs_cr' 0 i 
+           ? toProof ( toSlice (A.append xs_l xs_cr') 0 i
+                     ? lem_toSlice_from_left_append xs_l xs_cr' 0 i
                    === toSlice xs_l 0 i
-                   === toSlice (slice xs 0 i) 0 i 
+                   === toSlice (slice xs 0 i) 0 i
                      ? lem_toSlice_slice xs 0 i 0 i
                    === toSlice xs 0 i
            )
@@ -93,7 +93,7 @@ quickSortBtw xs i j  =
                      ? lem_toSlice_from_right_append xs_l  xs_cr' j (A.size xs)
                    === toSlice (A.append xs_c' xs_r) (j-i) (A.size xs - i)
                      ? lem_toSlice_from_right_append xs_c' xs_r (j-i) (A.size xs - i)
-                   === toSlice xs_r 0 (A.size xs - j)  
+                   === toSlice xs_r 0 (A.size xs - j)
                    === toSlice (slice xs_cr (j-i) (A.size xs - i)) 0 (A.size xs - j)
                      ? lem_toSlice_slice xs_cr (j-i) (A.size xs - i) 0 (A.size xs - j)
                    === toSlice xs_cr (j-i) (A.size xs - i)
@@ -162,26 +162,26 @@ shuffleBtw xs i j =
                            ? lem_toSlice_swap  zs i jl jr j
                   in goShuffle zs''' jl (jr-1)
 
-      (xs', ip)  = goShuffle xs1 i (j-2)  -- BOTH bounds inclusive      
+      (xs', ip)  = goShuffle xs1 i (j-2)  -- BOTH bounds inclusive
       {- @ xs'' :: { vs:(Array a) | isPartitionedBtw vs i ip j &&
-                                   toSlice xs' 0 i == toSlice vs 0 i && 
+                                   toSlice xs' 0 i == toSlice vs 0 i &&
                                    toSlice xs' j (A.size xs') == toSlice vs j (A.size xs') &&
                                    A.size xs' == A.size vs &&
                                    toBagBtw xs i j == toBagBtw vs i j } @-}
-      xs''       = if ip < j-1 
+      xs''       = if ip < j-1
                    then swap2 xs' ip (j-1) ? lma_swap xs' ip (j-1)
                                            ? lem_bagBtw_swap xs' i ip (j-1) j
                                            ? lem_range_inside_swap xs' ip (j-1)
                                            ? lem_range_outside_swap xs' i ip (j-1) j (get xs' (j-1))
                                            ? lem_toSlice_swap xs' i ip (j-1) j
-                   else xs' 
+                   else xs'
    in (xs'', ip)
 --  where
 
  -- | This belongs in Equivalence.hs but causes a Fixpoint panic if it's there
-{-@ lem_toSlice_slice :: xs:_ -> i:Nat  -> { j:Nat  | i <= j && j <= A.size xs }             
+{-@ lem_toSlice_slice :: xs:_ -> i:Nat  -> { j:Nat  | i <= j && j <= A.size xs }
                              -> i':Nat -> { j':Nat | i' <= j' && j' <= j - i }
-                             -> { pf:_ | toSlice (slice xs i j) i' j' == toSlice xs (i+i') (i+j')} 
+                             -> { pf:_ | toSlice (slice xs i j) i' j' == toSlice xs (i+i') (i+j')}
                              / [j' - i'] @-}
 lem_toSlice_slice :: (HasPrimOrd a, Eq a) => Array a -> Int -> Int -> Int -> Int -> Proof
 lem_toSlice_slice xs i j i' j'

@@ -1,15 +1,15 @@
-fun qsortInternal arr cmp = 
+fun qsortInternal arr cmp =
    let
-     fun qsort(arr, lo, hi) = 
+     fun qsort(arr, lo, hi) =
        if cmp lo hi < 0 then
          let
            val pivot = ArraySlice.sub(arr, hi)
            val i = ref (lo - 1)
            val j = ref lo
-           val _ = 
+           val _ =
              while cmp (!j) (hi - 1) < 1 do
                let
-                 val _ = 
+                 val _ =
                    if cmp (ArraySlice.sub(arr, !j)) pivot < 0 then
                      let
                        val _ = i := !i + 1

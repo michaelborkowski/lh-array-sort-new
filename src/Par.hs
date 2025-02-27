@@ -74,14 +74,14 @@ a .||. b = P.runPar $ do          -- or P.spawn_ ?
 -}
 
 #else
-{-@ tuple2 :: f:_ -> x:a -> g:_ -> y:a -> { tup:_ | fst tup == f x && snd tup == g y } @-} 
+{-@ tuple2 :: f:_ -> x:a -> g:_ -> y:a -> { tup:_ | fst tup == f x && snd tup == g y } @-}
 tuple2 :: (a -> b) -> a -> (a -> b) -> a -> (b, b)
 tuple2 f x g y = (f x, g y)
 
-{-@ tuple4 :: f:_ -> x:a -> g:_ -> y:a -> h:_ -> z:a -> j:_ -> w:a 
+{-@ tuple4 :: f:_ -> x:a -> g:_ -> y:a -> h:_ -> z:a -> j:_ -> w:a
                   -> { tup:_ | fst (fst tup) == f x && snd (fst tup) == g y &&
                                fst (snd tup) == h z && snd (snd tup) == j w } @-}
-tuple4 :: (a -> b) -> a -> (a -> b) -> a 
+tuple4 :: (a -> b) -> a -> (a -> b) -> a
        -> (a -> b) -> a -> (a -> b) -> a -> ((b, b), (b, b))
 tuple4 f x g y h z j w = ((f x, g y), (h z, j w))
 

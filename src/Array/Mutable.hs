@@ -36,7 +36,7 @@ import           Array.Mutable.Unlifted
 --------------------------------------------------------------------------------
 
 -- nice trick from: https://github.com/leftaroundabout/trivial-constraint
-class Unconstrained t 
+class Unconstrained t
 instance Unconstrained t
 
 type HasPrim a =
@@ -147,7 +147,7 @@ splitAt m = Unsafe.toLinear (\xs -> (slice xs 0 m, slice xs m (size xs)))
 
 -- PRE-CONDITION: the two slices are backed by the same array and should be contiguous.
 append :: Array a -. Array a -. Array a
-append = Unsafe.toLinear (\xs -> case xs of 
+append = Unsafe.toLinear (\xs -> case xs of
   (Array l1 _r1 !a1) -> Unsafe.toLinear (\ys -> case ys of
     (Array _l2 r2 _a2) -> Array l1 r2 a1))
 

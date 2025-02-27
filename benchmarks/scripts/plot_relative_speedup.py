@@ -5,12 +5,12 @@ import matplotlib.pyplot as plt
 SLOWPATH = "Mergesort_out.csv"
 FASTPATH = "sort_merge_seq_out.csv"
 
-def read(): 
+def read():
     slow = np.genfromtxt(SLOWPATH, skip_header=1)
     fast = np.genfromtxt(FASTPATH, skip_header=1)
     return slow, fast
 
-def plot(slow, fast): 
+def plot(slow, fast):
     x = slow[:,0]  # assume same x values
     speedup = slow[:,1] / fast[:,1]
     # plt.figure(constrained_layout=True)

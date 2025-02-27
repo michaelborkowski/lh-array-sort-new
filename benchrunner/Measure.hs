@@ -106,7 +106,7 @@ bench f arg iters = do
     return $! (last results, selftimed, batchtime)
 
 benchOnArrays :: (NFData a, Show b, NFData b, Show a) => (A.Array a %p -> b) -> [A.Array a] -> IO (b, Double, Double)
-benchOnArrays f arrArgs = do 
+benchOnArrays f arrArgs = do
     let !arg2s = force arrArgs
     !tups <- mapM (\arg2' -> dotrial f (force arg2')) arg2s
     let (results, times) = unzip tups
@@ -126,20 +126,20 @@ dotrial f arg = do
     return $! (a,delt)
 
 benchAndRunDataVecSorts :: VecSort -> Vec -> Int ->  IO (Vec, Double, Double)
-benchAndRunDataVecSorts sortFn inVec iters = do 
-  !tups <- mapM (\_ -> do 
+benchAndRunDataVecSorts sortFn inVec iters = do
+  !tups <- mapM (\_ -> do
                        mvec <- V.thaw inVec
-                       mvecCopy <- MV.new (MV.length mvec) 
+                       mvecCopy <- MV.new (MV.length mvec)
                        MV.copy mvecCopy mvec
                        res <- dotrialLocal sortFn mvecCopy
                        pure res
-                ) [1..iters]             
+                ) [1..iters]
   let (results, times) = unzip tups
   -- print times
   let  selftimed = median times
        batchtime = sum times
   return $! (last results, selftimed, batchtime)
-  where 
+  where
     dotrialLocal f arg = do
       performMajorGC
       t1 <- getCurrentTime
@@ -148,7 +148,7 @@ benchAndRunDataVecSorts sortFn inVec iters = do
       let delt = fromRational (toRational (diffUTCTime t2 t1))
       putStrLn ("iter time: " ++ show delt)
       arg' <- V.freeze arg
-      return $! (arg', delt)  
+      return $! (arg', delt)
 
 sortFnC :: SortAlgo -> FFI.SortFn
 sortFnC alg = case alg of
@@ -157,24 +157,24 @@ sortFnC alg = case alg of
                     Quicksort -> FFI.c_quicksort
                     _ -> error "sortFnC: Csort not implemented!"
 
--- return type : IO ([Int64], Double, Double) 
+-- return type : IO ([Int64], Double, Double)
 -- [Int64]: sorted output array from the last iteration that was run
 -- Double: median runtime from the iterations that were run (selftimed)
--- Double: Total time taken to run all the iterations (batchtime) 
+-- Double: Total time taken to run all the iterations (batchtime)
 benchAndRunCSorts :: SortAlgo -> [Int64] -> Int -> IO ([Int64], Double, Double)
-benchAndRunCSorts salg arr iters = do 
+benchAndRunCSorts salg arr iters = do
   !tups <- mapM (\_ -> do
-                       ptr <- newArray arr
-                       res <- dotrialLocal2 salg (length arr) ptr
+                       !ptr <- newArray arr
+                       res <- dotrialC salg (length arr) ptr
                        pure res
-                ) [1..iters]             
+                ) [1..iters]
   let (results, times) = unzip tups
   -- print times
   let  selftimed = median times
        batchtime = sum times
   return $! (last results, selftimed, batchtime)
-  where 
-    dotrialLocal2 alg arrLength ptr = do 
+  where
+    dotrialC alg arrLength ptr = do
         performMajorGC
         let fn = sortFnC alg
         t1 <- getCurrentTime

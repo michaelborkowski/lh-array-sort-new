@@ -1,9 +1,9 @@
 HC = ghc
 CC = gcc
 RTFLAGS = +RTS -N6
-CSORTS_DIR = $(PWD)/benchrunner/csorts/
+CSORTS_DIR = ./benchrunner/csorts/
 CSORTS_EXEC = cbench.exe
-CSORTS_EXEC_FULL := $(CSORTS_DIR)$(CSORTS_EXEC) 
+CSORTS_EXEC_FULL := $(CSORTS_DIR)$(CSORTS_EXEC)
 
 # Flag to decide whether we're using stack or cabal.
 ifeq ($(STACK),1)
@@ -17,7 +17,7 @@ else
 endif
 else
 	CABAL = cabal-3.12.1.0
-	HCTOOL = cabal-3.12.1.0 
+	HCTOOL = cabal-3.12.1.0
 	HCTOOLEXEC = v2-exec
 ifeq ($(MUTABLE_ARRAYS),1)
 		F_MUTABLE_ARRAYS = -fmutable-arrays
@@ -68,7 +68,7 @@ ifeq ($(STACK),1)
 # CSK: verify that this does indeed build everything, including criterion-external.
 	$(STK) build $(F_MUTABLE_ARRAYS)
 	$(STK) build criterion-external
-else    
+else
 	#$(CABAL) configure --enable-library-profiling --enable-profiling
 	$(CABAL) v2-build all $(F_MUTABLE_ARRAYS)
 	$(CABAL) v2-build criterion-external

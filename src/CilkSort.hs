@@ -6,7 +6,7 @@ module CilkSort where
 import qualified Language.Haskell.Liquid.Bag as B
 import           Language.Haskell.Liquid.ProofCombinators hiding ((?))
 import           ProofCombinators
-import           Array 
+import           Array
 import           ArrayOperations
 import           DpsMerge
 import Properties.Equivalence
@@ -25,15 +25,15 @@ import           Array.List as A
 #define QUICKSIZE (2*KILO)
 #define INSERTIONSIZE 20
 
--- DPS mergesort -- unfold twice, merge twice 
-{-@ cilkSortInplace :: xs:Array a 
-      -> { ys:(Array a ) | A.size ys  == A.size xs   && left xs == left ys && 
+-- DPS mergesort -- unfold twice, merge twice
+{-@ cilkSortInplace :: xs:Array a
+      -> { ys:(Array a ) | A.size ys  == A.size xs   && left xs == left ys &&
                            right xs == right ys }
       -> (Array a, Array a)<{\zs ts -> toBag xs == toBag zs && isSorted' zs &&
                                        token xs == token zs && token ys == token ts &&
                                        A.size xs == A.size zs && A.size ys == A.size ts &&
                                        left zs == left xs && right zs == right xs &&
-                                       left ts == left ys && right ts == right ys }> 
+                                       left ts == left ys && right ts == right ys }>
        / [A.size xs] @-}
 cilkSortInplace :: (Show a, Ord a) => A.Array a -> A.Array a -> (A.Array a, A.Array a)
 cilkSortInplace src tmp =
@@ -58,7 +58,7 @@ cilkSortInplace src tmp =
         (srcB'', tmpB'') = merge src3' src4' tmpB'
         src''            = A.append srcA'' srcB''
         (tmp''', src''') = merge tmpA'' tmpB'' src''
-    in (src''', tmp''')  ? lem_toBag_splitMid src 
+    in (src''', tmp''')  ? lem_toBag_splitMid src
                          ? lem_toBag_splitMid tmp
                          ? lem_toBag_splitMid srcA
                          ? lem_toBag_splitMid srcB

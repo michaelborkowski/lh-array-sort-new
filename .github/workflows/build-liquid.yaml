@@ -44,4 +44,3 @@ jobs:
 
       - name: Build in liquid mode
         run: cabal build lh-array-sort
-

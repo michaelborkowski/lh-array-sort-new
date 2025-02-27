@@ -1,11 +1,11 @@
-fun slice_eq_exn (s1, s2) = 
+fun slice_eq_exn (s1, s2) =
   let
     val len = ArraySlice.length s1
     val len2 = ArraySlice.length s2
-    val _ = 
+    val _ =
       if len2 = len then ()
       else raise Fail ("Mismatched lengths: " ^ (Int.toString len) ^ ", " ^ (Int.toString len2))
-    fun aux i = 
+    fun aux i =
       if i < len then
         if ArraySlice.sub(s1, i) = ArraySlice.sub(s2, i) then ()
         else raise Fail "Unequal slices"

@@ -91,12 +91,12 @@ msortInplace src tmp =
 msort' :: (Show a, HasPrimOrd a, NFData a) => A.Array a -> a -> A.Array a
 msort' src anyVal =
   let (n, src1) = A.size2 src
-      {-@ promise :: { tmp:(Array a) | size tmp == n && left tmp == 0 && right tmp == n } 
-              -> { out:(Ur (Array a, Array a)) | toBag src == toBag (fst (unur out)) && 
+      {-@ promise :: { tmp:(Array a) | size tmp == n && left tmp == 0 && right tmp == n }
+              -> { out:(Ur (Array a, Array a)) | toBag src == toBag (fst (unur out)) &&
                                                  isSorted' (fst (unur out)) &&
                     token src == token (fst (unur out)) && token tmp == token (snd (unur out)) &&
                     size (fst (unur out)) == n && size (snd (unur out)) == n } @-}
-      promise tmp = Ur (msortInplace src1 tmp)    
+      promise tmp = Ur (msortInplace src1 tmp)
       Ur (src2, _tmp) = A.alloc n anyVal (Unsafe.toLinear promise) in
   _tmp `seq` src2
 
@@ -111,13 +111,13 @@ msort src =
   let (n, src1) = A.size2 src in
       if n == 0 then src1
       else let (x0, src2) = A.get2 src1 0
-               {-@ promise :: { tmp:(Array a) | size tmp == n && left tmp == 0 && right tmp == n } 
-                           -> { out:(Ur (Array a)) | size (unur out) == n && 
+               {-@ promise :: { tmp:(Array a) | size tmp == n && left tmp == 0 && right tmp == n }
+                           -> { out:(Ur (Array a)) | size (unur out) == n &&
                                                      left (unur out) == 0 && right (unur out) == n &&
                                                      toSlice (unur out) 0 n == toSlice src2 0 n} @-}
-               promise tmp = Ur (A.copy src2 0 tmp 0 n) 
-                           ? lem_copy_equal_slice  src2 0 tmp 0 n 
-               {-@ cpy :: { ys:(Array a) | size ys == n && left ys == 0 && right ys == n && 
+               promise tmp = Ur (A.copy src2 0 tmp 0 n)
+                           ? lem_copy_equal_slice  src2 0 tmp 0 n
+               {-@ cpy :: { ys:(Array a) | size ys == n && left ys == 0 && right ys == n &&
                                            toSlice ys 0 n == toSlice src2 0 n } @-}
                Ur cpy = A.alloc n x0 (Unsafe.toLinear promise)
            in msort' (cpy ? lem_equal_slice_bag   src2   cpy 0 n) x0

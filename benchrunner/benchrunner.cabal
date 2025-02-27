@@ -37,10 +37,8 @@ executable benchrunner
 
     c-sources:
                       csorts/insertionsort.c
-                      csorts/insertionsort_glibc.c
                       csorts/mergesort.c
                       csorts/quicksort.c
-                      csorts/microbench.c
 
     -- DNDEBUG disables asserts in cbits/
     cc-options:        -std=c11 -O3 -DNDEBUG=1

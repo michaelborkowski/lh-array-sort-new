@@ -33,7 +33,7 @@ library
 
   if flag(prim-mutable-arrays)
     cpp-options: -DPRIM_MUTABLE_ARRAYS -DMUTABLE_ARRAYS
-  
+
   exposed-modules:
       Par
       Array
@@ -44,7 +44,7 @@ library
       Properties.RangeProperties
 
       -- Add sorts here
-      Insertion  
+      Insertion
 
       DpsMerge
       DpsMergePar
@@ -64,7 +64,7 @@ library
       -- Current Cilksort is entirely sequential
 
 -- remove until ready:
---      QuickSortNew   
+--      QuickSortNew
 --  the last not quite ready yet?
 --      CilkSort
       Linear.Common
@@ -78,7 +78,7 @@ library
   hs-source-dirs:
       src
   build-depends:
-      base, 
+      base,
       deepseq,
       containers,
       vector                >= 0.13 && < 0.14,
