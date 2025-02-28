@@ -58,6 +58,14 @@ static inline void SWAP(void *a, void *b, size_t elt_size)
     } while (--__size > 0);
 }
 
+template<typename T>
+static inline void SWAP2(T *a, int i, int j)
+{
+    T _tmp = a[i];
+    a[i] = a[j];
+    a[j] = _tmp;
+}
+
 // -----------------------------------------------------------------------------
 
 typedef struct slice_t_ {
