@@ -28,6 +28,8 @@ import qualified Data.Vector.Algorithms.Insertion as ISDVS
 import qualified Data.Vector.Algorithms.Merge as MSDVS
 import qualified Data.Vector.Algorithms.Intro as QSDVS
 
+import Options.Generic
+
 --------------------------------------------------------------------------------
 
 getInput :: Benchmark -> Maybe Int -> IO (Input Int64)
@@ -232,6 +234,7 @@ dobench bench parorseq mb_size iters = do
   putStrLn $ "BATCHTIME: " ++ show tall
   putStrLn $ "SELFTIMED: " ++ show tmed
   putStrLn ""
+
 
 main :: IO ()
 main = do
