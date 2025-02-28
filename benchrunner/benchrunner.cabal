@@ -21,7 +21,6 @@ executable benchrunner
                       , time
                       , primitive
                       , vector
-		      , optparse-generic
                       , vector-algorithms
     default-language:   GHC2021
     default-extensions: TupleSections
