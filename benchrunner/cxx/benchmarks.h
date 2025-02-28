@@ -14,7 +14,7 @@ void insertionsort_glibc_inplace(void *const pbase, size_t total_elems, size_t s
 void *insertionsort_copy(void *const pbase, size_t total_elems, size_t size);
 void *insertionsort_cmp(void *const pbase, size_t total_elems, size_t size, __compar_fn_t cmp);
 void insertionsort_inplace_cmp(void *const pbase, size_t total_elems, size_t size, __compar_fn_t cmp);
-template<typename T> T *insertionsort_inplace(T *const pbase, size_t total_elems, size_t size);
+template<typename T> T *insertionsort_inplace(T *pbase, size_t total_elems);
 void *quicksort_glibc(void *const pbase, size_t total_elems, size_t size, __compar_fn_t cmp);
 void quicksort_glibc_inplace(void *const pbase, size_t total_elems, size_t size, __compar_fn_t cmp);
 void *quicksort_cmp(void *const pbase, size_t total_elems, size_t size, __compar_fn_t cmp);

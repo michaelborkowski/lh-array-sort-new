@@ -142,4 +142,19 @@ static inline void slice_assert_sorted(__compar_fn_t cmp, const slice_t *sl)
     printf("Sorted: OK\n");
 }
 
+static inline void slice_assert_sorted_2(int64_t *arr, int size)
+{
+    size_t len = size;
+    int64_t a, b;
+    for (size_t i = 0; i < len-1; i++) {
+        a = arr[i];
+        b = arr[i+1];
+        if (a > b) {
+            fprintf(stderr, "Elements at %zu and %zu are not sorted.", i, i+1);
+            exit(1);
+        }
+    }
+    printf("Sorted: OK\n");
+}
+
 #endif

@@ -1,5 +1,5 @@
-CFILES   = $(wildcard *.c)
-OBJFILES = $(CFILES:.c=.o)
+CFILES   = $(wildcard *.c) $(wildcard *.cpp)
+OBJFILES = $(CFILES:.cpp=.o)
 OUT      = cbench.exe
 
 USECLANG    := 0
