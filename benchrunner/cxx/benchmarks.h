@@ -26,6 +26,7 @@ void *smergesort_cmp(void *const pbase, size_t total_elems, size_t size, __compa
 void *mergesort_par(void *const pbase, size_t total_elems, size_t size, __compar_fn_t cmp);
 void *cilksort(void *const pbase, size_t total_elems, size_t size, __compar_fn_t cmp);
 void *cilksort_par(void *const pbase, size_t total_elems, size_t size, __compar_fn_t cmp);
+template <typename T> T *bottomUpMergeSort(T *a, T *b, int n);
 
 // Microbenchmarks.
 int64_t* __attribute__ ((noinline)) fill_array_seq(size_t total_elems, int64_t val);
