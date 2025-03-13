@@ -131,7 +131,7 @@ copy s@(Array (GHC.I# lo1) _hi1 src) (GHC.I# src_offset)
 
 {-# INLINE copy2 #-}
 copy2 :: HasPrim a => Int -> Int -> Int -> (Array a -. (Array a -. (Array a, Array a)))
-copy2 xi yi n = Unsafe.toLinear (\xs -> Unsafe.toLinear (\ys -> (xs, copy xs xi ys yi n)))
+copy2 xi yi n = {-Unsafe.toLinear-} (\xs -> {-Unsafe.toLinear-} (\ys -> (xs, copy xs xi ys yi n)))
 
 {-# INLINE slice #-}
 slice :: Array a -> Int -> Int -> Array a
@@ -143,12 +143,12 @@ slice2 !ar l' r' = (slice ar l' r', ar)
 
 {-# INLINE splitAt #-}
 splitAt :: Int -> (Array a -. (Array a, Array a))
-splitAt m = Unsafe.toLinear (\xs -> (slice xs 0 m, slice xs m (size xs)))
+splitAt m = {-Unsafe.toLinear-} (\xs -> (slice xs 0 m, slice xs m (size xs)))
 
 -- PRE-CONDITION: the two slices are backed by the same array and should be contiguous.
 append :: Array a -. Array a -. Array a
-append = Unsafe.toLinear (\xs -> case xs of
-  (Array l1 _r1 !a1) -> Unsafe.toLinear (\ys -> case ys of
+append = {-Unsafe.toLinear-} (\xs -> case xs of
+  (Array l1 _r1 !a1) -> {-Unsafe.toLinear-} (\ys -> case ys of
     (Array _l2 r2 _a2) -> Array l1 r2 a1))
 
 -- token xs == token ys
@@ -157,15 +157,15 @@ append = Unsafe.toLinear (\xs -> case xs of
 
 {-# INLINE size2 #-}
 size2 :: Array a -. (Ur Int, Array a)
-size2 = Unsafe.toLinear (\ar -> (Ur (size ar), ar))
+size2 = {-Unsafe.toLinear-} (\ar -> (Ur (size ar), ar))
 
 {-# INLINE get2 #-}
 get2 :: HasPrim a => Int -> (Array a -. (Ur a, Array a))
-get2 i = Unsafe.toLinear (\ar -> (Ur (get ar i), ar))
+get2 i = {-Unsafe.toLinear-} (\ar -> (Ur (get ar i), ar))
 
 {-# INLINE setLin #-}
 setLin :: HasPrim a => Int -> a -> (Array a -. Array a)
-setLin n y = Unsafe.toLinear (\ar -> set ar n y)
+setLin n y = {-Unsafe.toLinear-} (\ar -> set ar n y)
 
 fromList :: HasPrim a => [a] -> Array a
 fromList [] = Array 0 0 undefined

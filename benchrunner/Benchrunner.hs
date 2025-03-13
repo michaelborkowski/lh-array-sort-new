@@ -95,7 +95,8 @@ randList _ty size = do
       ls = take size $ randoms rng
   pure (force ls)
 
-sortFn :: (Show a, A.HasPrimOrd a, NFData a) => SortAlgo -> ParOrSeq -> (A.Array a -. A.Array a)
+--sortFn :: (Show a, A.HasPrimOrd a, NFData a) => SortAlgo -> ParOrSeq -> (A.Array a -. A.Array a)
+sortFn :: SortAlgo -> ParOrSeq -> (A.Array Int64 -. A.Array Int64)
 sortFn bench parorseq = case (bench,parorseq) of
   (Insertionsort, Seq) -> I.isort_top'
   (Quicksort, Seq)     -> Q.quickSort'

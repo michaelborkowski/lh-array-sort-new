@@ -3,6 +3,8 @@
 
 module PiecewiseFallbackSort where
 
+import           Data.Int           ( Int64 )
+
 import qualified Language.Haskell.Liquid.Bag as B
 import           Language.Haskell.Liquid.ProofCombinators hiding ((?))
 import           ProofCombinators
@@ -30,7 +32,8 @@ import           Array.List as A
                                        left zs == left xs && right zs == right xs &&
                                        left ts == left ys && right ts == right ys }>
        / [A.size xs] @-}
-msortInplace :: (Show a, HasPrimOrd a) => Int -> A.Array a -. A.Array a -. (A.Array a, A.Array a)
+--msortInplace :: (Show a, HasPrimOrd a) => Int -> A.Array a -. A.Array a -. (A.Array a, A.Array a)
+msortInplace :: Int -> A.Array Int64 -. A.Array Int64 -. (A.Array Int64, A.Array Int64)
 msortInplace cutoff src tmp =  -- cutoff > 0, though it may not be necessary to show sorting correctness
   let !(Ur len, src') = A.size2 src in
   if len <= 1 then (src', tmp)                        -- MHB added
@@ -63,7 +66,8 @@ msortInplace cutoff src tmp =  -- cutoff > 0, though it may not be necessary to 
            -> { xs:(Array a) | A.size xs > 0 && left xs == 0 && right xs == size xs && y == A.get xs 0 }
            -> { zs:(Array a) | toBag xs == toBag zs && isSorted' zs &&
                                A.size xs == A.size zs && token xs == token zs } @-}
-pfsort' :: (Show a, HasPrimOrd a) => a -> A.Array a -. A.Array a
+--pfsort' :: (Show a, HasPrimOrd a) => a -> A.Array a -. A.Array a
+pfsort' :: Int64 -> A.Array Int64 -. A.Array Int64
 pfsort' anyVal src =
   let !(Ur len, src') = A.size2 src  -- below expression is always in the interval [28, 708] (interval changed from meeting doc).
       !(src'', _tmp) = msortInplace (if len <= 708 then 708  -- this can be any number >= 708 without affecting semantics, including `len`
@@ -76,7 +80,8 @@ pfsort' anyVal src =
 {-@ pfsort :: { xs:(A.Array a) | left xs == 0 && right xs == size xs }
                     -> { ys:_ | toBag xs == toBag ys && isSorted' ys &&
                                 A.size xs == A.size ys && token xs == token ys  } @-}
-pfsort :: (Show a, HasPrimOrd a) => A.Array a -. A.Array a
+--pfsort :: (Show a, HasPrimOrd a) => A.Array a -. A.Array a
+pfsort :: A.Array Int64 -. A.Array Int64
 pfsort src =
   let !(Ur len, src') = A.size2 src in
       if len == 0 then src'

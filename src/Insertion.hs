@@ -5,6 +5,8 @@
 
 module Insertion where
 
+import           Data.Int           ( Int64 )    
+
 import           Prelude hiding (max)
 import           Language.Haskell.Liquid.ProofCombinators hiding ((?))
 import qualified Language.Haskell.Liquid.Bag as B
@@ -115,7 +117,8 @@ lem_insert_func_sorted xs x i
 {-@ lem_insert_func_equiv :: xs:_ -> x:_
            -> { i:Nat | i < A.size xs }
            -> { pf:_  | toBag (insert_func xs x i) == toBag (A.set xs i x) } / [i] @-}
-lem_insert_func_equiv :: HasPrimOrd a => A.Array a -> a -> Int -> Proof
+--lem_insert_func_equiv :: HasPrimOrd a => A.Array a -> a -> Int -> Proof
+lem_insert_func_equiv :: A.Array Int64 -> Int64 -> Int -> Proof
 lem_insert_func_equiv xs x 0 = ()
 lem_insert_func_equiv xs x i
     | x < a     = toProof ( toBag (insert x (i-1) (set xs i a))
@@ -143,22 +146,59 @@ lem_insert_func_equiv xs x i
            -> { ys:_ | ys == insert_func xs x i &&
                        left xs == left ys && right xs == right ys &&
                        A.size ys == A.size xs && token xs == token ys } / [i] @-}
-insert :: HasPrimOrd a => a -> Int -> (A.Array a -. A.Array a)
-insert !x 0 !xs = A.setLin 0 x xs
-insert !x !i !xs =  -- sort the element at offset i into the first i+1 elements
-  A.get2 (i-1) xs {- a is above xs[0..i-1], insert must preserve -} & \(!(Ur a), !xs') ->
-  if x < a
-  then let !xs''  = A.setLin i a xs'
-           !xs''' = insert x (i - 1) xs''
-       in xs'''
+--insert :: HasPrimOrd a => a -> Int -> (A.Array a -. A.Array a)
+insert :: Int64 -> Int -> (A.Array Int64 -. A.Array Int64)
+insert !x !j !ws = insWorker j ws
+  where
+    insWorker  0 !xs = A.setLin 0 x xs
+    insWorker !i !xs = 
+        let (!(Ur a), !xs') = {-# SCC recursive_get2 #-} A.get2 (i-1) xs {- a is above xs[0..i-1], insert must preserve -}
+            --a   = {-# SCC recursive_get1 #-} A.get  xs (i-1)
+            --xs' = xs
+        in
+            if ({-# SCC if_guard #-} x < a)
+            then let !xs''  = {-# SCC recursive_setLin #-} A.setLin i a xs' {-
+                     !xs''' = {-# SCC recursive_call #-} insWorker (i - 1) xs''
+                in {-# SCC recursive_return #-} xs''' -}
+                  in insWorker (i - 1) xs''
+            else let !xs''' = {-# SCC rec_final_setLin #-} A.setLin i x xs'
+                in xs'''
+
+--insert !x 0 !xs = {-# SCC base_setLin #-} A.setLin 0 x xs
+{- my prev func
+insert !x !i !xs =  
+ if i == 0 then A.setLin 0 x xs
+ else    
+    -- sort the element at offset i into the first i+1 elements
+  let --(!(Ur a), !xs') = {-# SCC recursive_get2 #-} A.get2 (i-1) xs {- a is above xs[0..i-1], insert must preserve -}
+      a   = {-# SCC recursive_get1 #-} A.get  xs (i-1)
+      xs' = xs
+  in
+    if ({-# SCC if_guard #-} x < a)
+    then let !xs''  = {-# SCC recursive_setLin #-} A.setLin i a xs'
+             !xs''' = {-# SCC recursive_call #-} insert x (i - 1) xs''
+        in {-# SCC recursive_return #-} xs'''
+    else let !xs''' = {-# SCC rec_final_setLin #-} A.setLin i x xs'
+          in xs'''
+          -}
+
+  {-
+  insert !x !i !xs =  -- sort the element at offset i into the first i+1 elements
+  ({-# SCC recursive_get2 #-} A.get2 (i-1) xs) {- a is above xs[0..i-1], insert must preserve -} & \(!(Ur a), !xs') ->
+  if ({-# SCC if_guard #-} x < a)
+  then let !xs''  = {-# SCC recursive_setLin #-} A.setLin i a xs'
+           !xs''' = {-# SCC recursive_call #-}insert x (i - 1) xs''
+       in {-# SCC recursive_return #-} xs'''
   else A.setLin i x xs'
+  -}
 
 {-@ isort ::
       i:Nat -> { xs:_ | A.size xs > 1 && i <= A.size xs && isSortedBtw xs 0 i }
       -> { ys:_ | toBag xs == toBag ys   && isSorted' ys &&
                   left xs == left ys && right xs == right ys &&
                   A.size xs == A.size ys && token xs == token ys } / [A.size xs - i] @-}
-isort :: HasPrimOrd a => Int -> (A.Array a -. A.Array a) -- | Sort in-place.
+--isort :: HasPrimOrd a => Int -> (A.Array a -. A.Array a) -- | Sort in-place.
+isort :: Int -> (A.Array Int64 -. A.Array Int64) -- | Sort in-place.
 isort i xs =
   A.size2 xs & \(Ur s, xs') ->
     if i == s then xs'
@@ -172,14 +212,16 @@ isort i xs =
       -> { ys:_ | toBag xs == toBag ys &&  isSorted' ys &&
                   left xs == left ys && right xs == right ys &&
                   A.size xs == A.size ys && token xs == token ys } @-}
-isort_top' :: HasPrimOrd a => A.Array a -. A.Array a
+--isort_top' :: HasPrimOrd a => A.Array a -. A.Array a
+isort_top' :: A.Array Int64 -. A.Array Int64
 isort_top' xs = isort 0 xs
 
 -- | Sort a copy of the input array. Therefore token is not preserved.
 {-@ isort_top :: { xs:_ | A.size xs > 1 }
       -> { ys:_ | toBag xs  == toBag ys  && isSorted' ys &&
                   A.size xs == A.size ys } @-}
-isort_top :: forall a. HasPrimOrd a => A.Array a -. A.Array a
+--isort_top :: forall a. HasPrimOrd a => A.Array a -. A.Array a
+isort_top :: A.Array Int64 -. A.Array Int64
 isort_top xs0 =
   let !(Ur n, xs1) = A.size2 xs0
     in
@@ -189,7 +231,8 @@ isort_top xs0 =
             {- @ promise :: { tmp:(Array a) | size tmp == n }
                         -> { out:(Ur (Array a)) | size (unur out) == n &&
                                                   toSlice (unur out) 0 n == toSlice xs2 0 n} @-}
-            promise :: A.Array a -. Ur (A.Array a)
+            --promise :: A.Array a -. Ur (A.Array a)
+            promise :: A.Array Int64 -. Ur (A.Array Int64)
             --promise :: A.Array a -. (A.Array a -. Ur (A.Array a))
             promise tmp =
               let !(old_arr, tmp_arr) = A.copy2 0 0 n xs2 tmp

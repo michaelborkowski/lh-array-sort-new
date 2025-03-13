@@ -3,6 +3,8 @@
 
 module PiecewiseFallbackSortPar where
 
+import           Data.Int           ( Int64 )
+
 import qualified Language.Haskell.Liquid.Bag as B
 import           Language.Haskell.Liquid.ProofCombinators hiding ((?))
 import           ProofCombinators
@@ -35,13 +37,14 @@ import           Array.List as A
                                        A.size xs == A.size zs && A.size ys == A.size ts &&
                                        left zs == left xs && right zs == right xs &&
                                        left ts == left ys && right ts == right ys }>
-       / [A.size xs] @-}
+       / [A.size xs] @-}{-
 #ifdef MUTABLE_ARRAYS
 msortInplace :: (Show a, HasPrimOrd a, NFData a) =>
 #else
 msortInplace :: (Show a, HasPrimOrd a) =>
 #endif
-  Int -> A.Array a -. A.Array a -. (A.Array a, A.Array a)
+  Int -> A.Array a -. A.Array a -. (A.Array a, A.Array a)-}
+msortInplace :: Int -> A.Array Int64 -. A.Array Int64 -. (A.Array Int64, A.Array Int64)
 msortInplace cutoff src tmp =
   let !(Ur len, src') = A.size2 src in
   -- if len <= SEQSIZE then Seq.msortInplace src' tmp -- do we need this fallback?
@@ -77,12 +80,14 @@ msortInplace cutoff src tmp =
            -> { xs:(Array a) | A.size xs > 0 && left xs == 0 && right xs == size xs && y == A.get xs 0 }
            -> { zs:(Array a) | toBag xs == toBag zs && isSorted' zs &&
                                A.size xs == A.size zs && token xs == token zs } @-}
+                               {-
 #ifdef MUTABLE_ARRAYS
 pfsort' :: (Show a, HasPrimOrd a, NFData a) =>
 #else
 pfsort' :: (Show a, HasPrimOrd a) =>
 #endif
-  a -> A.Array a -. A.Array a
+  a -> A.Array a -. A.Array a -}
+pfsort' :: Int64 -> A.Array Int64 -. A.Array Int64  
 pfsort' anyVal src =
   let !(Ur len, src') = A.size2 src
       !(src'', _tmp) = msortInplace (if len <= 708 then 708  -- this can be any number >= 708 without affecting semantics, including `len`
@@ -95,12 +100,15 @@ pfsort' anyVal src =
 {-@ pfsort :: { xs:(A.Array a) | left xs == 0 && right xs == size xs }
                     -> { ys:_ | toBag xs == toBag ys && isSorted' ys &&
                                 A.size xs == A.size ys && token xs == token ys  } @-}
+                                {-
 #ifdef MUTABLE_ARRAYS
 pfsort :: (Show a, HasPrimOrd a, NFData a) =>
 #else
 pfsort :: (Show a, HasPrimOrd a) =>
 #endif
   A.Array a -. A.Array a
+  -}
+pfsort :: A.Array Int64 -. A.Array Int64
 pfsort src =
   let !(Ur len, src') = A.size2 src in
       if len == 0 then src'
