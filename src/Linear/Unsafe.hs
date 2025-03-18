@@ -16,7 +16,9 @@ import qualified Unsafe.Linear as Unsafe
 toLinear :: (a -> b) -. (a -. b)
 --toLinear :: (a -> (b,a)) -> (a %1-> (b,a))
 toLinear f = Unsafe.toLinear f
+{-# INLINABLE toLinear #-}
 
 {-@ assume toLinear3 :: f:_ -> x:_ -> y:_ -> z:_ -> { v:d | v == f x y z } @-}
 toLinear3 :: (a -> b -> c -> d) -> (a -. (b -> c -> d))
 toLinear3 f = Unsafe.toLinear3 f
+{-# INLINABLE toLinear3 #-}

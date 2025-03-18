@@ -38,13 +38,13 @@ makeNoFill# len elt =
   where
     nbytes = (P.sizeOf# elt) GHC.*# len
 
-{-# NOINLINE get# #-}
+{-# INLINABLE get# #-}
 get# :: P.Prim a => Array# a -> GHC.Int# -> a
 get# (Array# !arr) i =
   case GHC.runRW# (P.readByteArray# arr i) of
     (# _, !ret #) -> ret
 
-{-# NOINLINE set# #-}
+{-# INLINABLE set# #-}
 set# :: P.Prim a => Array# a -> GHC.Int# -> a -> Array# a
 set# (Array# !arr) i !a =
   case GHC.runRW# (P.writeByteArray# arr i a) of

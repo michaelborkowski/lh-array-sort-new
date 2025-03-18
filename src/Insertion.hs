@@ -29,6 +29,7 @@ import qualified Array as A
 {-@ max :: x:_ -> y:_ -> { z:_ | x <= z && y <= z } @-}
 max :: Ord a => a -> a -> a
 max x y = if x >= y then x else y
+{-# INLINE max #-}
 
 --------------------------------------------------------------------------------
 -- | Proofs for Sortedness and Equivalence
@@ -144,29 +145,39 @@ lem_insert_func_equiv xs x i
                        left xs == left ys && right xs == right ys &&
                        A.size ys == A.size xs && token xs == token ys } / [i] @-}
 insert :: HasPrimOrd a => a -> Int -> (A.Array a -. A.Array a)
-insert !x 0 !xs = A.setLin 0 x xs
-insert !x !i !xs =  -- sort the element at offset i into the first i+1 elements
-  A.get2 (i-1) xs {- a is above xs[0..i-1], insert must preserve -} & \(!(Ur a), !xs') ->
-  if x < a
-  then let !xs''  = A.setLin i a xs'
-           !xs''' = insert x (i - 1) xs''
-       in xs'''
-  else A.setLin i x xs'
+insert x 0 xs = A.setLin 0 x xs
+insert x i xs =  -- sort the element at offset i into the first i+1 elements
+    let
+      !(Ur a, xs') = A.get2 (i-1) xs {- a is above xs[0..i-1], insert must preserve -}
+    in
+      if x < a
+      then let xs''  = A.setLin i a xs'
+               xs''' = insert x (i - 1) xs''
+          in xs'''
+      else A.setLin i x xs'
+{-# INLINE insert #-}
 
 {-@ isort ::
       i:Nat -> { xs:_ | A.size xs > 1 && i <= A.size xs && isSortedBtw xs 0 i }
       -> { ys:_ | toBag xs == toBag ys   && isSorted' ys &&
                   left xs == left ys && right xs == right ys &&
                   A.size xs == A.size ys && token xs == token ys } / [A.size xs - i] @-}
-isort :: HasPrimOrd a => Int -> (A.Array a -. A.Array a) -- | Sort in-place.
+
+isort :: HasPrimOrd a => Int -> (A.Array a -. A.Array a) -- Sort in-place.
 isort i xs =
-  A.size2 xs & \(Ur s, xs') ->
-    if i == s then xs'
+  let
+    !(Ur s, xs') = A.size2 xs
+  in
+    if i == s
+    then xs'
     else
-      A.get2 i xs' & \(!(Ur a, xs'')) ->
+      let
+        !(Ur a, xs'') = A.get2 i xs'
+      in
         isort (i+1) (insert a i xs'' ? lem_insert_func_sorted xs a i)
         ? lem_insert_func_equiv xs a i
         ? lem_bag_unchanged     xs   i
+{-# INLINE isort #-}
 
 {-@ isort_top' :: { xs:_ | A.size xs > 1 }
       -> { ys:_ | toBag xs == toBag ys &&  isSorted' ys &&
@@ -174,6 +185,7 @@ isort i xs =
                   A.size xs == A.size ys && token xs == token ys } @-}
 isort_top' :: HasPrimOrd a => A.Array a -. A.Array a
 isort_top' xs = isort 0 xs
+{-# INLINABLE isort_top' #-}
 
 -- | Sort a copy of the input array. Therefore token is not preserved.
 {-@ isort_top :: { xs:_ | A.size xs > 1 }

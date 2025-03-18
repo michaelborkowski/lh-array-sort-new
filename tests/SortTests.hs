@@ -13,7 +13,7 @@ import           Infra
 import           InvalidSorts
 import           Properties
 import           Array
-import           Insertion (isort_top)
+import           Insertion (isort_top')
 import qualified DpsMergeSort4 as M4
 import qualified DpsMergeSort4Par as M4Par
 import qualified PiecewiseFallbackSort as PF
@@ -58,7 +58,7 @@ sortTests = testGroup "Sorting Tests" [
   -- Tests that our custom sorts work properly.
   testWorkingSorts :: TestTree
   testWorkingSorts = testGroup "Test Working Sorts" [
-    testSort "Insertion Sort" isort_top,
+    testSort "Insertion Sort" isort_top',
     testSort "Dps Merge Sort 4" M4.msort,
     testSort "Dps Merge Sort 4 Par" M4Par.msort,
     testSort "Piecewise Fallback Sort" PF.pfsort,
