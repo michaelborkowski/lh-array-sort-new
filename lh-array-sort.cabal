@@ -127,6 +127,12 @@ library
     ghc-options: -fplugin-opt=QuestPlugin:linear
 
 test-suite test
+  if flag(mutable-arrays)
+    cpp-options: -DMUTABLE_ARRAYS
+
+  if flag(prim-mutable-arrays)
+    cpp-options: -DPRIM_MUTABLE_ARRAYS -DMUTABLE_ARRAYS
+
   default-language:
     Haskell2010
   type:

@@ -1,3 +1,5 @@
+{-# LANGUAGE MonoLocalBinds #-}
+
 module Infra (module Infra) where
 
 import           Test.Tasty
@@ -21,7 +23,7 @@ import           Data.List (sort)
 --HELPER FUNCTIONS
 --------------------------------------------------------------------------------
 
-instance (QC.Arbitrary a, Random a) => QC.Arbitrary (CustomArray.Array a) where
+instance (QC.Arbitrary a, CustomArray.HasPrim a, Random a) => QC.Arbitrary (CustomArray.Array a) where
     arbitrary = do
         size <- QC.chooseInt (0, 1000)  -- hardcode as needed
         elements <- QC.vectorOf size QC.arbitrary
@@ -37,7 +39,7 @@ conditionalPrint :: String -> IO ()
 conditionalPrint msg = if verboseTests then putStrLn msg else return ()
 
 -- Prints an array.
-printCustomArray :: (Show a) => CustomArray.Array a -> IO ()
+printCustomArray :: (CustomArray.HasPrim a, Show a) => CustomArray.Array a -> IO ()
 printCustomArray arr = mapM_ print (CustomArray.toList arr)
 
 -- Makes a standard library array of n elements initialized to value v.
@@ -63,7 +65,20 @@ assertThrows msg action matcher = do
 --------------------------------------------------------------------------------
 
 -- Function to test that swapping two indices in an array properly changes their values.
-valueSwapTest :: (Eq a, Show a) => Int -> a -> Int -> a -> Int -> a -> TestTree
+valueSwapTest :: (CustomArray.HasPrim a, Eq a, Show a)
+  => Int
+  -- ^ Size of array
+  -> a 
+  -- ^ The element the array is initialized with
+  -> Int 
+  -- ^ Index of one element to swap
+  -> a 
+  -- ^ The initial value to put at index1 (index1)
+  -> Int 
+  -- ^ Index of the other element to swap (index2)
+  -> a 
+  -- ^ The initial value to put at index2
+  -> TestTree
 valueSwapTest size default_element index1 element1 index2 element2 = testCase "Test Values Swapped Generated" $ do
   assertEqual ("index1 should be less than size") (index1 < size) True
   assertEqual ("index2 should be less than size") (index2 < size) True
@@ -79,7 +94,7 @@ valueSwapTest size default_element index1 element1 index2 element2 = testCase "T
 -- If the call times out or throws an exception, the test succeeds.
 -- If the function returns normally, the test fails.
 -- This test is specialized for functions with 2 parameters.
-checkInvalid2 :: (Show a, Show b, Show c, Eq c, Control.DeepSeq.NFData c) => String -> Int -> (a -> b -> c) -> a -> b -> TestTree
+checkInvalid2 :: (Show a, Show b, Show c, Control.DeepSeq.NFData c) => String -> Int -> (a -> b -> c) -> a -> b -> TestTree
 checkInvalid2 name timeoutMilliseconds func param1 param2 = testCase name $ do
   result <- timeout (timeoutMilliseconds * 1000) $ do
     (evaluate (func param1 param2) >>= \value -> value `deepseq` pure (Right value))
@@ -94,7 +109,7 @@ checkInvalid2 name timeoutMilliseconds func param1 param2 = testCase name $ do
 -- If the call times out or throws an exception, the test succeeds.
 -- If the function returns normally, the test fails.
 -- This test is specialized for functions with 3 parameters.
-checkInvalid3 :: (Show a, Show b, Show c, Show d, Eq d, Control.DeepSeq.NFData d) => String -> Int -> (a -> b -> c -> d) -> a -> b -> c -> TestTree
+checkInvalid3 :: (Show a, Show b, Show c, Show d, Control.DeepSeq.NFData d) => String -> Int -> (a -> b -> c -> d) -> a -> b -> c -> TestTree
 checkInvalid3 name timeoutMilliseconds func param1 param2 param3 = testCase name $ do
   result <- timeout (timeoutMilliseconds * 1000) $ do
     (evaluate (func param1 param2 param3) >>= \value -> value `deepseq` pure (Right value))
