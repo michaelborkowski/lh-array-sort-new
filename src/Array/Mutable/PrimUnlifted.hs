@@ -53,11 +53,12 @@ set# (Array# !arr) i !a =
 {-# NOINLINE copy# #-}
 copy# :: P.Prim a => a -> Array# a -> GHC.Int# -> Array# a -> GHC.Int# -> GHC.Int# -> Array# a
 copy# elt (Array# !src) src_offset (Array# !dst) dst_offset n =
-  case GHC.runRW# (GHC.copyMutableByteArray# src src_offset_bytes dst dst_offset_bytes n) of
+  case GHC.runRW# (GHC.copyMutableByteArray# src src_offset_bytes dst dst_offset_bytes n_bytes) of
     _ -> Array# dst
   where
     src_offset_bytes = (P.sizeOf# elt) GHC.*# src_offset
     dst_offset_bytes = (P.sizeOf# elt) GHC.*# dst_offset
+    n_bytes          = (P.sizeOf# elt) GHC.*# n
 
 
 size# :: Array# a -> GHC.Int#
