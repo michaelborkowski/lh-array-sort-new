@@ -26,6 +26,10 @@ Flag liquid-checks
    Description: Perform liquid checks. This is currently mutually exclusive with mutable arrays (see TODO in Array.hs)
    Default: True
 
+Flag runtime-checks
+   Description: Perform runtime bounds checks.
+   Default: False
+
 library
 
   if flag(mutable-arrays)
@@ -33,6 +37,9 @@ library
 
   if flag(prim-mutable-arrays)
     cpp-options: -DPRIM_MUTABLE_ARRAYS -DMUTABLE_ARRAYS
+
+  if flag(runtime-checks)
+    cpp-options: -DRUNTIME_CHECKS
 
   exposed-modules:
       Par

@@ -91,12 +91,12 @@ size (Array !lo !hi _arr) = hi-lo
 
 {-# INLINE get #-}
 get :: HasPrim a => Array a -> Int -> a
-get (Array (GHC.I# lo) _hi !arr) (GHC.I# i) =
+get (Array lo'@(GHC.I# lo) _hi !arr) i'@(GHC.I# i) =
   seq
 #ifdef RUNTIME_CHECKS
-  if i < lo || i > hi
-  then (error $ "get: index out of bounds: " ++ show i ++ "," ++ show lo ++ "," ++ show hi)
-  else ()
+  ( if i' < 0 || i' >= (_hi - lo')
+    then (error $ "get: index out of bounds: i = " ++ show i' ++ ", relative to " ++ show lo' ++ "," ++ show _hi)
+    else () )
 #else
   ()
 #endif
@@ -104,12 +104,12 @@ get (Array (GHC.I# lo) _hi !arr) (GHC.I# i) =
 
 {-# INLINE set #-}
 set :: HasPrim a => Array a -> Int -> a -> Array a
-set (Array (GHC.I# lo) hi !arr) (GHC.I# i) !a =
+set (Array lo'@(GHC.I# lo) hi !arr) i'@(GHC.I# i) !a =
   seq
 #ifdef RUNTIME_CHECKS
-  if i < lo || i > hi
-  then (error $ "get: index out of bounds: " ++ show i ++ "," ++ show lo ++ "," ++ show hi)
-  else ()
+  ( if i' < 0 || i' >= (hi - lo')
+    then (error $ "set: index out of bounds: i = " ++ show i' ++ ", relative to " ++ show lo' ++ "," ++ show hi)
+    else () )
 #else
   ()
 #endif
