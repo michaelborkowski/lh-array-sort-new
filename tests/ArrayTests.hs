@@ -304,10 +304,7 @@ testSwap = testGroup "Swap Tests" [ caseTests, performanceTests, propertyTests ]
   -- The property tests for the split function.
   propertyTests :: TestTree
   propertyTests = testGroup "Swap Property Tests" [
--- TODO: the below should work for mutable backends too
-#ifndef MUTABLE_ARRAYS
     testSwapCommutative
-#endif
     ] where
 
     -- Generates random arrays to test that swap is commutative.
