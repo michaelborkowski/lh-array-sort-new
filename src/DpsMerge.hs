@@ -44,6 +44,26 @@ merge' :: HasPrimOrd a =>
   A.Array a -. A.Array a -. A.Array a -.
   (A.Array a, A.Array a)
 merge' i1 i2 j !src1 !src2 !dst = go i1 i2 j src1 src2 dst where
+  {-@ go :: i1:Nat -> i2:Nat
+             -> { j:Nat  | i1 + i2 == j }
+
+             -> { xs1:(Array a) | isSorted' xs1 && i1 <= size xs1 }
+             -> { xs2:(Array a) | isSorted' xs2 && token xs1 == token xs2 && right xs1 == left xs2 && i2 <= size xs2 }
+             -> {  zs:(Array a) | size xs1 + size xs2 == size zs &&
+
+                                  j <= size zs &&
+                                  isSortedBtw zs 0 j &&
+                                  B.union (toBagBtw xs1 0 i1) (toBagBtw xs2 0 i2) == toBagBtw zs 0 j &&
+                                  ( j == 0 || i1 == size xs1 || A.get xs1 i1 >= A.get zs (j-1) ) &&
+                                  ( j == 0 || i2 == size xs2 || A.get xs2 i2 >= A.get zs (j-1) ) }
+
+             -> { t:_    | B.union (toBag xs1) (toBag xs2) == toBag (snd t)  &&
+                           toSlice zs 0 j == toSlice (snd t) 0 j &&
+                           isSorted' (snd t) &&
+                           fst t == A.append xs1 xs2 &&
+                           token xs1 == token (fst t) &&
+                           size (snd t) == size zs && token (snd t) == token zs &&
+                           left (snd t) == left zs && right (snd t) == right zs  } / [size zs - j] @-}
   go :: HasPrimOrd a =>
         Int -> Int -> Int ->
         A.Array a -. A.Array a -. A.Array a -.

@@ -30,6 +30,15 @@ import           Array.List as A
        / [A.size xs] @-}
 msortInplace :: (Show a, HasPrimOrd a) => A.Array a -. A.Array a -. (A.Array a, A.Array a)
 msortInplace src tmp = go src tmp where
+  {-@ go :: xs:Array a
+        -> { ys:(Array a ) | A.size ys  == A.size xs   && left xs == left ys &&
+                             right xs == right ys }
+        -> (Array a, Array a)<{\zs ts -> toBag xs == toBag zs && isSorted' zs &&
+                                         token xs == token zs && token ys == token ts &&
+                                         A.size xs == A.size zs && A.size ys == A.size ts &&
+                                         left zs == left xs && right zs == right xs &&
+                                         left ts == left ys && right ts == right ys }>
+         / [A.size xs] @-}
   go :: (Show a, HasPrimOrd a) => A.Array a -. A.Array a -. (A.Array a, A.Array a)
   go src tmp =
         let !(Ur len, src') = A.size2 src in
