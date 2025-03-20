@@ -44,6 +44,7 @@ quickSort xs =
                  A.copy2 0 0 n xs2 tmp ? lem_copy_equal_slice xs2 0 tmp 0 n & \(xs2', cpy0) ->
                    (A.free(xs2'), cpy0) & \((), cpy) ->
                      quickSortBtw 0 n (cpy ? lem_equal_slice_bag   xs2   cpy 0 n)
+{-# INLINABLE quickSort #-}
 
 {-@ quickSort' :: xs:(Array a) -> { ys:(Array a) | isSorted' ys && A.size xs == A.size ys &&
                                                                   toBag  xs == toBag  ys } @-}
@@ -52,6 +53,7 @@ quickSort' xs =
   let (Ur n, xs1) = A.size2 xs in
   if n == 0 then xs1
   else quickSortBtw 0 n xs1
+{-# INLINABLE quickSort' #-}
 
 {-@ quickSortBtw :: { i:Int | 0 <= i } -> { j:Int | i <= j }
                 -> { xs:(Array a) | j <= A.size xs } -> { ys:(Array a) | isSortedBtw ys i j && A.size xs == A.size ys &&
@@ -77,6 +79,7 @@ quickSortBtw i j xs =
                         ? lem_equal_slice_bag            xs'' xs'''   i (i_piv+1)
                         ? lem_toBagBtw_compose           xs'  xs''    i i_piv     j
                         ? lem_toBagBtw_compose           xs'' xs'''   i (i_piv+1) j
+{-# INLINE quickSortBtw #-}
 
 {-@ shuffleBtw :: { i:Int | 0 <= i } -> j:Int -> { xs:(Array a) | i + 1 < j && j <= A.size xs }
                   -> (Array a, Ur Int)<{\ys ip -> isPartitionedBtw ys i (unur ip) j &&
@@ -142,7 +145,7 @@ shuffleBtw i j xs = xs & A.get2 (j-1) {- fix (j-1)^th element as the pivot -} & 
                                           ? lem_toSlice_swap xs' i ip (j-1) j
                    else xs'
   in (xs'', Ur ip)
---  where
+{-# INLINE shuffleBtw #-}
 
 
   -- Lemmas addressing how recursive calls to quickSortBtw preserve the partition property
