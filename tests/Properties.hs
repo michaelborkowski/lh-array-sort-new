@@ -1,4 +1,5 @@
-{-# LANGUAGE TypeOperators       #-}
+{-# LANGUAGE TypeOperators #-}
+{-# LANGUAGE MonoLocalBinds #-}
 
 module Properties (module Properties) where
 
@@ -15,9 +16,9 @@ type LinearSort = CustomArray.Array Int -. CustomArray.Array Int
 
 -- Real swapCommutativeProperty.
 -- Define the commutative property for swap.
-swapCommutativeProperty :: (QC.Arbitrary a, Show a, Eq a) => CustomArray.Array a -> Int -> Int -> QC.Property
+swapCommutativeProperty :: (QC.Arbitrary a, CustomArray.HasPrim a, Show a, Eq a) => CustomArray.Array a -> Int -> Int -> QC.Property
 swapCommutativeProperty arr i j =
-  i /= j QC.==> CustomOperations.swap arr i j QC.=== CustomOperations.swap arr j i
+  i /= j QC.==> CustomArray.toList (CustomOperations.swap arr i j) QC.=== CustomArray.toList (CustomOperations.swap arr j i)
 
 -- Property: Function correctly sorts all elements.
 sortsCorrectlyProperty :: ([Int] -> [Int]) -> [Int] -> Bool

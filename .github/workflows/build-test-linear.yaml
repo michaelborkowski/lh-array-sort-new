@@ -1,4 +1,4 @@
-name: Build/test/"bench" lh-array-sort in linear mode
+name: Build and test lh-array-sort in linear mode
 
 # See: https://docs.github.com/en/actions/reference/workflow-syntax-for-github-actions#concurrency.
 concurrency:
@@ -17,7 +17,7 @@ on:
   workflow_dispatch:
 
 jobs:
-  main:
+  test-mutable-arrays:
     runs-on: ubuntu-latest
     steps:
 
@@ -43,26 +43,107 @@ jobs:
           restore-keys: ${{ runner.os }}-${{ matrix.ghc }}-
 
       - name: Configure
-        run: cabal configure --enable-tests --constraint="lh-array-sort -liquid-checks"
+        run: cabal configure --enable-tests -f-liquid-checks
 
       - name: Build in linear mode with mutable arrays
-        run: cabal build lh-array-sort --constraint="lh-array-sort +mutable-arrays"
+        run: cabal build lh-array-sort -fmutable-arrays
+
+      - name: Run tests in linear mode with mutable arrays
+        run: cabal test -fmutable-arrays
+
+
+  test-prim-mutable-arrays:
+    runs-on: ubuntu-latest
+    steps:
+
+      - uses: actions/checkout@v4
+
+      - name: Setup Z3
+        uses: cda-tum/setup-z3@v1
+
+      - uses: haskell-actions/setup@v2
+        with:
+          ghc-version: 9.10.1
+          cabal-version: 3.14
+
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ${{ steps.setup-haskell.outputs.cabal-store }}
+            dist-*
+          key: ${{ runner.os }}-${{ matrix.ghc }}-${{ github.sha }}
+          restore-keys: ${{ runner.os }}-${{ matrix.ghc }}-
+
+      - name: Configure
+        run: cabal configure --enable-tests -f-liquid-checks
 
       - name: Build in linear mode with primitive mutable arrays
-        run: cabal build lh-array-sort --constraint="lh-array-sort +prim-mutable-arrays"
+        run: cabal build lh-array-sort -fprim-mutable-arrays
+
+      - name: Run tests in linear mode with primitive mutable arrays
+        run: cabal test -fprim-mutable-arrays
+
+
+  test-pure-arrays:
+    runs-on: ubuntu-latest
+    steps:
+
+      - uses: actions/checkout@v4
+
+      - name: Setup Z3
+        uses: cda-tum/setup-z3@v1
+
+      - uses: haskell-actions/setup@v2
+        with:
+          ghc-version: 9.10.1
+          cabal-version: 3.14
+
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ${{ steps.setup-haskell.outputs.cabal-store }}
+            dist-*
+          key: ${{ runner.os }}-${{ matrix.ghc }}-${{ github.sha }}
+          restore-keys: ${{ runner.os }}-${{ matrix.ghc }}-
+
+      - name: Configure
+        run: cabal configure --enable-tests -f-liquid-checks
 
       - name: Build in linear mode with pure arrays
         run: cabal build lh-array-sort
 
-      # TODO: tests only build with pure arrays right now (e.g. no Eq instance for mutable)
-      - name: Run tests with pure arrays
+      - name: Run tests in linear mode with pure arrays
         run: cabal test
         #optional --flag=verbose-tests for printing additional debug information when running tests
 
+
+  run-benchrunner:
+    runs-on: ubuntu-latest
+    steps:
+
+      - uses: actions/checkout@v4
+
+      - name: Setup Z3
+        uses: cda-tum/setup-z3@v1
+
+      - uses: haskell-actions/setup@v2
+        with:
+          ghc-version: 9.10.1
+          cabal-version: 3.14
+
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ${{ steps.setup-haskell.outputs.cabal-store }}
+            dist-*
+          key: ${{ runner.os }}-${{ matrix.ghc }}-${{ github.sha }}
+          restore-keys: ${{ runner.os }}-${{ matrix.ghc }}-
+
+      - name: Configure
+        run: cabal configure -f-liquid-checks -fmutable-arrays # (benchrunner must use mutable arrays)
+
       - name: Make sure benchrunner builds and runs
         run: |
-          rm cabal.project.local
-          cabal configure --constraint="lh-array-sort +mutable-arrays -liquid-checks" # (benchrunner must use mutable arrays)
           cabal build benchrunner
           cabal run benchrunner -- 5 Insertionsort Seq 100
           cabal run benchrunner -- 5 Mergesort Seq 100
