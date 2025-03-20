@@ -140,6 +140,9 @@ test-suite test
   if flag(prim-mutable-arrays)
     cpp-options: -DPRIM_MUTABLE_ARRAYS -DMUTABLE_ARRAYS
 
+  if flag(runtime-checks)
+    cpp-options: -DRUNTIME_CHECKS
+
   default-language:
     Haskell2010
   type:
