@@ -36,7 +36,6 @@ import           Control.DeepSeq ( NFData(..) )
 import           Language.Haskell.Liquid.ProofCombinators hiding ((?))
 import           ProofCombinators
 import qualified Data.Primitive.Types as P
-import qualified Array as key
 
 --------------------------------------------------------------------------------
 -- ArrayOperations contain Advanced Operations that live outside of the TCB
