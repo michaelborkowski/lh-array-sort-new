@@ -2,6 +2,8 @@
 {-# LANGUAGE CPP #-}
 {-# LANGUAGE BangPatterns #-}
 
+{-# OPTIONS_GHC -Wno-name-shadowing #-}
+
 module DpsMerge where
 
 import qualified Language.Haskell.Liquid.Bag as B

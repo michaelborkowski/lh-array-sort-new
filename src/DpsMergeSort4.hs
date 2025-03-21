@@ -1,5 +1,7 @@
 {-# LANGUAGE CPP #-}
 
+{-# OPTIONS_GHC -Wno-name-shadowing #-}
+
 module DpsMergeSort4 where
 
 import qualified Language.Haskell.Liquid.Bag as B
