@@ -69,8 +69,8 @@ merge' i1 i2 j !src1 !src2 !dst = go i1 i2 j src1 src2 dst where
         A.Array a -. A.Array a -. A.Array a -.
         (A.Array a, A.Array a)
   go i1 i2 j !src1 !src2 !dst =
-    let !(Ur len1, src1') = A.size2 src1
-        !(Ur len2, src2') = A.size2 src2 in
+    let !(Ur len1, !src1') = A.size2 src1
+        !(Ur len2, !src2') = A.size2 src2 in
     if i1 >= len1
     then
       let !(src2'1, dst') = A.copy2 i2 j (len2-i2) src2' dst in (A.append src1' src2'1, dst')

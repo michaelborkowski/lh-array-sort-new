@@ -99,10 +99,12 @@ splitMid = Unsafe.toLinear go
                     size (fst t) == div (size xs) 2 &&
                     size (snd t) == size xs - div (size xs) 2 &&
                     size xs = (size (fst t)) + (size (snd t)) } @-}
-    go xs = (slice xs 0 m, slice xs m n)
+    go xs = (left, right)
       where
         n = size xs
         m = n `div` 2
+        !left = slice xs 0 m
+        !right = slice xs m n
 {-# INLINABLE splitMid #-}
 
 
