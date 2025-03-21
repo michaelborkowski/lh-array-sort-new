@@ -47,24 +47,13 @@ arrayTests = testGroup "Array Tests"
 --------------------------------------------------------------------------------
 testMakeArray :: TestTree
 testMakeArray = testGroup "MakeArray Tests"
-  [ caseTests
--- TODO: property tests should work for mutable backends too (?)
-#ifndef MUTABLE_ARRAYS
-  , propertyTests
-#endif
-  , invalidOperationTests
-  ] where
+  [ caseTests, propertyTests , invalidOperationTests ] where
 
   -- The case tests for the MakeArray function.
   -- Tests that arrays of size 0 and 1 have the proper size and elements.
   caseTests :: TestTree
   caseTests = testGroup "MakeArray Case Tests"
-    [ testEmptyArray
--- TODO: the below should work for mutable backends too (?)
-#ifndef MUTABLE_ARRAYS
-    , testSizeOneArray
-#endif
-    ]
+    [ testEmptyArray, testSizeOneArray ]
     where
 
     -- Testing the output of an empty array.
@@ -79,8 +68,11 @@ testMakeArray = testGroup "MakeArray Tests"
       QC.forAll QC.arbitrary $ \(randomElement :: Int) ->
           let customArr = CustomArray.makeArray 1 randomElement
               standardArr = makeStandardArray 1 randomElement
-          in CustomArray.size customArr QC.=== 1 QC..&. CustomArray.toList customArr QC.=== StandardArray.elems standardArr
-
+          in CustomArray.size customArr QC.=== 1 
+-- The mutable backend doesn't initialize array elements, StandardArray(Data.Array) does
+#ifndef MUTABLE_ARRAYS
+          QC..&. CustomArray.toList customArr QC.=== StandardArray.elems standardArr
+#endif
 
   -- The property tests for the makeArray function.
   -- Tests that random arrays have proper size and elements.
@@ -94,7 +86,11 @@ testMakeArray = testGroup "MakeArray Tests"
       QC.forAll ((,) <$> QC.chooseInt (0, mediumNumber) <*> QC.arbitrary) $ \(randomSize :: Int, randomElement :: Int) ->
           let customArr = CustomArray.makeArray randomSize randomElement
               standardArr = makeStandardArray randomSize randomElement
-          in CustomArray.size customArr QC.=== randomSize QC..&. CustomArray.toList customArr QC.=== StandardArray.elems standardArr
+          in CustomArray.size customArr QC.=== randomSize 
+-- The mutable backend doesn't initialize array elements, StandardArray(Data.Array) does
+#ifndef MUTABLE_ARRAYS
+          QC..&. CustomArray.toList customArr QC.=== StandardArray.elems standardArr
+#endif
 
   -- The tests for exception cases of the MakeArray functions.
   -- Tests that negative size arrays can't be made.
@@ -260,8 +256,8 @@ testSwap = testGroup "Swap Tests" [ caseTests, performanceTests, propertyTests ]
     , testValuesSwapped2
     , testValuesSwapped3
     , testValuesSwapped4
--- TODO: the below should work for mutable backends too
-#ifndef MUTABLE_ARRAYS
+-- TODO: This should work for the primitive mutable backend
+#ifndef PRIM_MUTABLE_ARRAYS
     , testSwapSameIndex
 #endif
     ] where
@@ -269,7 +265,7 @@ testSwap = testGroup "Swap Tests" [ caseTests, performanceTests, propertyTests ]
     -- Testing if swapping two elements works correctly.
     testValuesSwapped1 :: TestTree
     testValuesSwapped1 = testCase "Test Values Swapped Manual" $ do
-      let arr = CustomArray.makeArray 5 (0 :: Int)
+      let arr = CustomArray.makeArray @Int 5 0
       let arr1 = CustomArray.set arr 0 1
       let arr2 = CustomArray.set arr1 1 2
       let swappedArr = CustomOperations.swap arr2 0 1
@@ -277,26 +273,28 @@ testSwap = testGroup "Swap Tests" [ caseTests, performanceTests, propertyTests ]
       assertEqual "Second element should be 1" 1 (CustomArray.get swappedArr 1)
 
     -- Testing if swapping two elements works correctly.
-    testValuesSwapped2 = valueSwapTest 5 0 0 1 1 (2 :: Int)
-    testValuesSwapped3 = valueSwapTest 10 1 1 2 2 (4 :: Int)
-    testValuesSwapped4 = valueSwapTest 20 1 2 3 4 (5 :: Int)
+    testValuesSwapped2 = valueSwapTest @Int 5 0 0 1 1 2
+    testValuesSwapped3 = valueSwapTest @Int 10 1 1 2 2 4
+    testValuesSwapped4 = valueSwapTest @Int 20 1 2 3 4 5
 
     -- Testing that swapping an element with itself doesn't change anything.
     testSwapSameIndex :: TestTree
     testSwapSameIndex = testCase "Test Swapping Same Index" $ do
-      let arr = CustomArray.makeArray 5 (1 :: Int)
-      let swappedArr = CustomOperations.swap arr 2 2
+      let arr = CustomArray.makeArray @Int 5 1
+          swappedArr = CustomOperations.swap arr 2 2
       assertEqual "Array should remain unchanged" 1 (CustomArray.get swappedArr 2)
 
   -- Test performance for swap.
   performanceTests :: TestTree
-  performanceTests = testGroup "Swap Performance Tests" [ testLargeArraySwap ] where
+  performanceTests = testGroup "Swap Performance Tests" [ 
+      testLargeArraySwap 
+    ] where
     largeInt = 1000000 * performanceTestMultiplier
 
     -- Test performance of creating and splitting a large.
     testLargeArraySwap :: TestTree
     testLargeArraySwap = testCase "Test Large Array Swap" $ do
-      let largeArr = CustomArray.makeArray largeInt (0 :: Int)
+      let largeArr = CustomArray.makeArray @Int largeInt 0
       let updatedArr = CustomArray.set largeArr (largeInt-1) 1
       let swappedArr = CustomOperations.swap updatedArr (largeInt-1) 0
       assertEqual "Last element should be 0" 0 (CustomArray.get swappedArr (largeInt-1))
@@ -304,7 +302,7 @@ testSwap = testGroup "Swap Tests" [ caseTests, performanceTests, propertyTests ]
   -- The property tests for the split function.
   propertyTests :: TestTree
   propertyTests = testGroup "Swap Property Tests" [
-    testSwapCommutative
+      testSwapCommutative
     ] where
 
     -- Generates random arrays to test that swap is commutative.
@@ -326,17 +324,15 @@ testSwap = testGroup "Swap Tests" [ caseTests, performanceTests, propertyTests ]
 -- TODO: Missing performance and property tests.
 --------------------------------------------------------------------------------
 testSplit :: TestTree
-testSplit = testGroup "Test Split" [ caseTests ] where
+testSplit = testGroup "Test Split" [
+    caseTests
+  ] where
 
   -- The case tests for the split function.
   caseTests :: TestTree
   caseTests = testGroup "Split Case Tests" [
--- TODO: the below should work for mutable backends too
-#ifndef MUTABLE_ARRAYS
       testSplitMid
-    ,
-#endif
-      testSplitEmpty
+    , testSplitEmpty
     ] where
 
     -- Testing after splitting an array in the middle the sizes of the left and right are correct.
@@ -344,7 +340,8 @@ testSplit = testGroup "Test Split" [ caseTests ] where
     -- Hardcoded array size and values.
     testSplitMid :: TestTree
     testSplitMid = testCase "Test Split Mid" $ do
-      let arr = CustomArray.makeArray 6 (1 :: Int)
+      let list = replicate @Int 6 1
+          arr = CustomArray.fromList list
       let (leftArr, rightArr) = CustomOperations.splitMid arr
       assertEqual "Left array size should be 3" 3 (CustomArray.size leftArr)
       assertEqual "Right array size should be 3" 3 (CustomArray.size rightArr)
@@ -356,7 +353,7 @@ testSplit = testGroup "Test Split" [ caseTests ] where
     -- Tests that splitting an empty array leads to two arrays of size 0.
     testSplitEmpty :: TestTree
     testSplitEmpty = testCase "Test Splitting Empty Array" $ do
-      let arr = CustomArray.makeArray 0 (0 :: Int)
+      let arr = CustomArray.makeArray @Int 0 0
       let (leftArr, rightArr) = CustomOperations.splitMid arr
       assertEqual "Left array size should be 0" 0 (CustomArray.size leftArr)
       assertEqual "Right array size should be 0" 0 (CustomArray.size rightArr)

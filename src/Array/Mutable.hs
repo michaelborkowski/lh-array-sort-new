@@ -117,8 +117,8 @@ set (Array lo'@(GHC.I# lo) hi !arr) i'@(GHC.I# i) !a =
 
 {-# INLINE copy #-}
 copy :: HasPrim a => Array a -> Int -> Array a -> Int -> Int -> Array a
-copy s@(Array lo1'@(GHC.I# lo1) _hi1 src) (GHC.I# src_offset)
-     d@(Array      (GHC.I# lo2) _hi2 dst) (GHC.I# dst_offset)
+copy s@(Array (GHC.I# lo1) _hi1 src) (GHC.I# src_offset)
+     d@(Array (GHC.I# lo2) _hi2 dst) (GHC.I# dst_offset)
      (GHC.I# n) =
 #ifdef PRIM_MUTABLE_ARRAYS
   case copy# (get# src lo1) src (lo1 GHC.+# src_offset) dst (lo2 GHC.+# dst_offset) n of

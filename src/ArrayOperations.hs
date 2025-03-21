@@ -59,14 +59,16 @@ swap xs i j = let !xi   = get xs i
               in xs''
 #endif
 
-
+-- For correctness, the strictness annotations on !xi and !xj are crucial.
+--   Due to laziness, there's otherwise nothing preventing `setLin i xj xs2`
+--   from executing before `get2 i xs`. Same with `swap` above.
 {-@ swap2 :: { i:Int | 0 <= i }
           -> { j:Int | 0 <= j } -> { xs:(Array a) | i < size xs && j < size xs }
           -> { ys:(Array a) | size xs == size ys && token xs == token ys &&
                               left xs == left ys && right xs == right ys &&
                               ys == swap xs i j } @-}
 swap2 :: HasPrim a => Int -> Int -> (Array a -. Array a)
-swap2 i j xs = 
+swap2 i j xs =
   let
     !((Ur !xi), xs1) = get2 i xs
     !((Ur !xj), xs2) = get2 j xs1
