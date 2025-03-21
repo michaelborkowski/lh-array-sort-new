@@ -7,9 +7,9 @@ DEBUG       := 0
 CILK        := 0
 
 ifeq ($(CILK), 1)
-	ifeq ($(USECLANG), 0)
-		$(error cilk can only be used with an opencilk compiler!)
-	endif
+  ifeq ($(USECLANG), 0)
+    $(error cilk can only be used with an opencilk compiler!)
+  endif
 endif
 
 OpenCILK_CLANG       := clang-16
@@ -26,23 +26,23 @@ CDEBUG := -DCBENCH_DEBUG -O0 -g
 CFLAGS += -Wall -Wextra -Wpedantic -flto
 
 ifeq ($(USECLANG), 1)
-	CC     = $(CLANG)
-	CFLAGS = $(CLANG_FLAGS)
-	LFLAGS := -fuse-ld=lld
+  CC     = $(CLANG)
+  CFLAGS = $(CLANG_FLAGS)
+  LFLAGS := -fuse-ld=lld
 endif
 
 ifeq ($(CILK), 1)
-	ifeq ($(USECLANG), 1)
-		CC     = $(OpenCILK_CLANG)
-		CFLAGS = $(OpenCILK_CLANG_FLAGS)
-		LFLAGS := -fuse-ld=lld
-	endif
+  ifeq ($(USECLANG), 1)
+    CC     = $(OpenCILK_CLANG)
+    CFLAGS = $(OpenCILK_CLANG_FLAGS)
+    LFLAGS := -fuse-ld=lld
+  endif
 endif
 
 ifeq ($(DEBUG), 1)
-	CFLAGS += $(CDEBUG)
+  CFLAGS += $(CDEBUG)
 else
-	CFLAGS += -O3
+  CFLAGS += -O3
 endif
 
 all: $(OUT)
@@ -54,6 +54,6 @@ $(OUT): $(OBJFILES)
 	$(CC) $(CFLAGS) -c -o $@ $^
 
 clean:
-	rm -f $(OBJFILES) $(OUT)
+	rm -f  $(OUT)
 
 .PHONY: clean

@@ -10,7 +10,7 @@
 // void quicksort_inplace_helper(void *_a, size_t n, size_t es);
 
 template<typename T>
-void quicksort_inplace_helper(T *_a, size_t n);
+inline void quicksort_inplace_helper(T *_a, size_t n);
 
 // void *quicksort_glibc(void *const pbase, size_t total_elems, size_t size, __compar_fn_t cmp)
 // {
@@ -121,7 +121,7 @@ T *quicksort_inplace(T *_a, size_t n){
 }
 
 template<typename T>
-void quicksort_inplace_helper(T *_a, size_t n)
+inline void quicksort_inplace_helper(T *_a, size_t n)
 {
     T *a = (T *) _a;
     int j;

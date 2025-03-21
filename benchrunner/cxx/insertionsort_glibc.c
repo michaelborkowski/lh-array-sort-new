@@ -42,17 +42,17 @@ void *insertionsort_glibc(void *const pbase, size_t total_elems, size_t size, __
 }
 
 /* Byte-wise swap two items of size SIZE. */
-#define SWAP(a, b, size)						      \
-  do									      \
-    {									      \
-      size_t __size = (size);						      \
-      char *__a = (a), *__b = (b);					      \
-      do								      \
-        {								      \
-          char __tmp = *__a;						      \
-          *__a++ = *__b;						      \
-          *__b++ = __tmp;						      \
-        } while (--__size > 0);						      \
+#define SWAP(a, b, size)                    \
+  do                                        \
+    {                                       \
+      size_t __size = (size);               \
+      char *__a = (a), *__b = (b);          \
+      do                                    \
+        {                                   \
+          char __tmp = *__a;                \
+          *__a++ = *__b;                    \
+          *__b++ = __tmp;                   \
+        } while (--__size > 0);             \
     } while (0)
 
 #define MAX_THRESH 4
