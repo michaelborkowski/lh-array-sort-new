@@ -1,11 +1,8 @@
-#include <iostream>
 #include "benchmarks.h"
+#include "helpers.h"
 #include "insertionsort.cpp"
 #include "quicksort.cpp"
 #include "mergesort.cpp"
-#include "microbench.h"
-#include "cbench.h"
-#include <chrono>
 
 int main(int argc, char *argv[]) {
 

@@ -54,6 +54,6 @@ $(OUT): $(OBJFILES)
 	$(CC) $(CFLAGS) -c -o $@ $^
 
 clean:
-	rm -f  $(OUT)
+	rm -f  $(OUT) *.o
 
 .PHONY: clean
