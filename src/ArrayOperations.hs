@@ -69,7 +69,7 @@ swap xs i j = let !xi   = get xs i
                               left xs == left ys && right xs == right ys &&
                               ys == swap xs i j } @-}
 swap2 :: HasPrim a => Int -> Int -> (Array a -. Array a)
-swap2 i j xs = 
+swap2 i j xs =
   let
     !((Ur !xi), xs1) = get2 i xs
     !((Ur !xj), xs2) = get2 j xs1
