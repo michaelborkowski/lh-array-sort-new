@@ -29,9 +29,9 @@ void *cilksort_par(void *const pbase, size_t total_elems, size_t size, __compar_
 template <typename T> T *bottomUpMergeSort(T *a, T *b, int n);
 
 // Relating to C++ templatized versions
-int64_t *bottom_up_merge_sort_int(int64_t *pbase, size_t total_elems);
-int64_t *insertionsort_int(int64_t *pbase, size_t total_elems);
-int64_t *quicksort_int(int64_t *pbase, size_t total_elems);
+int64_t *bottom_up_merge_sort_cxx_int(int64_t *pbase, size_t total_elems);
+int64_t *insertionsort_cxx_int(int64_t *pbase, size_t total_elems);
+int64_t *quicksort_cxx_int(int64_t *pbase, size_t total_elems);
 
 // Microbenchmarks.
 int64_t* __attribute__ ((noinline)) fill_array_seq(size_t total_elems, int64_t val);
