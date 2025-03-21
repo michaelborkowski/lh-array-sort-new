@@ -36,6 +36,7 @@ import           Control.DeepSeq ( NFData(..) )
 import           Language.Haskell.Liquid.ProofCombinators hiding ((?))
 import           ProofCombinators
 import qualified Data.Primitive.Types as P
+import qualified Array as key
 
 --------------------------------------------------------------------------------
 -- ArrayOperations contain Advanced Operations that live outside of the TCB
@@ -59,7 +60,9 @@ swap xs i j = let !xi   = get xs i
               in xs''
 #endif
 
-
+-- For correctness, the strictness annotations on !xi and !xj are crucial.
+--   Due to laziness, there's otherwise nothing preventing `setLin i xj xs2`
+--   from executing before `get2 i xs`. Same with `swap` above.
 {-@ swap2 :: { i:Int | 0 <= i }
           -> { j:Int | 0 <= j } -> { xs:(Array a) | i < size xs && j < size xs }
           -> { ys:(Array a) | size xs == size ys && token xs == token ys &&
