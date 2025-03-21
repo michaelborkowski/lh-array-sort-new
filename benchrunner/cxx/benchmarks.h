@@ -18,9 +18,9 @@ template <typename T> void copyArray(T *b, T* a, int n);
 
 // Relating to C++ templatized versions
 extern "C" {
-extern int64_t *bottom_up_merge_sort_cxx_int(int64_t *pbase, size_t total_elems);
-extern int64_t *insertionsort_cxx_int(int64_t *pbase, size_t total_elems);
-extern int64_t *quicksort_cxx_int(int64_t *pbase, size_t total_elems);
+    extern int64_t *bottom_up_merge_sort_cxx_int(int64_t *pbase, size_t total_elems);
+    extern int64_t *insertionsort_cxx_int(int64_t *pbase, size_t total_elems);
+    extern int64_t *quicksort_cxx_int(int64_t *pbase, size_t total_elems);
 }
 
 // Microbenchmarks.

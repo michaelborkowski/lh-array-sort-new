@@ -26,7 +26,7 @@ int64_t* __attribute__ ((noinline)) fill_array_rand_seq(size_t total_elems)
     return (int64_t *) nums;
 }
 
-static inline void slice_assert_sorted_2(int64_t *arr, int size)
+static inline void slice_assert_sorted(int64_t *arr, int size)
 {
     size_t len = size;
     int64_t a, b;

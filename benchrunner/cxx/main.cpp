@@ -21,7 +21,7 @@ int main(int argc, char *argv[]) {
         printf("itertime: %lf\n", elapsed_seconds.count());
     }
 
-    slice_assert_sorted_2(out, arr_size);
+    slice_assert_sorted(out, arr_size);
 
     std::cout << std::endl;
     std::cout << "Benchmarking quicksort inplace: " << std::endl;
@@ -34,7 +34,7 @@ int main(int argc, char *argv[]) {
         printf("itertime: %lf\n", elapsed_seconds.count());
     }
 
-    slice_assert_sorted_2(out, arr_size);
+    slice_assert_sorted(out, arr_size);
 
     std::cout << std::endl;
     std::cout << "Benchmarking mergesort sequential: " << std::endl;
@@ -49,7 +49,7 @@ int main(int argc, char *argv[]) {
         printf("itertime: %lf\n", elapsed_seconds.count());
     }
 
-    slice_assert_sorted_2(out, arr_size);
+    slice_assert_sorted(out, arr_size);
 
     return 0;
 }
