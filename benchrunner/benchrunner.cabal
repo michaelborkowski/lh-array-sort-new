@@ -66,4 +66,4 @@ executable benchrunner
                        -fno-strict-aliasing
                        -Werror=undef
 
-    cpp-options: -std=c++11 -O3
+    cpp-options: -std=c++11 -O3 -fno-strict-aliasing
