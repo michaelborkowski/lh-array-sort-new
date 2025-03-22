@@ -12,9 +12,9 @@ typedef int (*__compar_fn_t) (const void *, const void *);
 // Sorting algorithms.
 template<typename T> T *insertionsort_inplace(T *pbase, size_t total_elems);
 template<typename T> T *quicksort_inplace(T *_a, size_t n);
-template <typename T> T *bottomUpMergeSort(T *a, T *b, int n);
-template <typename T> void bottomUpMerge(T *a, int left, int right, int end, T *b);
-template <typename T> void copyArray(T *b, T* a, int n);
+template<typename T> T *bottomUpMergeSort(T *a, T *b, int n);
+template<typename T> void bottomUpMerge(T *a, int left, int right, int end, T *b);
+template<typename T> void copyArray(T *b, T* a, int n);
 
 // Relating to C++ templatized versions
 extern "C" {

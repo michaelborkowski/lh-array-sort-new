@@ -192,7 +192,6 @@ benchAndRunCSorts salg arr iters = do
         !sortedArr <- peekArray arrLength (castPtr sortedPtr :: Ptr Int64)
         return $! (sortedArr, delt)
 
-
 -- return type : IO ([Int64], Double, Double)
 -- [Int64]: sorted output array from the last iteration that was run
 -- Double: median runtime from the iterations that were run (selftimed)
