@@ -23,6 +23,7 @@ data Benchmark
   | OurSort SortAlgo
   | VectorSort SortAlgo
   | CSort SortAlgo
+  | CxxSort SortAlgo
   deriving (Eq, Show, Read)
 
 data ParOrSeq = Seq | Par | ParM

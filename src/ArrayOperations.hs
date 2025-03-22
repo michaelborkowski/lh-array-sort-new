@@ -58,6 +58,7 @@ swap xs i j = let !xi   = get xs i
 #else
               in xs''
 #endif
+{-# INLINABLE swap #-}
 
 -- For correctness, the strictness annotations on !xi and !xj are crucial.
 --   Due to laziness, there's otherwise nothing preventing `setLin i xj xs2`
@@ -75,6 +76,7 @@ swap2 i j xs =
     xs3 = setLin i xj xs2
     xs4 = setLin j xi xs3
   in {- xi `pseq` xj `pseq` -} xs4
+{-# INLINABLE swap2 #-}
 
 
 {-@ reflect splitMid @-}
@@ -97,10 +99,14 @@ splitMid = Unsafe.toLinear go
                     size (fst t) == div (size xs) 2 &&
                     size (snd t) == size xs - div (size xs) 2 &&
                     size xs = (size (fst t)) + (size (snd t)) } @-}
-    go xs = (slice xs 0 m, slice xs m n)
+    go xs = (left, right)
       where
         n = size xs
         m = n `div` 2
+        !left = slice xs 0 m
+        !right = slice xs m n
+{-# INLINABLE splitMid #-}
+
 
 --------------------------------------------------------------------------------
 -- | Proofs

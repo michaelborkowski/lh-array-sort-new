@@ -218,6 +218,12 @@ dobench bench parorseq mb_size iters = do
         unless (isSorted (res0)) (error $ show bench ++ ": result not sorted.")
         putStrLn "Sorted: OK"
         pure (length arr, length res0, tmed0, tall0)
+      CxxSort alg -> do
+        arr <- getInputAsList alg mb_size
+        (res0, tmed0, tall0) <- M.benchAndRunCxxSorts alg arr iters
+        unless (isSorted (res0)) (error $ show bench ++ ": result not sorted.")
+        putStrLn "Sorted: OK"
+        pure (length arr, length res0, tmed0, tall0)
       _ -> error "dobench: case not implemented!"
 
 {-

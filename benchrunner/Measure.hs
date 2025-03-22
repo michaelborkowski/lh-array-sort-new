@@ -1,4 +1,4 @@
-module Measure (benchAndRunCSorts, benchAndRunDataVecSorts, benchOnArrays, bench, benchPar, dotrialIO, benchIO, benchParIO) where
+module Measure (benchAndRunCSorts, benchAndRunCxxSorts, benchAndRunDataVecSorts, benchOnArrays, bench, benchPar, dotrialIO, benchIO, benchParIO) where
 
 import Control.Exception (evaluate)
 import Control.Monad.Par hiding (runParIO)
@@ -157,6 +157,13 @@ sortFnC alg = case alg of
                     Quicksort -> FFI.c_quicksort
                     _ -> error "sortFnC: Csort not implemented!"
 
+sortFnCxx :: SortAlgo -> FFI.SortFnCxx
+sortFnCxx alg = case alg of
+                    Insertionsort -> FFI.cxx_int_insertionsort
+                    Mergesort -> FFI.cxx_int_mergesort
+                    Quicksort -> FFI.cxx_int_quicksort
+                    _ -> error "sortFnCxx: Csort not implemented!"
+
 -- return type : IO ([Int64], Double, Double)
 -- [Int64]: sorted output array from the last iteration that was run
 -- Double: median runtime from the iterations that were run (selftimed)
@@ -179,6 +186,34 @@ benchAndRunCSorts salg arr iters = do
         let fn = sortFnC alg
         t1 <- getCurrentTime
         !sortedPtr <- fn ptr (fromIntegral arrLength) (fromIntegral $ F.sizeOf (undefined :: Int64))
+        t2 <- getCurrentTime
+        let delt = fromRational (toRational (diffUTCTime t2 t1))
+        putStrLn ("iter time: " ++ show delt)
+        !sortedArr <- peekArray arrLength (castPtr sortedPtr :: Ptr Int64)
+        return $! (sortedArr, delt)
+
+-- return type : IO ([Int64], Double, Double)
+-- [Int64]: sorted output array from the last iteration that was run
+-- Double: median runtime from the iterations that were run (selftimed)
+-- Double: Total time taken to run all the iterations (batchtime)
+benchAndRunCxxSorts :: SortAlgo -> [Int64] -> Int -> IO ([Int64], Double, Double)
+benchAndRunCxxSorts salg arr iters = do
+  !tups <- mapM (\_ -> do
+                       !ptr <- newArray arr
+                       res <- dotrialCxx salg (length arr) ptr
+                       pure res
+                ) [1..iters]
+  let (results, times) = unzip tups
+  -- print times
+  let  selftimed = median times
+       batchtime = sum times
+  return $! (last results, selftimed, batchtime)
+  where
+    dotrialCxx alg arrLength ptr = do
+        performMajorGC
+        let fn = sortFnCxx alg
+        t1 <- getCurrentTime
+        !sortedPtr <- fn ptr (fromIntegral arrLength)
         t2 <- getCurrentTime
         let delt = fromRational (toRational (diffUTCTime t2 t1))
         putStrLn ("iter time: " ++ show delt)
