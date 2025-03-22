@@ -32,9 +32,7 @@ executable benchrunner
     ghc-options:        -Wall -Wcompat
                         -threaded -rtsopts
                         -fdefer-typed-holes
-                        -O2 -optl -optl-lstdc++
-
-    extra-libraries: stdc++
+                        -O2 -optl -lstdc++
 
     c-sources:
                       csorts/insertionsort.c
