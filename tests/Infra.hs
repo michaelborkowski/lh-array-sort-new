@@ -25,7 +25,7 @@ import           Data.List (sort)
 
 instance (QC.Arbitrary a, CustomArray.HasPrim a, Random a) => QC.Arbitrary (CustomArray.Array a) where
     arbitrary = do
-        size <- QC.chooseInt (0, 1000)  -- hardcode as needed
+        size <- QC.chooseInt (1, 1000)  -- hardcode as needed. fromList is not defined for size 0.
         elements <- QC.vectorOf size QC.arbitrary
         return $ CustomArray.fromList elements
 
