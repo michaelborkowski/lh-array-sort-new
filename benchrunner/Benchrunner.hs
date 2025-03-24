@@ -21,6 +21,7 @@ import qualified DpsMergeSort4 as DMS
 import qualified DpsMergeSort4Par as DMSP
 import qualified PiecewiseFallbackSort as PFS
 import qualified PiecewiseFallbackSortPar as PFSP
+import qualified CutoffSort as CS
 import qualified Microbench as MB
 import qualified Array as A
 import qualified Data.Vector.Unboxed as V
@@ -42,6 +43,7 @@ getInput bench mb_size = case bench of
     Quicksort     -> ArrayIn <$> randArray (Proxy :: Proxy Int64) (mb 1000000)
     Mergesort     -> ArrayIn <$> randArray (Proxy :: Proxy Int64) (mb 8000000)
     Optsort       -> ArrayIn <$> randArray (Proxy :: Proxy Int64) (mb 8000000)
+    Cutoffsort _  -> ArrayIn <$> randArray (Proxy :: Proxy Int64) (mb 8000000)
   _ -> error "getInput: Unexpected Input!"
   where
     mb x = case mb_size of
@@ -103,6 +105,7 @@ sortFn bench parorseq = case (bench,parorseq) of
   (Mergesort, Par) -> DMSP.msort
   (Optsort,   Seq) -> PFS.pfsort
   (Optsort,   Par) -> PFSP.pfsort
+  (Cutoffsort i, Seq) -> CS.pfsort i
   oth -> error $ "sortFn: unknown configuration: " ++ show oth
 
 vectorSortFn :: SortAlgo -> ParOrSeq -> VecSort

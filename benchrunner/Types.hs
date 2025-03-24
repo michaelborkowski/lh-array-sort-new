@@ -12,6 +12,7 @@ data SortAlgo
   | Mergesort
   | Quicksort
   | Optsort -- piecewise fallback
+  | Cutoffsort Int
   deriving (Eq, Show, Read)
 
 data Benchmark
