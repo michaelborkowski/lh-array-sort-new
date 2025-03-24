@@ -127,7 +127,7 @@ biJoinAlloc i a f =
       let
         !(dst, tmp') = f tmp src
       in
-      case free tmp' of !() -> dst
+      case (Unsafe.toLinear (\_ -> ())) tmp' of !() -> dst
   in
   flattenCallback (\cont src -> alloc i a (\tmp -> makeCallback (g tmp) cont src))
 
@@ -137,7 +137,7 @@ allocScratch :: HasPrim tmps => Int -> tmps -> (Array srcs -. Array tmps -. (Arr
 allocScratch i a f arr = 
   let
     !(dst, tmp) = f arr (makeArray i a)
-  in case free tmp of !() -> dst
+  in case (Unsafe.toLinear (\_ -> ())) tmp of !() -> dst
 
 
 --------------------------------------------------------------------------------
