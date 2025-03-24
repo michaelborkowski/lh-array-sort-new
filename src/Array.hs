@@ -99,7 +99,7 @@ makeArray = make
 #endif
 
 {-# INLINE free #-}
-free :: HasPrim a => Array a -. ()
+free :: Array a -. ()
 free = Unsafe.toLinear (\_ -> ())
 
 {-# INLINE flattenCallback #-}
