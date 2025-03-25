@@ -8,6 +8,7 @@ import           Linear.Common
 import qualified Unsafe.Linear as Unsafe
 import           Control.DeepSeq ( NFData(..) )
 import           GHC.Conc ( par, pseq )
+import qualified Control.Monad.Par as P
 
 --------------------------------------------------------------------------------
 
@@ -37,9 +38,39 @@ tuple4 f1 x f2 y f3 z f4 a  = p `par` q `par` r `par` s `pseq` ((p,q), (r,s))
     r = f3 z
     s = f4 a
 
-{-# INLINE (.||.) #-}
-(.||.) :: (NFData a, NFData b) => a -. b -. (a,b)
-(.||.) = Unsafe.toLinear (\a -> Unsafe.toLinear (\b -> (a `par` b `pseq` (a,b))))
+{-# INLINABLE (.||.) #-}
+(.||.) :: (NFData a) => a -. a -. (a,a)
+--(.||.) = Unsafe.toLinear (\a -> Unsafe.toLinear (\b -> (a `par` b `pseq` (a,b))))
+(.||.) = Unsafe.toLinear (\a -> Unsafe.toLinear (\b -> P.runPar $ do
+                    i <- P.new
+                    j <- P.new
+                    P.fork (P.put_ i a)
+                    P.fork (P.put_ j b)
+                    a' <- P.get i 
+                    b' <- P.get j
+                    return (a', b') 
+  ))
+
+
+(.||||.) :: (NFData a) => a -. a -. a -. a -. ((a,a),(a,a))  
+(.||||.) = Unsafe.toLinear (\a -> 
+                Unsafe.toLinear (\b -> 
+                    Unsafe.toLinear (\c -> 
+                        Unsafe.toLinear (\d -> P.runPar $ do
+                            i <- P.new
+                            j <- P.new
+                            k <- P.new
+                            l <- P.new
+                            P.fork (P.put_ i a)
+                            P.fork (P.put_ j b)
+                            P.fork (P.put_ k c)
+                            P.fork (P.put_ l d)
+                            a' <- P.get i 
+                            b' <- P.get j
+                            c' <- P.get k
+                            d' <- P.get l
+                            return ((a', b'), (c', d')) 
+  ))))
 
 {-
 tuple2 :: (NFData a, NFData b) => (a -> b) -> a -> (a -> b) -> a -> (b, b)
@@ -88,4 +119,10 @@ tuple4 f x g y h z j w = ((f x, g y), (h z, j w))
 {-@ (.||.) :: x:a -> y:b -> { tup:_ | x == fst tup && y = snd tup } @-}
 (.||.) :: a -. b -. (a,b)
 a .||. b = (a,b)
+
+{-@ (.||||.) :: x:a -> y:a -> z:a -> w:a 
+                    -> { tup:_ | x == fst (fst tup) && y == snd (fst tup) &&
+                                 z == fst (snd tup) && w == snd (snd tup) } @-}
+(.||||.) :: (NFData a) => a -. a -. a -. a -. ((a,a),(a,a))  
+(.||||.) a b c d = ((a, b), (c, d)) 
 #endif
