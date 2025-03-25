@@ -87,8 +87,8 @@ msort' :: (Show a, HasPrimOrd a) =>
   a -> A.Array a -. A.Array a
 msort' anyVal src =
   let !(Ur len, src') = A.size2 src
-      !(src'', _tmp) = msortInplace src' (A.make len anyVal) in
-  case A.free _tmp of !() -> src''
+      !src'' = A.allocScratch len anyVal msortInplace src' in
+  src''
 
 -- finally, the top-level merge sort function
 {-@ msort :: { xs:(A.Array a) | left xs == 0 && right xs == size xs }
