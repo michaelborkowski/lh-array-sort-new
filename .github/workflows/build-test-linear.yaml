@@ -145,12 +145,14 @@ jobs:
       - name: Make sure benchrunner builds and runs
         run: |
           cabal build benchrunner
-          cabal run benchrunner -- 5 Insertionsort Seq 100
-          cabal run benchrunner -- 5 Mergesort Seq 100
-          cabal run benchrunner -- 5 Mergesort Par 100 +RTS -N2
-          cabal run benchrunner -- 5 "VectorSort Insertionsort" Seq 100
-          cabal run benchrunner -- 5 "VectorSort Mergesort" Seq 100
-          cabal run benchrunner -- 5 "VectorSort Quicksort" Seq 100
-          cabal run benchrunner -- 5 "CSort Insertionsort" Seq 100
-          cabal run benchrunner -- 5 "CSort Mergesort" Seq 100
-          cabal run benchrunner -- 5 "CSort Quicksort" Seq 100
+          cabal run benchrunner -- 5 Insertionsort Seq 1000
+          cabal run benchrunner -- 5 Quicksort Seq 1000
+          cabal run benchrunner -- 5 Mergesort Seq 1000
+          cabal run benchrunner -- 5 Mergesort Par 1000 +RTS -N1
+          cabal run benchrunner -- 5 Mergesort Par 1000 +RTS -N2
+          cabal run benchrunner -- 5 "VectorSort Insertionsort" Seq 1000
+          cabal run benchrunner -- 5 "VectorSort Mergesort" Seq 1000
+          cabal run benchrunner -- 5 "VectorSort Quicksort" Seq 1000
+          cabal run benchrunner -- 5 "CSort Insertionsort" Seq 1000
+          cabal run benchrunner -- 5 "CSort Mergesort" Seq 1000
+          cabal run benchrunner -- 5 "CSort Quicksort" Seq 1000

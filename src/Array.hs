@@ -179,6 +179,7 @@ generate_loop arr idx end f =
 copy2_par :: HasPrim a =>  Int -> Int -> Int -> Array a -. Array a -. (Array a, Array a)
 copy2_par src_offset0 dst_offset0 len0 =
   Unsafe.toLinear (\src0 ->  Unsafe.toLinear (\dst0 -> (src0, copy_par src0 src_offset0 dst0 dst_offset0 len0)))
+{-# INLINABLE copy2_par #-}
 
 --TODO: src_offset0 and dst_offset0 are not respected.
 {- @ ignore copy_par @-}
@@ -205,6 +206,7 @@ copy_par src0 src_offset0 dst0 dst_offset0 len0 = copy_par' src0 src_offset0 dst
 #else
 copy_par src0 src_offset0 dst0 dst_offset0 len0 = copy src0 src_offset0 dst0 dst_offset0 len0
 #endif
+{-# INLINABLE copy_par #-}
 
 --TODO: src_offset0 and dst_offset0 are not respected.
 {-@ ignore copy_par_m @-}
@@ -223,6 +225,7 @@ copy_par_m !src0 src_offset0 !dst0 dst_offset0 !len0 = copy_par_m' src0 src_offs
            !right <- copy_par_m' src_r 0 dst_r 0 (len-half)
            !left <- P.get left_f
            pure $ append left right
+{-# INLINABLE copy_par_m #-}
 
 -- {-@ ignore foldl1_par @-}
 -- foldl1_par :: Int -> (a -> a -> a) -> a -> Array a -> a
