@@ -198,7 +198,7 @@ copy_par src0 src_offset0 dst0 dst_offset0 len0 = copy_par' src0 src_offset0 dst
       then copy src src_offset dst dst_offset len
       else let !half = len `div` 2
                !(src_l, src_r) = splitAt half src
-               !(dst_l, dst_r) = splitAt (len-half) dst
+               !(dst_l, dst_r) = splitAt half dst
                left = copy_par' src_l 0 dst_l 0 half
                right = copy_par' src_r 0 dst_r 0 (len-half)
            in left `par` right `pseq` append left right
@@ -218,7 +218,7 @@ copy_par_m !src0 src_offset0 !dst0 dst_offset0 !len0 = copy_par_m' src0 src_offs
       else do
            let !half = len `div` 2
                !(src_l, src_r) = splitAt half src
-               !(dst_l, dst_r) = splitAt (len-half) dst
+               !(dst_l, dst_r) = splitAt half dst
            !left_f <- P.spawn_$ copy_par_m' src_l 0 dst_l 0 half
            !right <- copy_par_m' src_r 0 dst_r 0 (len-half)
            !left <- P.get left_f
