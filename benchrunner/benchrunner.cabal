@@ -21,6 +21,7 @@ executable benchrunner
                       , primitive
                       , vector
                       , vector-algorithms
+                      , system-cxx-std-lib
     default-language:   GHC2021
     default-extensions: TupleSections
                         BangPatterns
@@ -32,7 +33,7 @@ executable benchrunner
     ghc-options:        -Wall -Wcompat
                         -threaded -rtsopts
                         -fdefer-typed-holes
-                        -O2 -optl -lstdc++
+                        -O2
 
     c-sources:
                       csorts/insertionsort.c
@@ -47,11 +48,9 @@ executable benchrunner
                       cxx/mergesort_int_wrapper.cpp
                       cxx/quicksort_int_wrapper.cpp
 
-    build-depends:      system-cxx-std-lib
-
     -- DNDEBUG disables asserts in cbits/
     cc-options:        -std=c11 -O3 -DNDEBUG=1
                        -fno-strict-aliasing
                        -Werror=undef
 
-    cpp-options: -std=c++11 -O3 -fno-strict-aliasing
+    cxx-options: -std=c++11 -O3 -fno-strict-aliasing
