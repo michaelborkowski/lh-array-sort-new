@@ -40,7 +40,7 @@ getInput bench mb_size = case bench of
   OurSort alg -> case alg of
     Insertionsort -> ArrayIn <$> randArray (Proxy :: Proxy Int64) (mb 100)
     Quicksort     -> ArrayIn <$> randArray (Proxy :: Proxy Int64) (mb 1000000)
-    Mergesort     -> ArrayIn <$> randArray (Proxy :: Proxy Int64) (mb 8000000)
+    Mergesort     -> pure . ArrayIn . A.fromList . take 100000 $ (cycle [0,1]) -- <$> randArray (Proxy :: Proxy Int64) (mb 8000000)
     Optsort       -> ArrayIn <$> randArray (Proxy :: Proxy Int64) (mb 8000000)
   _ -> error "getInput: Unexpected Input!"
   where

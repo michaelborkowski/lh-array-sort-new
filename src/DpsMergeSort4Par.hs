@@ -68,14 +68,18 @@ msortInplace src tmp =
         tmpA'            = A.append tmp1' tmp2'
         tmpB'            = A.append tmp3' tmp4'
         !((srcA'', tmpA''), (srcB'', tmpB''))
+                         -- = merge_par src1' src2' tmpA' .||. merge_par src3' src4' tmpB' ------ completely parallel
+                         -- = (merge_par src1' src2' tmpA', merge_par src3' src4' tmpB')
                          = SeqMerge.merge src1' src2' tmpA' .||. SeqMerge.merge src3' src4' tmpB'
+                         -- = (SeqMerge.merge src1' src2' tmpA', SeqMerge.merge src3' src4' tmpB') ------ completely sequential
 --                         = tuple2 (merge_par src1' src2') tmpA' (merge_par src3' src4') tmpB'
         src''            = A.append srcA'' srcB''
         !(tmp''', src''') = SeqMerge.merge tmpA'' tmpB'' src''
+        meta             = "tmpA' unsorted, size: " ++ (show $ A.size tmpA')
     in
       if isSorted tmpA' then
         (src''', tmp''')
-        else traceShow  tmpA'
+        else traceShow  meta
                 (src''', tmp''')
 
 {-
