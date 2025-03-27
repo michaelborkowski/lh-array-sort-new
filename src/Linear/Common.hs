@@ -4,7 +4,7 @@ module Linear.Common where
 
 type a -. b =
 #ifdef LINEAR
-  a %1 -> b
+  a -> b
 #else
   a -> b
 #endif

@@ -3,18 +3,24 @@
 
 module DpsMergeSort4Par where
 
+import           Array as A
+import           ArrayOperations
+import           Par
+import           Linear.Common
+
+import           Debug.Trace
+
+import qualified DpsMerge as SeqMerge (merge)
+import           DpsMergePar
+import qualified DpsMergeSort4 as Seq
+
 import qualified Language.Haskell.Liquid.Bag as B
 import           Language.Haskell.Liquid.ProofCombinators hiding ((?))
 import           ProofCombinators
-import           Array as A
-import           ArrayOperations
-import           DpsMergePar
-import qualified DpsMergeSort4 as Seq
-import Properties.Equivalence
-import Properties.Order
-import           Par
+import           Properties.Equivalence
+import           Properties.Order
 
-import           Linear.Common
+
 #ifdef MUTABLE_ARRAYS
 import           Array.Mutable as A
 import           Control.DeepSeq ( NFData(..) )
@@ -55,23 +61,32 @@ msortInplace src tmp =
         !(tmp1, tmp2)     = splitMid tmpA
         !(tmp3, tmp4)     = splitMid tmpB
         !(((src1', tmp1'), (src2', tmp2')), ((src3', tmp3'), (src4', tmp4')))
-                         = (msortInplace src1 tmp1 .||. msortInplace src2 tmp2) .||.
-                           (msortInplace src3 tmp3 .||. msortInplace src4 tmp4)
+                         = ((msortInplace src1 tmp1, msortInplace src2 tmp2),
+                           (msortInplace src3 tmp3, msortInplace src4 tmp4))
 --                         = tuple4 (msortInplace src1) tmp1 (msortInplace src2) tmp2
 --                                  (msortInplace src3) tmp3 (msortInplace src4) tmp4
         tmpA'            = A.append tmp1' tmp2'
         tmpB'            = A.append tmp3' tmp4'
         !((srcA'', tmpA''), (srcB'', tmpB''))
-                         = merge_par src1' src2' tmpA' .||. merge_par src3' src4' tmpB'
+                         = SeqMerge.merge src1' src2' tmpA' .||. SeqMerge.merge src3' src4' tmpB'
 --                         = tuple2 (merge_par src1' src2') tmpA' (merge_par src3' src4') tmpB'
         src''            = A.append srcA'' srcB''
-        !(tmp''', src''') = merge_par tmpA'' tmpB'' src''
-    in  (src''', tmp''') ? lem_toBag_splitMid src
-                         ? lem_toBag_splitMid tmp
-                         ? lem_toBag_splitMid srcA
-                         ? lem_toBag_splitMid srcB
-                         ? lem_toBag_splitMid tmpA
-                         ? lem_toBag_splitMid tmpB
+        !(tmp''', src''') = SeqMerge.merge tmpA'' tmpB'' src''
+    in
+      if isSorted tmpA' then
+        (src''', tmp''')
+        else traceShow  tmpA'
+                (src''', tmp''')
+
+{-
+? lem_toBag_splitMid src
+? lem_toBag_splitMid tmp
+? lem_toBag_splitMid srcA
+? lem_toBag_splitMid srcB
+? lem_toBag_splitMid tmpA
+? lem_toBag_splitMid tmpB
+-}
+
 
 {-@ msort' :: y:a
            -> { xs:(Array a) | A.size xs > 0 && left xs == 0 && right xs == size xs && y == A.get xs 0 }
