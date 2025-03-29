@@ -55,8 +55,10 @@ msortInplace src tmp =
         !(tmp1, tmp2)     = splitMid tmpA
         !(tmp3, tmp4)     = splitMid tmpB
         !(((src1', tmp1'), (src2', tmp2')), ((src3', tmp3'), (src4', tmp4')))
-                         = (msortInplace src1 tmp1 .||. msortInplace src2 tmp2) .||.
-                           (msortInplace src3 tmp3 .||. msortInplace src4 tmp4)
+                         = (.||||.) (msortInplace src1 tmp1) (msortInplace src2 tmp2)
+                                    (msortInplace src3 tmp3) (msortInplace src4 tmp4) 
+--                         = (msortInplace src1 tmp1 .||. msortInplace src2 tmp2) .||.
+--                           (msortInplace src3 tmp3 .||. msortInplace src4 tmp4) 
 --                         = tuple4 (msortInplace src1) tmp1 (msortInplace src2) tmp2
 --                                  (msortInplace src3) tmp3 (msortInplace src4) tmp4
         tmpA'            = A.append tmp1' tmp2'
@@ -85,8 +87,8 @@ msort' :: (Show a, HasPrimOrd a) =>
   a -> A.Array a -. A.Array a
 msort' anyVal src =
   let !(Ur len, src') = A.size2 src
-      !(src'', _tmp) = msortInplace src' (A.make len anyVal) in
-  case A.free _tmp of !() -> src''
+      !src'' = A.allocScratch len anyVal msortInplace src' in
+  src''
 
 -- finally, the top-level merge sort function
 {-@ msort :: { xs:(A.Array a) | left xs == 0 && right xs == size xs }

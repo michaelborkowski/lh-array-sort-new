@@ -1,6 +1,7 @@
 {-# LANGUAGE CPP           #-}
 {-# LANGUAGE BangPatterns  #-}
 {-# LANGUAGE DeriveFunctor #-}
+{-# LANGUAGE LiberalTypeSynonyms #-}
 
 -- {-# LANGUAGE Strict        #-}
 
@@ -15,6 +16,9 @@ module Array
 
     -- * Construction and querying
   , alloc, make, generate, generate_par, generate_par_m, makeArray
+  , flattenCallback, makeCallback, biJoinAllocAffine, allocScratchAffine
+  , biJoinAlloc, allocScratch
+
   , copy, copy_par, copy_par_m
   , size, get, set, slice, append
   , splitAt
@@ -95,8 +99,46 @@ makeArray = make
 #endif
 
 {-# INLINE free #-}
-free :: HasPrim a => Array a -. ()
+free :: Array a -. ()
 free = Unsafe.toLinear (\_ -> ())
+
+{-# INLINE flattenCallback #-}
+flattenCallback :: (forall c. (Array b -. Ur c) -. Array a -. Ur c) -. Array a -. Array b
+flattenCallback f arr = unur (f ur arr)
+
+{-# INLINE makeCallback #-}
+makeCallback :: (Array b -. Array a) -. (Array a -. Ur c) -. Array b -. Ur c
+makeCallback direct k arr = k (direct arr)
+
+{-# INLINE biJoinAllocAffine #-}
+biJoinAllocAffine :: HasPrim tmps => Int -> tmps -> (Array tmps -. Array srcs -. Array dsts) -> Array srcs -. Array dsts
+biJoinAllocAffine i a f = flattenCallback (\cont src -> alloc i a (\tmp -> makeCallback (f tmp) cont src))
+
+-- efficient implementation of above
+{-# INLINE allocScratchAffine #-}
+allocScratchAffine :: HasPrim tmps => Int -> tmps -> (Array srcs -. Array tmps -. Array dsts) -> Array srcs -. Array dsts
+allocScratchAffine i a f arr = f arr (makeArray i a)
+
+{-# INLINE biJoinAlloc #-}
+biJoinAlloc :: HasPrim tmps => Int -> tmps -> (Array tmps -. Array srcs -. (Array dsts, Array tmpdsts)) -> Array srcs -. Array dsts
+biJoinAlloc i a f = 
+  let
+    g tmp src = 
+      let
+        !(dst, tmp') = f tmp src
+      in
+      case free tmp' of !() -> dst
+  in
+  flattenCallback (\cont src -> alloc i a (\tmp -> makeCallback (g tmp) cont src))
+
+-- efficient implementation of above
+{-# INLINE allocScratch #-}
+allocScratch :: HasPrim tmps => Int -> tmps -> (Array srcs -. Array tmps -. (Array dsts, Array tmpdsts)) -> Array srcs -. Array dsts
+allocScratch i a f arr = 
+  let
+    !(dst, tmp) = f arr (makeArray i a)
+  in case free tmp of !() -> dst
+
 
 --------------------------------------------------------------------------------
 -- Parallel operations
@@ -198,7 +240,7 @@ copy_par src0 src_offset0 dst0 dst_offset0 len0 = copy_par' src0 src_offset0 dst
       then copy src src_offset dst dst_offset len
       else let !half = len `div` 2
                !(src_l, src_r) = splitAt half src
-               !(dst_l, dst_r) = splitAt (len-half) dst
+               !(dst_l, dst_r) = splitAt half dst
                left = copy_par' src_l 0 dst_l 0 half
                right = copy_par' src_r 0 dst_r 0 (len-half)
            in left `par` right `pseq` append left right
@@ -218,7 +260,7 @@ copy_par_m !src0 src_offset0 !dst0 dst_offset0 !len0 = copy_par_m' src0 src_offs
       else do
            let !half = len `div` 2
                !(src_l, src_r) = splitAt half src
-               !(dst_l, dst_r) = splitAt (len-half) dst
+               !(dst_l, dst_r) = splitAt half dst
            !left_f <- P.spawn_$ copy_par_m' src_l 0 dst_l 0 half
            !right <- copy_par_m' src_r 0 dst_r 0 (len-half)
            !left <- P.get left_f
