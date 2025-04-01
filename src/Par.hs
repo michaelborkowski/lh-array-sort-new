@@ -123,6 +123,6 @@ a .||. b = (a,b)
 {-@ (.||||.) :: x:a -> y:a -> z:a -> w:a 
                     -> { tup:_ | x == fst (fst tup) && y == snd (fst tup) &&
                                  z == fst (snd tup) && w == snd (snd tup) } @-}
-(.||||.) :: (NFData a) => a -. a -. a -. a -. ((a,a),(a,a))  
+(.||||.) :: a -. a -. a -. a -. ((a,a),(a,a))  
 (.||||.) a b c d = ((a, b), (c, d)) 
 #endif
