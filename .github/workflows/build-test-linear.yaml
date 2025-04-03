@@ -16,20 +16,16 @@ on:
       - "**/README.md"
   workflow_dispatch:
 
+env:
+  CABAL_DIR: '/cabal-dir'
+
 jobs:
   test-mutable-arrays:
     runs-on: ubuntu-latest
+    container: ghcr.io/ulysses4ever/lh-array-sort
     steps:
 
       - uses: actions/checkout@v4
-
-      - name: Setup Z3
-        uses: cda-tum/setup-z3@v1
-
-      - uses: haskell-actions/setup@v2
-        with:
-          ghc-version: 9.10.1
-          cabal-version: 3.14
 
       #  See the following link for a breakdown of the following step
       #  https://github.com/haskell/actions/issues/7#issuecomment-745697160
@@ -54,17 +50,10 @@ jobs:
 
   test-prim-mutable-arrays:
     runs-on: ubuntu-latest
+    container: ghcr.io/ulysses4ever/lh-array-sort
     steps:
 
       - uses: actions/checkout@v4
-
-      - name: Setup Z3
-        uses: cda-tum/setup-z3@v1
-
-      - uses: haskell-actions/setup@v2
-        with:
-          ghc-version: 9.10.1
-          cabal-version: 3.14
 
       - uses: actions/cache@v4
         with:
@@ -86,17 +75,10 @@ jobs:
 
   test-pure-arrays:
     runs-on: ubuntu-latest
+    container: ghcr.io/ulysses4ever/lh-array-sort
     steps:
 
       - uses: actions/checkout@v4
-
-      - name: Setup Z3
-        uses: cda-tum/setup-z3@v1
-
-      - uses: haskell-actions/setup@v2
-        with:
-          ghc-version: 9.10.1
-          cabal-version: 3.14
 
       - uses: actions/cache@v4
         with:
@@ -119,17 +101,10 @@ jobs:
 
   run-benchrunner:
     runs-on: ubuntu-latest
+    container: ghcr.io/ulysses4ever/lh-array-sort
     steps:
 
       - uses: actions/checkout@v4
-
-      - name: Setup Z3
-        uses: cda-tum/setup-z3@v1
-
-      - uses: haskell-actions/setup@v2
-        with:
-          ghc-version: 9.10.1
-          cabal-version: 3.14
 
       - uses: actions/cache@v4
         with:
