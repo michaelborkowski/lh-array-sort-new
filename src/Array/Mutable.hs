@@ -145,10 +145,10 @@ splitAt m = Unsafe.toLinear (\xs -> (slice xs 0 m, slice xs m (size xs)))
 {-# INLINABLE append #-}
 -- PRE-CONDITION: the two slices are backed by the same array and should be contiguous.
 append :: Array a -. Array a -. Array a
-append xs ys =
+append xs' ys' =
   let !res = Unsafe.toLinear (\xs -> case xs of
-        (Array !l1 _r1 !a1) -> Unsafe.toLinear (\ys -> case ys of
-          (Array _l2 !r2 _a2) -> Array l1 r2 a1)) xs ys
+        (Array l1 _r1 !a1) -> Unsafe.toLinear (\ys -> case ys of
+          (Array _l2 !r2 _a2) -> Array l1 r2 a1)) xs' ys'
   in res
 
 -- token xs == token ys
