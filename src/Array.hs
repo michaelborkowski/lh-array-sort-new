@@ -103,6 +103,8 @@ free :: Array a -. ()
 free = Unsafe.toLinear (\_ -> ())
 
 {-# INLINE flattenCallback #-}
+{-@ flattenCallback :: f:_ -> xs:_ ->
+      ret:{ ys:(Array a) } @-}
 flattenCallback :: (forall c. (Array b -. Ur c) -. Array a -. Ur c) -. Array a -. Array b
 flattenCallback f arr = unur (f ur arr)
 
