@@ -10,6 +10,7 @@ import Data.Time.Clock (getCurrentTime, diffUTCTime)
 
 import qualified Array as A
 import Foreign as F
+import ForeignFunctionImports as FFI
 import Sort
 import Utils
 import qualified Vector as V
@@ -155,11 +156,11 @@ benchAndRunDataVecSorts sortfn inVec iters = do
 -- [Int64]: sorted output array from the last iteration that was run
 -- Double: median runtime from the iterations that were run (selftimed)
 -- Double: Total time taken to run all the iterations (batchtime)
-benchAndRunCSorts :: SortAlgo -> [Int64] -> Int -> IO ([Int64], Double, Double)
-benchAndRunCSorts salg arr iters = do
+benchAndRunCSorts :: FFI.SortFn -> [Int64] -> Int -> IO ([Int64], Double, Double)
+benchAndRunCSorts fn arr iters = do
   !tups <- mapM (\_ -> do
                        !ptr <- newArray arr
-                       res <- dotrialC salg (length arr) ptr
+                       res <- dotrialC fn (length arr) ptr
                        pure res
                 ) [1..iters]
   let (results, times) = unzip tups
@@ -168,9 +169,8 @@ benchAndRunCSorts salg arr iters = do
        batchtime = sum times
   return $! (last results, selftimed, batchtime)
   where
-    dotrialC alg arrLength ptr = do
+    dotrialC fn arrLength ptr = do
         performMajorGC
-        let fn = sortFnC alg
         t1 <- getCurrentTime
         !sortedPtr <- fn ptr (fromIntegral arrLength) (fromIntegral $ F.sizeOf (undefined :: Int64))
         t2 <- getCurrentTime
@@ -183,11 +183,11 @@ benchAndRunCSorts salg arr iters = do
 -- [Int64]: sorted output array from the last iteration that was run
 -- Double: median runtime from the iterations that were run (selftimed)
 -- Double: Total time taken to run all the iterations (batchtime)
-benchAndRunCxxSorts :: SortAlgo -> [Int64] -> Int -> IO ([Int64], Double, Double)
-benchAndRunCxxSorts salg arr iters = do
+benchAndRunCxxSorts :: FFI.SortFnCxx -> [Int64] -> Int -> IO ([Int64], Double, Double)
+benchAndRunCxxSorts fn arr iters = do
   !tups <- mapM (\_ -> do
                        !ptr <- newArray arr
-                       res <- dotrialCxx salg (length arr) ptr
+                       res <- dotrialCxx fn (length arr) ptr
                        pure res
                 ) [1..iters]
   let (results, times) = unzip tups
@@ -196,9 +196,8 @@ benchAndRunCxxSorts salg arr iters = do
        batchtime = sum times
   return $! (last results, selftimed, batchtime)
   where
-    dotrialCxx alg arrLength ptr = do
+    dotrialCxx fn arrLength ptr = do
         performMajorGC
-        let fn = sortFnCxx alg
         t1 <- getCurrentTime
         !sortedPtr <- fn ptr (fromIntegral arrLength)
         t2 <- getCurrentTime
