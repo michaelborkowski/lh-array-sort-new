@@ -2,98 +2,35 @@
 
 module Main where
 
-import           Data.Int           ( Int64 )
-import           System.Random      ( Random, newStdGen, randoms )
-import           Data.Proxy         ( Proxy(..) )
-import           Control.DeepSeq    ( NFData, force )
 import           Data.List.Split    ( splitOn )
 import           System.Environment ( getArgs )
-import           Control.Monad      ( unless, replicateM )
-import           Text.Read
-import           Linear.Common
-import Types as T
+import           Control.Monad      ( unless )
+import           Control.DeepSeq    ( NFData )
 
-import qualified Data.Primitive.Types as P
+import qualified Array as A
+import           Linear.Common
+
+import           ForeignFunctionImports as FFI
+import qualified Vector as V
+import           Input
 import qualified Measure as M
+import           Sort
+import           Utils
+import qualified Microbench as MB
+
 import qualified Insertion as I
 import qualified QuickSort as Q
 import qualified DpsMergeSort4 as DMS
 import qualified DpsMergeSort4Par as DMSP
 import qualified PiecewiseFallbackSort as PFS
 import qualified PiecewiseFallbackSortPar as PFSP
-import qualified Microbench as MB
-import qualified Array as A
-import qualified Data.Vector.Unboxed as V
 import qualified Data.Vector.Algorithms.Insertion as ISDVS
 import qualified Data.Vector.Algorithms.Merge as MSDVS
 import qualified Data.Vector.Algorithms.Intro as QSDVS
 
---------------------------------------------------------------------------------
-
-getInput :: Benchmark -> Maybe Int -> IO (Input Int64)
-getInput bench mb_size = case bench of
-  GenerateArray -> pure $ IntIn (mb 10000000)
-  FillArray     -> pure $ EltsIn (mb 10000000) 1024
-  CopyArray     -> pure $ ArrayIn (A.make (mb 10000000) 1)
-  SumArray      -> pure $ ArrayIn (A.make (mb 10000000) 1)
-  Fib           -> pure $ IntIn (mb 45)
-  OurSort alg -> case alg of
-    Insertionsort -> ArrayIn <$> randArray (Proxy :: Proxy Int64) (mb 100)
-    Quicksort     -> ArrayIn <$> randArray (Proxy :: Proxy Int64) (mb 1000000)
-    Mergesort     -> ArrayIn <$> randArray (Proxy :: Proxy Int64) (mb 8000000)
-    Optsort       -> ArrayIn <$> randArray (Proxy :: Proxy Int64) (mb 8000000)
-  _ -> error "getInput: Unexpected Input!"
-  where
-    mb x = case mb_size of
-      Nothing -> x
-      Just y  -> y
-
-getInputAsDataVector :: SortAlgo -> Maybe Int -> IO Vec
-getInputAsDataVector bench mb_size = case bench of
-  Insertionsort -> V.fromList <$> randList (Proxy :: Proxy Int64) (mb 100)
-  Quicksort -> V.fromList <$> randList (Proxy :: Proxy Int64) (mb 1000000)
-  Mergesort -> V.fromList <$> randList (Proxy :: Proxy Int64) (mb 8000000)
-  _ -> error "getInputAsDataVector: TODO sort function not implemented!"
-  where
-    mb x = case mb_size of
-      Nothing -> x
-      Just y -> y
-
-getInputAsList :: SortAlgo -> Maybe Int -> IO [Int64]
-getInputAsList bench mb_size = case bench of
-  Insertionsort -> randList (Proxy :: Proxy Int64) (mb 100)
-  Quicksort -> randList (Proxy :: Proxy Int64) (mb 1000000)
-  Mergesort -> randList (Proxy :: Proxy Int64) (mb 8000000)
-  _ -> error "getInputAsDataVector: TODO sort function not implemented!"
-  where
-    mb x = case mb_size of
-      Nothing -> x
-      Just y -> y
-
-copyInput :: (Input Int64) -> IO (Input Int64)
-copyInput i = case i of
-  ArrayIn arr -> pure $ ArrayIn (A.copy arr 0 (A.make (A.size arr) (A.get arr 0)) 0 (A.size arr))
-  _ -> error "TODO: copyInput not implemented!"
-
-copyInputIterTimes :: Input Int64 -> Int -> IO [A.Array Int64]
-copyInputIterTimes inp iters = do
-  copiedInputs <- replicateM iters (copyInput inp)
-  return [arr | ArrayIn arr <- copiedInputs]
-
-randArray :: forall a. (Random a, NFData a, P.Prim a) => Proxy a -> Int -> IO (A.Array a)
-randArray _ty size = do
-  rng <- newStdGen
-  let ls :: [a]
-      ls = take size $ randoms rng
-      !arr = force (A.fromList ls)
-  pure arr
-
-randList :: forall a. (Random a, NFData a) => Proxy a -> Int -> IO [a]
-randList _ty size = do
-  rng <- newStdGen
-  let ls :: [a]
-      ls = take size $ randoms rng
-  pure (force ls)
+--
+-- Table of sorting functions
+--
 
 sortFn :: (Show a, A.HasPrimOrd a, NFData a) => SortAlgo -> ParOrSeq -> (A.Array a -. A.Array a)
 sortFn bench parorseq = case (bench,parorseq) of
@@ -104,6 +41,7 @@ sortFn bench parorseq = case (bench,parorseq) of
   (Optsort,   Seq) -> PFS.pfsort
   (Optsort,   Par) -> PFSP.pfsort
   oth -> error $ "sortFn: unknown configuration: " ++ show oth
+{-# INLINABLE sortFn #-}
 
 vectorSortFn :: SortAlgo -> ParOrSeq -> VecSort
 vectorSortFn bench parorseq = case (bench,parorseq) of
@@ -111,20 +49,27 @@ vectorSortFn bench parorseq = case (bench,parorseq) of
   (Mergesort,     Seq) -> MSDVS.sort
   (Quicksort,     Seq) -> QSDVS.sort
   oth -> error $ "sortFn: unknown configuration: " ++ show oth
+{-# INLINABLE vectorSortFn #-}
 
---------------------------------------------------------------------------------
+sortFnC :: SortAlgo -> FFI.SortFn
+sortFnC alg = case alg of
+                    Insertionsort -> FFI.c_insertionsort
+                    Mergesort -> FFI.c_mergesort
+                    Quicksort -> FFI.c_quicksort
+                    _ -> error "sortFnC: Csort not implemented!"
+{-# INLINABLE sortFnC #-}
 
-isSorted :: Ord a => [a] -> Bool
-isSorted []       = True
-isSorted [_]      = True
-isSorted (x:y:xs) = x <= y && isSorted (y:xs)
+sortFnCxx :: SortAlgo -> FFI.SortFnCxx
+sortFnCxx alg = case alg of
+                    Insertionsort -> FFI.cxx_int_insertionsort
+                    Mergesort -> FFI.cxx_int_mergesort
+                    Quicksort -> FFI.cxx_int_quicksort
+                    _ -> error "sortFnCxx: Csort not implemented!"
+{-# INLINABLE sortFnCxx #-}
 
-readBench :: String -> Benchmark
-readBench s = case readMaybe s of
-  Just b -> b
-  Nothing -> case readMaybe s of
-    Just srt -> OurSort srt
-    Nothing -> read s
+--
+-- Select which benchmark to run
+--
 
 -- dobench :: Benchmark -> ParOrSeq -> Maybe Int -> IO ()
 dobench :: Benchmark -> ParOrSeq -> Maybe Int -> Int -> IO ()
@@ -204,23 +149,22 @@ dobench bench parorseq mb_size iters = do
         putStrLn "Sorted: OK"
         pure (V.length inPutVec, V.length res0, tmed0, tall0)
       OurSort alg -> do
-        ArrayIn arr <- getInput bench mb_size
-        arrs <- copyInputIterTimes (ArrayIn arr) iters
+        (ArrayIn arr) <- getInput bench mb_size
         let fn = sortFn alg parorseq
         putStrLn $ "array size = " ++ show (A.size arr)
-        (res0, tmed0, tall0) <- M.benchOnArrays fn arrs
+        (res0, tmed0, tall0) <- M.benchOnArrays fn arr iters
         unless (isSorted (A.toList res0)) (error $ show bench ++ ": result not sorted.")
         putStrLn "Sorted: OK"
         pure (A.size arr, A.size res0, tmed0, tall0)
       CSort alg -> do
         arr <- getInputAsList alg mb_size
-        (res0, tmed0, tall0) <- M.benchAndRunCSorts alg arr iters
+        (res0, tmed0, tall0) <- M.benchAndRunCSorts (sortFnC alg) arr iters
         unless (isSorted (res0)) (error $ show bench ++ ": result not sorted.")
         putStrLn "Sorted: OK"
         pure (length arr, length res0, tmed0, tall0)
       CxxSort alg -> do
         arr <- getInputAsList alg mb_size
-        (res0, tmed0, tall0) <- M.benchAndRunCxxSorts alg arr iters
+        (res0, tmed0, tall0) <- M.benchAndRunCxxSorts (sortFnCxx alg) arr iters
         unless (isSorted (res0)) (error $ show bench ++ ": result not sorted.")
         putStrLn "Sorted: OK"
         pure (length arr, length res0, tmed0, tall0)

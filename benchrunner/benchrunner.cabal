@@ -8,7 +8,11 @@ executable benchrunner
     main-is:          Benchrunner.hs
     other-modules:      Measure
                       , ForeignFunctionImports
-                      , Types
+                      , Input
+                      , Sort
+                      , Utils
+                      , Vector
+                      , MVector
     -- other-extensions:
     build-depends:      base
                       , lh-array-sort
