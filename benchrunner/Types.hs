@@ -11,6 +11,7 @@ data SortAlgo
   = Insertionsort
   | Mergesort
   | Quicksort
+  | Cilksort
   | Optsort -- piecewise fallback
   deriving (Eq, Show, Read)
 
