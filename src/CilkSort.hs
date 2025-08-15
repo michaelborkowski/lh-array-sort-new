@@ -90,7 +90,7 @@ cilkSort' anyVal src =
       !src'' = A.allocScratch len anyVal cilkSortInplace src' in
   src''
 
--- finally, the top-level merge sort function
+-- finally, the top-level cilksort function
 {-@ cilkSort :: { xs:(A.Array a) | left xs == 0 && right xs == size xs }
                     -> { ys:_ | toBag xs == toBag ys && isSorted' ys &&
                                 A.size xs == A.size ys && token xs == token ys  } @-}
