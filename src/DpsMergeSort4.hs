@@ -77,11 +77,14 @@ msortInplace src tmp = go src tmp where
 msort' :: (Show a, HasPrimOrd a) => a -> A.Array a -. A.Array a
 msort' anyVal src =
   let !(Ur len, src') = A.size2 src
-      !(src'', _tmp) = msortInplace src' (A.make len anyVal) in
-  case A.free _tmp of !() -> src''
+-- The old implementation with unsafe operation make. In case we want to look into performance.
+--      !(src'', _tmp) = msortInplace src' (A.make len anyVal) in
+--  case A.free _tmp of !() -> src''
+      !src'' = A.allocScratch len anyVal msortInplace src' in
+  src''
 {-# INLINE msort' #-}
 
--- finally, the top-level merge sort function -- TODO: use A.get2/A.size2 for linearity
+-- finally, the top-level merge sort function
 {-@ msort :: { xs:(A.Array a) | left xs == 0 && right xs == size xs }
                     -> { ys:_ | toBag xs == toBag ys && isSorted' ys &&
                                 A.size xs == A.size ys && token xs == token ys  } @-}
