@@ -19,6 +19,7 @@ import qualified Insertion as I
 import qualified QuickSort as Q
 import qualified DpsMergeSort4 as DMS
 import qualified DpsMergeSort4Par as DMSP
+import qualified CilkSort as CSP
 import qualified PiecewiseFallbackSort as PFS
 import qualified PiecewiseFallbackSortPar as PFSP
 import qualified Microbench as MB
@@ -41,6 +42,7 @@ getInput bench mb_size = case bench of
     Insertionsort -> ArrayIn <$> randArray (Proxy :: Proxy Int64) (mb 100)
     Quicksort     -> ArrayIn <$> randArray (Proxy :: Proxy Int64) (mb 1000000)
     Mergesort     -> ArrayIn <$> randArray (Proxy :: Proxy Int64) (mb 8000000)
+    Cilksort       -> ArrayIn <$> randArray (Proxy :: Proxy Int64) (mb 8000000)
     Optsort       -> ArrayIn <$> randArray (Proxy :: Proxy Int64) (mb 8000000)
   _ -> error "getInput: Unexpected Input!"
   where
@@ -103,6 +105,7 @@ sortFn bench parorseq = case (bench,parorseq) of
   (Mergesort, Par) -> DMSP.msort
   (Optsort,   Seq) -> PFS.pfsort
   (Optsort,   Par) -> PFSP.pfsort
+  (Cilksort,  Par) -> CSP.cilkSort
   oth -> error $ "sortFn: unknown configuration: " ++ show oth
 
 vectorSortFn :: SortAlgo -> ParOrSeq -> VecSort
