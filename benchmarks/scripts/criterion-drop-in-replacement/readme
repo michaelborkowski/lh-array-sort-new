@@ -1,0 +1,16 @@
+The script `criterionmethodology.py` is my implementation of a benchrunner-runner that uses the criterion methodology.
+We take as input some program which takes `iters` as a command-line argument, times a function of interest in a tight loop which repeats `iters` many times, and then prints to stdout the batchtime (total loop time) and selftimed (total loop time divided by iters).
+The essense of criterion is then to sweep `iters` and perform a linear regression against iters and batchtime.
+The slope is the mean and the y-intercept represents some notion of shared overhead, insensitive to `iters`.
+Ultimately, criterion serves as a way to benchmark tasks with very short execution times, as startup overhead can be ignored.
+
+Since we have relatively precise timing over loops, I also implemented the criterion methodolgy *geometrically*.
+I take the logarithm of all the x and y values, compute the linear regression over that, then exponentiate the y-intercept - this represents the geomean.
+The other dependent portion, which is the slope, becomes a power (the equation is y = e^b x^m), which represents *geometric overhead*, e.g. how much overhead is being added per iteration.
+This may do well to model any slowdowns arising from pre-allocating arrays.
+Additionally, since performance data is non-negative and judged multiplicatively (twice as good means numbers are half, twice has bad means numbers are doubled; these are all *factors*), the geomean and geo-standard-deviation may make more sense theoretically.
+However, from my testing, the geomean seams to vary wildly for programs with fleeting execution times, even between repeat runs with the same parameters.
+
+The scripts `criterionmethodology.py` and `sweep_seq.py` can both be ran directly.
+The first takes command-line arguments, e.g. `criterionmethodology benchrunner Quicksort Seq 2000` will call `benchrunner iters Quicksort Seq 2000` for various `iters`.
+`sweep_seq` performs a logarithmic sweep over different array sizes, invoking the criterion methdology at each point.
