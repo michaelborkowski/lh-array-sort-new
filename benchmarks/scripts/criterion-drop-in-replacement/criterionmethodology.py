@@ -24,7 +24,8 @@ def linear_regression_with_std(x, y):
     return slope, intercept, std_dev
 
 def do_bench(cliargs, iters):
-    print([cliargs[1], str(iters)] + cliargs[2:])
+    bin = cliargs[1].rsplit('/', 1)[-1]
+    print([bin] + cliargs[2:] + [str(iters)])
     out = str(subprocess.check_output([cliargs[1], str(iters)] + cliargs[2:]))
     s1 = out[out.find("SELFTIMED")+11:]
     s2 = float(s1[:s1.find("\n")-4])
@@ -34,7 +35,7 @@ def do_bench(cliargs, iters):
     b2 = float(b1[:b1.find("SELFTIMED")-2])
     batchtime = b2
 
-    print(f"ITERS: {iters}, BATCHTIME: {batchtime}, SELFTIMED: {selftimed}")
+    #print(f"ITERS: {iters}, BATCHTIME: {batchtime}, SELFTIMED: {selftimed}")
     return batchtime
 
 def converge(cliargs):
@@ -65,17 +66,20 @@ def converge(cliargs):
         st = do_bench(cliargs, iters)
         xs.append(iters)
         ys.append(st)
-    m, b, sigma = linear_regression_with_std(xs, ys)
-    print(f"Slope (Mean): {m}, Intercept (Overhead): {b}, Stdev: {sigma}")
+
+    m, b, sig = linear_regression_with_std(xs, ys)
     p, lnc, lngsd = linear_regression_with_std([math.log(x) for x in xs], [math.log(y) for y in ys])
     c, gsd = math.exp(lnc), math.exp(lngsd)
-    print(f"Power (Distortion): {p}, Factor (Geomean) {c}, GeoStdev {gsd}")
+
+    print(f"Slope (Mean):     {m:.2e}, Stdev:    {sig:.2e}, Intercept (Overhead): {b:.2e}")
+    print(f"Factor (Geomean): {c:.2e}, GeoStdev: {gsd:.2e}, Power (Distortion):   {p:.2e}")
+
     if MAKE_PLOT:
         plt.plot(xs, ys, 'rx')
         plt.plot([xs[0], xs[-1]], [m*xs[0]+b, m*xs[-1]+b], color="blue")
         plt.plot(xs, [c*x**p for x in xs], color="green")
         plt.savefig("plot.png")
-    return m, sigma, c, gsd
+    return m, sig, c, gsd
 
 if __name__ == "__main__":
-    print(converge(argv))
+    converge(argv)

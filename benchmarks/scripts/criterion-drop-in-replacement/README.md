@@ -3,7 +3,7 @@
 This directory contains a Python re-implementation of the Haskell Criterion methodology to run executables (instead of Haskell functions, like Criterion normally does).
 One could call it "benchrunner-runner" because the purpose is to run `benchrunner` many times and calculate the appropriate run time statistics.
 
-We take as input some program `prog` with the following interface:
+We take as input a path to some program `prog` (meant to be the `benchrunner`) with the following interface:
 
 - `prog` takes `iters` as a command-line argument,
 - `prog` measures run time of a function of interest in a tight loop that repeats `iters` many times, and finally
@@ -29,7 +29,7 @@ will call `benchrunner iters Quicksort Seq 2000` for various `iters`.
 
 `sweep_seq` performs a logarithmic sweep over different array sizes, invoking `criterionmethdology.py` at each point.
 
-## Arightmetic vs geometric mean
+## Arithmetic vs geometric mean
 
 Since performance data is non-negative and judged multiplicatively (twice as good means numbers are half, twice has bad means numbers are doubled; these are all *factors*), the geomean and geo-standard-deviation may make more sense theoretically.
 However, from some testing, the geomean seems to vary wildly for programs with fleeting execution times, even between repeated runs with the same parameters.
