@@ -14,7 +14,7 @@ def bounds(name):
     match name:
         case "Insertionsort":
             lo = 3  # 2**n ...
-            hi = 16
+            hi = 12 # for local testing; initially: 16
         case "Quicksort":
             lo = 3
             hi = 22
@@ -34,17 +34,16 @@ def bounds(name):
             hi = 20
     return lo, hi, (hi-lo)*DENSITY+1
 
-def dotrial(name, size):
-    return converge([sys.argv[0], "benchrunner", name, "Seq", str(int(size))])
+def dotrial(exe, name, size):
+    return converge([exe, name, "Seq", str(int(size))])
 
 if __name__ == "__main__":
+    exe = sys.argv[1]
+    print("Running with executable:", exe)
     for name in names:
         lo, hi, pts = bounds(name)
         with open("%s_out3.csv" % name, "w") as f:
             f.write("# size\tmean\tstddev\tgeomean\tgeostdev\n")
-        for i in np.unique(np.logspace(lo, hi, pts, base=2).astype(int)):
+        for i in np.unique(np.logspace(lo, hi, pts, base=2).astype(int)):  # Artem: I don't understand this and I must
             with open("%s_out3.csv" % name, "a") as f:
-                try:
-                    f.write("%d" % int(i) + "\t%f\t%f\t%f\t%f\n" % dotrial(name, i))
-                except:
-                    pass
+                f.write("%d" % int(i) + "\t%f\t%f\t%f\t%f\n" % dotrial(exe, name, i))
