@@ -14,7 +14,8 @@ module Array
     Array
 
     -- * Construction and querying
-  , alloc, make, generate, generate_par, generate_par_m, makeArray
+  , alloc, make, allocScratch
+  , generate, generate_par, generate_par_m, makeArray
   , copy, copy_par, copy_par_m
   , size, get, set, slice, append
   , splitAt
@@ -95,8 +96,16 @@ makeArray = make
 #endif
 
 {-# INLINE free #-}
-free :: HasPrim a => Array a -. ()
+free :: Array a -. ()
 free = Unsafe.toLinear (\_ -> ())
+
+{-# INLINE allocScratch #-} -- todo: are we linear in the use of the algorithm?
+allocScratch :: HasPrim tmps => Int -> tmps -> (Array srcs -. Array tmps -. (Array dsts, Array tmpdsts)) 
+                  -. Array srcs -. Array dsts
+allocScratch i a f arr =
+  let
+    !(dst, tmp) = f arr (makeArray i a)
+  in case free tmp of !() -> dst
 
 --------------------------------------------------------------------------------
 -- Parallel operations
