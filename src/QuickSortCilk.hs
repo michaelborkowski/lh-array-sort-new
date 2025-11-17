@@ -40,6 +40,16 @@ import qualified Array as A
 
 {-@ quickSort :: xs:(Array a) -> { ys:(Array a) | isSorted' ys && A.size xs == A.size ys &&
                                                                   toBag  xs == toBag  ys } @-}
+quickSort :: (HasPrimOrd a, Show a) => Array a -. Array a
+quickSort xs =
+  let (Ur n, xs1) = A.size2 xs in
+  if n == 0 then xs1
+  else quickSortBtw 0 n xs1
+{-# INLINABLE quickSort #-}
+
+{-
+{-@ quickSort :: xs:(Array a) -> { ys:(Array a) | isSorted' ys && A.size xs == A.size ys &&
+                                                                  toBag  xs == toBag  ys } @-}
 -- quickSort :: (Ord a, Show a) => Array a -> Array a
 quickSort :: (HasPrimOrd a, Show a) => Array a -> Array a
 quickSort xs =
@@ -54,6 +64,7 @@ quickSort xs =
                {- @ cpy :: { ys:(Array a) | size ys == n && toSlice ys 0 n == toSlice xs2 0 n } @-}
                Ur cpy = A.alloc n hd (Unsafe.toLinear promise)
             in quickSortBtw (cpy ? lem_equal_slice_bag   xs2   cpy 0 n) 0 n
+-}
 
 {-@ quickSortBtw :: xs:(Array a) -> { i:Int | 0 <= i } -> { j:Int | i <= j && j <= A.size xs }
                 -> { ys:(Array a) | isSortedBtw ys i j && A.size xs == A.size ys &&

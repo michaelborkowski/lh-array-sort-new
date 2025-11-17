@@ -100,6 +100,14 @@ free :: Array a -. ()
 free = Unsafe.toLinear (\_ -> ())
 
 {-# INLINE allocScratch #-} -- todo: are we linear in the use of the algorithm?
+{-@ allocScratch :: forall <p :: Array dsts -> Bool>. n:Nat -> x:_ 
+      -> f:({xs:_ | size xs == n } -> { ys:_ | size ys == n } 
+              -> { tup:(Array<p> dsts, Array tmpdsts) | 
+                      token (fst tup) == token xs & token (snd tup) == token ys &
+                      size (fst tup) == size xs & size (snd tup) == size ys &
+                      left (fst tup) == left xs & left (snd tup) == left ys &
+                      right (fst tup) == right xs & right (snd tup) == right ys })
+      -> { src:_ | size src == n } -> { dst:Array<p> dsts | token src == token dsts } @-}
 allocScratch :: HasPrim tmps => Int -> tmps -> (Array srcs -. Array tmps -. (Array dsts, Array tmpdsts)) 
                   -. Array srcs -. Array dsts
 allocScratch i a f arr =
