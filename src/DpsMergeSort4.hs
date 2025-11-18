@@ -76,9 +76,7 @@ msortInplace src tmp = go src tmp where
                                A.size xs == A.size zs && token xs == token zs } @-}
 msort' :: (Show a, HasPrimOrd a) => a -> A.Array a -. A.Array a
 msort' anyVal src =
-  let !(Ur len, src') = A.size2 src
-      !(src'', _tmp) = msortInplace src' (A.make len anyVal) in
-  case A.free _tmp of !() -> src''
+  let !(Ur len, src') = A.size2 src in allocScratch len anyVal msortInplace src'
 {-# INLINE msort' #-}
 
 -- finally, the top-level merge sort function -- TODO: use A.get2/A.size2 for linearity
