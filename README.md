@@ -45,8 +45,9 @@ Checking time should not exceed 2min for any single file. Slightly faster than L
 
 ### Benchmarking
 
-The `benchrunner` package in the repository provides an executable to run benchmarks.
-But
+The `benchrunner` package in the repository provides a couple executables to run benchmarks:
+`benchrunner-old`, an older more manual one, and `bench-criterion`, a newer one based on the `criterion`.
+We describe both, in order, starting with `benchrunner`.
 
 First, you need to make sure that you compiled the mutable-arrays backend.
 You can either add `--constraint="lh-array-sort +prim-mutable-arrays"` to every call
@@ -61,7 +62,7 @@ asserting the mutable-arrays constraint. Note that this constraint will be in
 action until you remove the file.
 
 
-The interface for `benchrunner` is:
+The interface for `benchrunner-old` is:
 
 ```shellsession
 benchrunner ITERS SORT PAR SIZE
@@ -70,25 +71,87 @@ benchrunner ITERS SORT PAR SIZE
 For instance:
 
 ```shellsession
-cabal run benchrunner -- 5 Mergesort Seq 10000
-cabal run benchrunner -- 5 Mergesort Par 10000 +RTS -N4
-cabal run benchrunner -- 5 Insertionsort Seq 10000
+cabal run benchrunner-old -- 5 Mergesort Seq 10000
+cabal run benchrunner-old -- 5 Mergesort Par 10000 +RTS -N4
+cabal run benchrunner-old -- 5 Insertionsort Seq 10000
 ```
 
 To run the sorting algorithms from vector-algorithms, use the following commands:
 
-    $ cabal run benchrunner -- ITERS "VectorSort Insertionsort" ParOrSeq NUM_ELTS
-    $ cabal run benchrunner -- ITERS "VectorSort Mergesort" ParOrSeq NUM_ELTS
-    $ cabal run benchrunner -- ITERS "VectorSort Quicksort" ParOrSeq NUM_ELTS
+    $ cabal run benchrunner-old -- ITERS "VectorSort Insertionsort" ParOrSeq NUM_ELTS
+    $ cabal run benchrunner-old -- ITERS "VectorSort Mergesort" ParOrSeq NUM_ELTS
+    $ cabal run benchrunner-old -- ITERS "VectorSort Quicksort" ParOrSeq NUM_ELTS
 
 
-To run the sorting algorithms from the csorts directory which consist of hand written C sorting benchmarks:
+To run the sorting algorithms from the `csorts` directory which consist of hand written C sorting benchmarks:
 
-    $ cabal run benchrunner -- ITERS "CSort Insertionsort" ParOrSeq NUM_ELTS
-    $ cabal run benchrunner -- ITERS "CSort Mergesort" ParOrSeq NUM_ELTS
-    $ cabal run benchrunner -- ITERS "CSort Quicksort" ParOrSeq NUM_ELTS
+    $ cabal run benchrunner-old -- ITERS "CSort Insertionsort" ParOrSeq NUM_ELTS
+    $ cabal run benchrunner-old -- ITERS "CSort Mergesort" ParOrSeq NUM_ELTS
+    $ cabal run benchrunner-old -- ITERS "CSort Quicksort" ParOrSeq NUM_ELTS
 
 
+
+### `criterion`-based benchmarking
+
+The `bench-criterion` executable is a part of a **Criterion-based** benchmark pipeline capable of
+generating paper-quality figures.  It compares:
+
+- **ours** — our verified prim-mutable implementation
+- **vector** — `vector-algorithms` (unverified Haskell)
+- **c** — hand-written C with `-O3`
+
+#### Setup (once)
+
+```shellsession
+cabal configure --constraint="lh-array-sort +prim-mutable-arrays -liquid-checks"
+```
+
+#### Full paper benchmark run (all figures)
+
+```shellsession
+make bench-paper
+```
+
+This will:
+1. Configure cabal for the `prim-mutable-arrays` backend (as shown above)
+2. Sweep input sizes for Insertionsort and Mergesort (`benchmarks/scripts/sweep_paper.py`)
+3. Sweep core counts for parallel Mergesort (`benchmarks/scripts/sweep_parallel.py`) 
+4. Produce PDF figures A–D in `plots/`
+
+The sweep scripts are **resumable**: if interrupted, re-running will skip already-completed
+sizes.  Raw timing data is saved to `benchmarks/data/`.
+
+#### Running a single benchmark manually
+
+```shellsession
+# Criterion output to stdout (all contestants, size 10000)
+cabal run bench-criterion -- --size 10000 --algo Insertionsort +RTS -N1
+
+# Save to CSV
+cabal run bench-criterion -- --size 1000000 --algo Mergesort --csv out.csv +RTS -N1
+
+# Parallel mergesort on 4 cores
+# cabal run bench-criterion -- --size 8000000 --algo MergesortPar +RTS -N4
+```
+
+#### Output figures
+
+| File | Description |
+|---------------------------------|-------------------------------------------|
+| `plots/insertionsort_sweep.pdf` | Fig A — log-log sweep, Insertionsort      |
+| `plots/mergesort_sweep.pdf`     | Fig B — log-log sweep, Mergesort          |
+| `plots/bar_chart.pdf`           | Fig C — bar chart at representative sizes |
+| `plots/mergesort_parallel.pdf`  | Fig D — parallel Mergesort speedup  |
+
+#### Python dependencies
+
+These are provided by our shell.nix now but you could install them manually if need to run outside the nix shell (e.g. on server).
+
+```shellsession
+pip install numpy pandas matplotlib
+```
+
+---
 
 ## Make-based building and benchmarking (somewhat outdated in February 2025)
 
