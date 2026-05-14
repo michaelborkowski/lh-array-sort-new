@@ -6,6 +6,15 @@ packages: .
 
 with-compiler: ghc
 
+allow-newer:
+    -- this is akward: the single version of `liquidhaskell` we're compatible with depends on a particular
+    -- version of `bytestring` (to a point release! for no good reason!), which makes it impossible
+    -- to bump ghc 9.10.1 -> 9.10.3, and this, in turn, is inconvenient where a system-provided GHC
+    -- is preferable for various reasons (e.g. in nix-shell, where you only hit the binary cache if you
+    -- let nix choose the minor release, i.e. the x in 9.10.x)
+    -- upstream issue: https://github.com/ucsd-progsys/liquidhaskell/issues/2679
+    liquidhaskell:bytestring
+
 package lh-array-sort
     ghc-options: -O2
     -- ghc-options: -ddump-simpl -ddump-to-file -dsuppress-all
