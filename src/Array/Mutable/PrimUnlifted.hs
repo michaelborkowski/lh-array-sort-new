@@ -2,11 +2,13 @@
 {-# LANGUAGE UnboxedTuples    #-}
 {-# LANGUAGE MagicHash        #-}
 {-# LANGUAGE BangPatterns     #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 
 
 module Array.Mutable.PrimUnlifted where
 
 import qualified GHC.Exts as GHC
+import qualified GHC.Base as GHC
 import qualified Data.Primitive.Types as P
 
 --------------------------------------------------------------------------------
@@ -27,7 +29,7 @@ make# len elt =
 {-# INLINABLE fill# #-}
 fill# :: P.Prim a => GHC.MutableByteArray# GHC.RealWorld -> GHC.Int# -> a -> GHC.MutableByteArray# GHC.RealWorld
 fill# arr len elt =
-  case GHC.runRW# (P.setByteArray# arr 0# (len GHC.-# 1#) elt) of
+  case GHC.runRW# (P.setByteArray# arr 0# len elt) of
     _ -> arr
 
 {-# INLINABLE makeNoFill# #-}
@@ -61,7 +63,7 @@ copy# elt (Array# !src) src_offset (Array# !dst) dst_offset n =
     n_bytes          = (P.sizeOf# elt) GHC.*# n
 
 {-# INLINABLE size# #-}
-size# :: Array# a -> GHC.Int#
+size# :: forall a. P.Prim a => Array# a -> GHC.Int#
 size# (Array# arr) =
   case GHC.runRW# (GHC.getSizeofMutableByteArray# arr) of
-    (# _, !sz #) -> sz
+    (# _, sz #) -> sz `GHC.divInt#` (P.sizeOf# (undefined :: a))
