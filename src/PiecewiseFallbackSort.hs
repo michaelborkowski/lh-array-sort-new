@@ -65,15 +65,13 @@ msortInplace cutoff src tmp =  -- cutoff > 0, though it may not be necessary to 
                                A.size xs == A.size zs && token xs == token zs } @-}
 pfsort' :: (Show a, HasPrimOrd a) => a -> A.Array a -. A.Array a
 pfsort' anyVal src =
-  msort' :: (Show a, HasPrimOrd a) => a -> A.Array a -. A.Array a
-msort' anyVal src =
-  let !(Ur len, src') = A.size2 src -- below expression is always in the interval [28, 708] (interval changed from meeting doc).
-      cutoff          = if len <= 708 then 708  -- this can be any number >= 708 without affecting semantics, including `len`
+    let !(Ur len, src') = A.size2 src -- below expression is always in the interval [28, 708] (interval changed from meeting doc).
+        cutoff          = if len <= 708 then 708  -- this can be any number >= 708 without affecting semantics, including `len`
                         else if len < 451776
                              -- this is the same as truncate (18820.2738 / sqrt (fromIntegral len)) per GHC.Float
                              then truncate((18820.2738 / (exp ((log (fromIntegral len)) * 0.5) )) :: Float)
                              else 28  
-   in allocScratch len anyVal (msortInplace cutoff) src'
+     in allocScratch len anyVal (msortInplace cutoff) src'
 
 {-@ pfsort :: { xs:(A.Array a) | left xs == 0 && right xs == size xs }
                     -> { ys:_ | toBag xs == toBag ys && isSorted' ys &&

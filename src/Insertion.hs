@@ -196,7 +196,7 @@ isort_top :: forall a. HasPrimOrd a => A.Array a -. A.Array a
 isort_top xs0 =
   let !(Ur n, xs1) = A.size2 xs0
     in
-      if n <= 1 then xs1 else isort 0 xs
+      if n <= 1 then xs1 else isort 0 xs1
 
 {-
 -- | Sort a copy of the input array. Therefore token is not preserved.
