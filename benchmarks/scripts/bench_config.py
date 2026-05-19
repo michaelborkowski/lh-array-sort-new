@@ -70,7 +70,7 @@ ALGOS: list[AlgoConfig] = [
     AlgoConfig(
         name="Insertionsort",
         label="Insertion sort",
-        size_lo_exp=3, size_hi_exp=12, n_sizes=37,
+        size_lo_exp=3, size_hi_exp=12, n_sizes=19,
         bar_sizes=[100, 1_000],
     ),
     AlgoConfig(

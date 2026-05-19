@@ -31,6 +31,9 @@ executable bench-criterion
                       csorts/insertionsort.c
                       csorts/mergesort.c
                       csorts/quicksort.c
+                      csorts-mono/insertionsort_mono.c
+                      csorts-mono/mergesort_mono.c
+                      csorts-mono/quicksort_mono.c
 
     cxx-sources:
                       cxx/insertionsort.cpp
@@ -80,6 +83,9 @@ executable benchrunner-old
                       csorts/insertionsort.c
                       csorts/mergesort.c
                       csorts/quicksort.c
+                      csorts-mono/insertionsort_mono.c
+                      csorts-mono/mergesort_mono.c
+                      csorts-mono/quicksort_mono.c
 
     cxx-sources:
                       cxx/insertionsort.cpp
