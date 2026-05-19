@@ -23,13 +23,13 @@
 -- Example (parallel mergesort at 8M, 4 cores):
 --   cabal run bench-criterion -- --size 8000000 --algo MergesortPar --csv par.csv +RTS -N4
 
-
 -- NOTE: Duplication in this file
 --
 -- It'd be easy to avoid a lot of duplication in this file (among *SortGroup functions esp.)
 -- But it's easy to break  GHC optimizations when you start passing sorting functions around.
 -- As a result, we stick with a safer approach of duplicating the benchmark group code for each algorithm.
 -- Hopefully, we can fix it one day.
+
 
 module Main where
 
@@ -38,7 +38,7 @@ import           Criterion.Main               ( defaultMainWith, bgroup, bench, 
 import           Criterion.Main.Options       ( defaultConfig )
 import           Data.Int                     ( Int64 )
 import           Data.Maybe                   ( )
-import           Foreign                      ( newArray, peekArray, castPtr, sizeOf, Ptr )
+import           Foreign                      ( newArray, sizeOf )
 import           System.Environment           ( getArgs, withArgs )
 import           System.Random                ( newStdGen, randoms )
 import           Text.Read                    ( readMaybe )
@@ -48,7 +48,6 @@ import qualified Data.Vector.Algorithms.Insertion as ISDVS
 import qualified Data.Vector.Algorithms.Intro     as QSDVS
 import qualified Data.Vector.Algorithms.Merge     as MSDVS
 import qualified Data.Vector.Unboxed              as V
-import qualified Data.Vector.Unboxed.Mutable      as MV
 import qualified ForeignFunctionImports           as FFI
 import qualified Insertion                        as I
 import qualified QuickSort                        as Q
@@ -134,8 +133,12 @@ insertionSortGroup size = do
                     (fromIntegral (sizeOf (undefined :: Int64)))
         pure sorted
 
+  let grpMonoC = bench "mono-c" $ perRunEnv (newArray templateList) $ \ptr -> do
+        sorted <- FFI.mono_c_insertionsort ptr (fromIntegral size)
+        pure sorted
+
   pure [ bgroup ("insertionsort/" ++ show size)
-           [ grpOurs, grpVector, grpC ] ]
+           [ grpOurs, grpVector, grpC, grpMonoC ] ]
 
 mergeSortGroup :: Int -> IO [Benchmark]
 mergeSortGroup size = do
@@ -156,8 +159,12 @@ mergeSortGroup size = do
                     (fromIntegral (sizeOf (undefined :: Int64)))
         pure sorted
 
+  let grpMonoC = bench "mono-c" $ perRunEnv (newArray templateList) $ \ptr -> do
+        sorted <- FFI.mono_c_mergesort ptr (fromIntegral size)
+        pure sorted
+
   pure [ bgroup ("mergesort/" ++ show size)
-           [ grpOurs, grpVector, grpC ] ]
+           [ grpOurs, grpVector, grpC, grpMonoC ] ]
 
 -- | Parallel merge sort (our implementation only; for speedup plots).
 mergeSortParGroup :: Int -> IO [Benchmark]
@@ -190,8 +197,12 @@ quickSortGroup size = do
                     (fromIntegral (sizeOf (undefined :: Int64)))
         pure sorted
 
+  let grpMonoC = bench "mono-c" $ perRunEnv (newArray templateList) $ \ptr -> do
+        sorted <- FFI.mono_c_quicksort ptr (fromIntegral size)
+        pure sorted
+
   pure [ bgroup ("quicksort/" ++ show size)
-           [ grpOurs, grpVector, grpC ] ]
+           [ grpOurs, grpVector, grpC, grpMonoC ] ]
 
 --------------------------------------------------------------------------------
 -- Main
