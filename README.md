@@ -49,11 +49,11 @@ The `benchrunner` package in the repository provides an executable to run benchm
 But
 
 First, you need to make sure that you compiled the mutable-arrays backend.
-You can either add `--constraint="lh-array-sort +mutable-arrays"` to every call
+You can either add `--constraint="lh-array-sort +prim-mutable-arrays"` to every call
 to `cabal run` below (add it right after "run") or call
 
 ``` shellsession
-cabal configure --constraint="lh-array-sort +mutable-arrays -liquid-checks"
+cabal configure --constraint="lh-array-sort +prim-mutable-arrays -liquid-checks"
 ```
 
 once before benchmarking. This command will create a `cabal.project.local` file

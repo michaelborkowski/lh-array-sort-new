@@ -18,7 +18,8 @@ type LinearSort = CustomArray.Array Int -. CustomArray.Array Int
 -- Define the commutative property for swap.
 swapCommutativeProperty :: (QC.Arbitrary a, CustomArray.HasPrim a, Show a, Eq a) => CustomArray.Array a -> Int -> Int -> QC.Property
 swapCommutativeProperty arr i j =
-  i /= j QC.==> CustomArray.toList (CustomOperations.swap arr i j) QC.=== CustomArray.toList (CustomOperations.swap arr j i)
+  let arrCopy = CustomArray.fromList (CustomArray.toList arr) in
+  i /= j QC.==> CustomArray.toList (CustomOperations.swap arrCopy i j) QC.=== CustomArray.toList (CustomOperations.swap arr j i)
 
 -- Property: Function correctly sorts all elements.
 sortsCorrectlyProperty :: ([Int] -> [Int]) -> [Int] -> Bool

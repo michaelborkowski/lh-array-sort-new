@@ -2,6 +2,8 @@
 {-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE CPP #-}
 
+{-# OPTIONS_GHC -Wno-name-shadowing #-}
+
 module DpsMergeParSeqFallback where
 
 import qualified Language.Haskell.Liquid.Bag as B
@@ -247,25 +249,41 @@ merge' :: HasPrimOrd a =>
   Int -> Int -> Int ->
   A.Array a -. A.Array a -. A.Array a -.
   ((A.Array a, A.Array a), A.Array a)
-merge' i1 i2 j !src1 !src2 !dst =
-  let !(Ur len1, src1') = A.size2 src1
-      !(Ur len2, src2') = A.size2 src2 in
-  if i1 >= len1
-  then
-    let !(src2'1, dst') = A.copy2_par i2 j (len2-i2) src2' dst in ((src1', src2'1), dst')
-  else if i2 >= len2
-  then
-    let !(src1'1, dst') = A.copy2_par i1 j (len1-i1) src1' dst in ((src1'1, src2'), dst')
-  else
-    let !(Ur v1, src1'1) = A.get2 i1 src1'
-        !(Ur v2, src2'1) = A.get2 i2 src2' in
-    if v1 < v2
-    then let dst' = A.setLin j v1 dst
-             !(src_tup, dst'') =  merge' (i1 + 1) i2 (j + 1) src1'1 src2'1 dst' in
-         (src_tup, dst'')
-    else let dst' = A.setLin j v2 dst
-             !(src_tup, dst'') =  merge' i1 (i2 + 1) (j + 1) src1'1 src2'1 dst' in
-         (src_tup, dst'')
+merge' i1 i2 j !src1 !src2 !dst = go i1 i2 j src1 src2 dst where
+{-@ go :: i1:Nat -> i2:Nat -> { j:Nat  | i1 + i2 == j }
+           -> { xs1:(Array a) | i1 <= size xs1 }
+           -> { xs2:(Array a) | token xs1 == token xs2 && i2 <= size xs2 }
+           -> { zs:(Array a) | size xs1 + size xs2 == size zs && j <= size zs }
+           -> { t:_    | t == ((xs1, xs2), merge_func xs1 xs2 zs i1 i2 j) &&
+                         token (fst (fst t)) == token xs1 && token (snd (fst t)) == token xs2 &&
+                         left (fst (fst t)) == left xs1 && right (fst (fst t)) == right xs1 &&
+                         left (snd (fst t)) == left xs2 && right (snd (fst t)) == right xs2 &&
+                         size (snd t) == size zs && token (snd t) == token zs &&
+                         left (snd t) == left zs && right (snd t) == right zs  } / [size zs - j] @-}
+  go :: HasPrimOrd a =>
+    Int -> Int -> Int ->
+    A.Array a -. A.Array a -. A.Array a -.
+    ((A.Array a, A.Array a), A.Array a)
+  go !i1 !i2 !j src1 src2 dst =
+    let !(Ur len1, !src1') = A.size2 src1
+        !(Ur len2, !src2') = A.size2 src2 in
+    if i1 >= len1
+    then
+      let !(src2'1, dst') = A.copy2_par i2 j (len2-i2) src2' dst in ((src1', src2'1), dst')
+    else if i2 >= len2
+    then
+      let !(src1'1, dst') = A.copy2_par i1 j (len1-i1) src1' dst in ((src1'1, src2'), dst')
+    else
+      let !(Ur v1, !src1'1) = A.get2 i1 src1'
+          !(Ur v2, !src2'1) = A.get2 i2 src2' in
+      if v1 < v2
+      then let !dst' = A.setLin j v1 dst
+               !(src_tup, dst'') =  go (i1 + 1) i2 (j + 1) src1'1 src2'1 dst' in
+           (src_tup, dst'')
+      else let !dst' = A.setLin j v2 dst
+               !(src_tup, dst'') =  go i1 (i2 + 1) (j + 1) src1'1 src2'1 dst' in
+           (src_tup, dst'')
+{-# INLINE merge' #-}
 
 {-@ merge :: { xs1:(Array a) | isSorted' xs1 }
           -> { xs2:(Array a) | isSorted' xs2 && token xs1 == token xs2  }
@@ -278,12 +296,8 @@ merge' i1 i2 j !src1 !src2 !dst =
                                left (snd (fst t)) == left xs2 && right (snd (fst t)) == right xs2 &&
                                left (snd t) == left zs  && right (snd t) == right zs  &&
                                size (snd t) == size zs } @-}
-{-# INLINE merge #-}
-{-# SPECIALISE merge :: A.Array Float -. A.Array Float -. A.Array Float
-                                      -. ((A.Array Float, A.Array Float), A.Array Float) #-}
-{-# SPECIALISE merge :: A.Array Int -. A.Array Int -. A.Array Int
-                                    -. ((A.Array Int, A.Array Int), A.Array Int) #-}
 merge :: HasPrimOrd a => A.Array a -. A.Array a -. A.Array a -. ((A.Array a, A.Array a), A.Array a)
 merge src1 src2 dst = merge' 0 0 0 src1 src2 dst   -- the 0's are relative to the current
                     ? lem_merge_func_sorted src1 src2 dst 0 0 0  -- slices, not absolute indices
                     ? lem_merge_func_equiv  src1 src2 dst 0 0 0
+{-# INLINABLE merge #-}

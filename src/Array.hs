@@ -179,6 +179,7 @@ generate_loop arr idx end f =
 copy2_par :: HasPrim a =>  Int -> Int -> Int -> Array a -. Array a -. (Array a, Array a)
 copy2_par src_offset0 dst_offset0 len0 =
   Unsafe.toLinear (\src0 ->  Unsafe.toLinear (\dst0 -> (src0, copy_par src0 src_offset0 dst0 dst_offset0 len0)))
+{-# INLINABLE copy2_par #-}
 
 --TODO: src_offset0 and dst_offset0 are not respected.
 {- @ ignore copy_par @-}
@@ -198,13 +199,14 @@ copy_par src0 src_offset0 dst0 dst_offset0 len0 = copy_par' src0 src_offset0 dst
       then copy src src_offset dst dst_offset len
       else let !half = len `div` 2
                !(src_l, src_r) = splitAt half src
-               !(dst_l, dst_r) = splitAt (len-half) dst
+               !(dst_l, dst_r) = splitAt half dst
                left = copy_par' src_l 0 dst_l 0 half
                right = copy_par' src_r 0 dst_r 0 (len-half)
            in left `par` right `pseq` append left right
 #else
 copy_par src0 src_offset0 dst0 dst_offset0 len0 = copy src0 src_offset0 dst0 dst_offset0 len0
 #endif
+{-# INLINABLE copy_par #-}
 
 --TODO: src_offset0 and dst_offset0 are not respected.
 {-@ ignore copy_par_m @-}
@@ -218,11 +220,12 @@ copy_par_m !src0 src_offset0 !dst0 dst_offset0 !len0 = copy_par_m' src0 src_offs
       else do
            let !half = len `div` 2
                !(src_l, src_r) = splitAt half src
-               !(dst_l, dst_r) = splitAt (len-half) dst
+               !(dst_l, dst_r) = splitAt half dst
            !left_f <- P.spawn_$ copy_par_m' src_l 0 dst_l 0 half
            !right <- copy_par_m' src_r 0 dst_r 0 (len-half)
            !left <- P.get left_f
            pure $ append left right
+{-# INLINABLE copy_par_m #-}
 
 -- {-@ ignore foldl1_par @-}
 -- foldl1_par :: Int -> (a -> a -> a) -> a -> Array a -> a
