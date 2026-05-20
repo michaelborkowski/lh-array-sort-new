@@ -64,12 +64,10 @@ def draw_sweep(ax: plt.Axes, algo: AlgoConfig, data_dir: str) -> bool:
     """Draw a log-log sweep onto *ax*. Returns True if data was found."""
     csv_path = os.path.join(data_dir, algo.seq_csv_name())
     if not os.path.exists(csv_path):
-        ax.set_title(f"{algo.label}\n(no data)")
         return False
 
     df = pd.read_csv(csv_path)
     if df.empty:
-        ax.set_title(f"{algo.label}\n(no data)")
         return False
 
     for contestant, grp in df.groupby("contestant"):
@@ -84,7 +82,6 @@ def draw_sweep(ax: plt.Axes, algo: AlgoConfig, data_dir: str) -> bool:
     ax.set_yscale("log")
     ax.set_xlabel("Input size (N)", fontsize=9)
     ax.set_ylabel("Wall-clock time (s)", fontsize=9)
-    ax.set_title(algo.label, fontsize=10)
     ax.legend(fontsize=7)
     ax.tick_params(labelsize=8)
     ax.grid(True, which="both", linestyle="--", linewidth=0.4, alpha=0.6)
@@ -95,12 +92,10 @@ def draw_speedup(ax: plt.Axes, algo: AlgoConfig, data_dir: str) -> bool:
     """Draw parallel speedup onto *ax*. Returns True if data was found."""
     csv_path = os.path.join(data_dir, algo.par_csv_name())
     if not os.path.exists(csv_path):
-        ax.set_title(f"Parallel {algo.label}\n(no data)")
         return False
 
     df = pd.read_csv(csv_path).sort_values("cores")
     if df.empty or 1 not in df["cores"].values:
-        ax.set_title(f"Parallel {algo.label}\n(no single-core entry)")
         return False
 
     t1 = df.loc[df["cores"] == 1, "mean_s"].iloc[0]
@@ -117,7 +112,6 @@ def draw_speedup(ax: plt.Axes, algo: AlgoConfig, data_dir: str) -> bool:
 
     ax.set_xlabel("Core count", fontsize=9)
     ax.set_ylabel("Speedup (T₁ / Tₖ)", fontsize=9)
-    ax.set_title(f"Parallel {algo.label} speedup (N={algo.par_size:,})", fontsize=10)
     ax.set_xticks(cores)
     ax.set_xticklabels([str(c) for c in cores])
     ax.legend(fontsize=7)

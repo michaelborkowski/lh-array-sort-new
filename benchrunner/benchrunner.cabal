@@ -8,6 +8,7 @@ executable bench-criterion
     main-is:          BenchCriterion.hs
     other-modules:      ForeignFunctionImports
                       , Types
+                      , ParMergeSort
     build-depends:      base
                       , lh-array-sort
                       , criterion
@@ -17,6 +18,8 @@ executable bench-criterion
                       , primitive
                       , vector
                       , vector-algorithms
+                      , massiv                >= 0.6
+                      , async
                       , system-cxx-std-lib
     default-language:   GHC2021
     default-extensions: TupleSections

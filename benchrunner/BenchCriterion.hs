@@ -53,6 +53,8 @@ import qualified Insertion                        as I
 import qualified QuickSort                        as Q
 import qualified DpsMergeSort4                    as DMS
 import qualified DpsMergeSort4Par                 as DMSP
+import qualified Data.Massiv.Array                as MA
+import qualified ParMergeSort                     as PMS
 
 --------------------------------------------------------------------------------
 -- CLI argument extraction
@@ -71,7 +73,7 @@ extractSize args = go args []
     go (x:rest)       acc = go rest (x:acc)
 
 -- | Extract --algo NAME from the argument list; return (algo, remaining_args).
--- Recognised values: Insertionsort, Mergesort, MergesortPar, All (default).
+-- Recognised values: Insertionsort, Mergesort, MergesortPar, MergesortVecPar, Quicksort, QuicksortMassivPar, All (default).
 extractAlgo :: [String] -> (String, [String])
 extractAlgo args = go args []
   where
@@ -204,6 +206,41 @@ quickSortGroup size = do
   pure [ bgroup ("quicksort/" ++ show size)
            [ grpOurs, grpVector, grpC, grpMonoC ] ]
 
+-- | Parallel mergesort over a mutable unboxed vector (for scaling plots).
+-- Uses fork-join parallelism via the async package; respects +RTS -N.
+mergeSortVecParGroup :: Int -> IO [Benchmark]
+mergeSortVecParGroup size = do
+  templateVec <- randVector size
+
+  -- PMS.sort thaws to a fresh mutable copy internally, so the immutable
+  -- template is safe to reuse across Criterion iterations.
+  let grpVecPar = bench "vec-par" $ perRunEnv (pure templateVec) $ \vec -> do
+        !sorted <- PMS.sort vec
+        pure sorted
+
+  pure [ bgroup ("mergesort-vec-par/" ++ show size)
+           [ grpVecPar ] ]
+
+
+-- Uses Comp = Par so the number of worker threads is controlled by +RTS -N.
+quickSortMassivParGroup :: Int -> IO [Benchmark]
+quickSortMassivParGroup size = do
+  rng <- newStdGen
+  let !xs   = force (take size (randoms rng :: [Int64]))
+      -- Build a Primitive unboxed 1-D array with the Par scheduler so that
+      -- MA.quicksort dispatches work across all GHC capabilities (+RTS -N#).
+      !tmpl = MA.fromList MA.Par xs :: MA.Array MA.P MA.Ix1 Int64
+
+  let grpMassivPar = bench "massiv-par" $ perRunEnv (pure tmpl) $ \arr -> do
+        -- MA.quicksort thaws the array into a fresh mutable copy, sorts
+        -- in-place using the embedded scheduler, then freezes the result.
+        -- The original `arr` is therefore never mutated between runs.
+        let !sorted = MA.quicksort arr
+        pure sorted
+
+  pure [ bgroup ("quicksort-massiv-par/" ++ show size)
+           [ grpMassivPar ] ]
+
 --------------------------------------------------------------------------------
 -- Main
 --------------------------------------------------------------------------------
@@ -219,13 +256,15 @@ main = do
     "Mergesort"     -> mergeSortGroup size
     "MergesortPar"  -> mergeSortParGroup size
     "Quicksort"     -> quickSortGroup size
+    "QuicksortMassivPar" -> quickSortMassivParGroup size
+    "MergesortVecPar"    -> mergeSortVecParGroup size
     "All"           -> do
       is <- insertionSortGroup size
       ms <- mergeSortGroup size
       qs <- quickSortGroup size
       pure (is ++ ms ++ qs)
     other -> error $ "bench-criterion: unknown --algo value: " ++ other
-             ++ "\n  Valid values: Insertionsort, Mergesort, MergesortPar, Quicksort, All"
+             ++ "\n  Valid values: Insertionsort, Mergesort, MergesortPar, MergesortVecPar, Quicksort, QuicksortMassivPar, All"
 
   withArgs criterionArgs $
     defaultMainWith defaultConfig benchmarks

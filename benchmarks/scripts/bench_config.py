@@ -75,18 +75,32 @@ ALGOS: list[AlgoConfig] = [
     ),
     AlgoConfig(
         name="Mergesort",
-        label="Merge sort",
+        label="Mergesort: ours (verified)",
         size_lo_exp=10, size_hi_exp=23, n_sizes=27,
         bar_sizes=[100_000, 1_000_000, 8_000_000],
         parallel=True,
         par_algo_name="MergesortPar",
-        par_size=8_000_000,
     ),
     AlgoConfig(
         name="Quicksort",
         label="Quicksort",
         size_lo_exp=10, size_hi_exp=23, n_sizes=27,
+    ),
+    AlgoConfig(
+        name="MergesortVecPar",
+        label="Mergesort: mutable vector",
+        size_lo_exp=10, size_hi_exp=23, n_sizes=27,
         bar_sizes=[100_000, 1_000_000, 8_000_000],
+        parallel=True,
+        par_algo_name="MergesortVecPar",
+    ),
+    AlgoConfig(
+        name="QuicksortMassivPar",
+        label="Quicksort: massiv",
+        size_lo_exp=10, size_hi_exp=23, n_sizes=27,
+        bar_sizes=[100_000, 1_000_000, 8_000_000],
+        parallel=True,
+        par_algo_name="QuicksortMassivPar",
     ),
 ]
 

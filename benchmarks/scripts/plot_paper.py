@@ -82,7 +82,6 @@ def plot_sweep(algo: AlgoConfig, data_dir: str, plots_dir: str):
     ax.set_yscale("log")
     ax.set_xlabel("Input size (N)")
     ax.set_ylabel("Wall-clock time (s)")
-    ax.set_title(algo.label)
     ax.legend(fontsize=8)
     ax.grid(True, which="both", linestyle="--", linewidth=0.4, alpha=0.6)
     fig.tight_layout()
@@ -108,13 +107,11 @@ def plot_bar_chart(plots_dir: str, data_dir: str):
     for ax, algo in zip(axes, ALGOS):
         csv_path = os.path.join(data_dir, algo.seq_csv_name())
         if not os.path.exists(csv_path):
-            ax.set_title(f"{algo.label}\n(no data)")
             continue
 
         df = pd.read_csv(csv_path)
         df = df[df["size"].isin(algo.bar_sizes)]
         if df.empty:
-            ax.set_title(f"{algo.label}\n(no data for bar sizes)")
             continue
 
         any_data = True
@@ -141,7 +138,6 @@ def plot_bar_chart(plots_dir: str, data_dir: str):
         ax.set_xticks(x + width * (len(contestants) - 1) / 2)
         ax.set_xticklabels([f"{s:,}" for s in algo.bar_sizes], rotation=30, ha="right")
         ax.set_ylabel("Time (ms)")
-        ax.set_title(algo.label)
         ax.legend(fontsize=7)
         ax.grid(axis="y", linestyle="--", linewidth=0.4, alpha=0.6)
 
