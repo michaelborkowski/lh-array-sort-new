@@ -1,7 +1,10 @@
 packages:
     quest-plugin,
     common-lemmas,
-    insertionsort
+    insertionsort,
+    quicksort,
+    four-way-mergesort,
+    four-way-mergesort-parallel
 
 with-compiler: ghc
 

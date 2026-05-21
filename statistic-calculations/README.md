@@ -3,15 +3,18 @@
 ### Setup
 To install the testing software, run:
 ```
-sudo apt install hyperfine cloc
+sudo apt install hyperfine
 ```
+<!-- ```
+sudo apt install hyperfine cloc
+``` -->
 
 ### Verification Time
 To test the verification time, cd into the directory of the sort you want to test (e.g., `cd statistic-calculations/insertionsort`), then run:
 ```
 hyperfine \
 --warmup 1 \
---runs 10 \
+--runs 3 \
 'cabal clean && cabal build'
 ```
 
@@ -21,15 +24,15 @@ Note: we chose to use build time as a proxy for verification time for simplicity
 ```
 hyperfine \
 --warmup 1 \
---runs 10 \
+--runs 3 \
 'rm -rf .liquid && liquid src/Insertion.hs' 
 ```
 might be a more exact representation of verification time alone.
 
 ### Lines of code/proofs
-To find the lines of code, cd into the directory of the sort you want to test (e.g., `cd statistic-calculations/insertionsort`), then run `cloc src`. From there, manually count and subtract the number of proof lines from the `code` column.
+To find the lines of code, cd into the directory of the sort you want to test (e.g., `cd statistic-calculations/insertionsort`), then run `cloc src`. From there, manually count and subtract the number of proof lines and the number of comments from the sum of the `comments` and `code` columns (some proof lines are counted as comments).
 
-Note: some lines count as both proof and code, namely, lines with `?` annotations.
+Note: some lines count as both proof and code, namely, lines with `?` annotations. Even if a function is reflected, we consider its body to be code lines not proof lines.
 
 ## Configuration
 

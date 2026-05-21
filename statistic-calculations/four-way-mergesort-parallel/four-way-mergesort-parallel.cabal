@@ -1,6 +1,6 @@
 cabal-version: >=1.10
 
-name:           insertionsort
+name:           four-way-mergesort-parallel
 version:        0.1.0.0
 description:    
 homepage:
@@ -42,7 +42,12 @@ library
     cpp-options: -DRUNTIME_CHECKS
 
   exposed-modules:
-      Insertion
+      DpsMergeSort4Par
+  other-modules:
+      DpsMerge
+      DpsMergeSort4
+      DpsMergeParSeqFallback
+      DpsMergePar
   hs-source-dirs:
       src
   build-depends:
