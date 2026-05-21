@@ -1,0 +1,104 @@
+cabal-version: >=1.10
+
+name:           common-lemmas
+version:        0.1.0.0
+description:    
+homepage:
+bug-reports:
+author:         
+maintainer:     
+copyright:      
+license:        MIT
+license-file:
+build-type:     Simple
+
+Flag mutable-arrays
+   Description: Use mutable arrays.
+   Manual: True
+   Default: False
+
+Flag prim-mutable-arrays
+   Description: Use mutable arrays of primitive types.
+   Manual: True
+   Default: False
+
+Flag liquid-checks
+   Description: Perform liquid checks. This is currently mutually exclusive with mutable arrays (see TODO in Array.hs)
+   Default: True
+
+Flag runtime-checks
+   Description: Perform runtime bounds checks.
+   Default: False
+
+library
+
+  if flag(mutable-arrays)
+    cpp-options: -DMUTABLE_ARRAYS
+
+  if flag(prim-mutable-arrays)
+    cpp-options: -DPRIM_MUTABLE_ARRAYS -DMUTABLE_ARRAYS
+
+  if flag(runtime-checks)
+    cpp-options: -DRUNTIME_CHECKS
+
+  exposed-modules:
+      Par
+      Array
+      ArrayOperations
+      Properties.Equivalence
+      Properties.Order
+      Properties.Partitions
+      Properties.RangeProperties
+--   other-modules:
+      Array.List
+      Array.Mutable
+      Array.Mutable.Unlifted
+      Array.Mutable.PrimUnlifted
+      ProofCombinators
+      Linear.Unsafe
+      Linear.Common
+  hs-source-dirs:
+      src
+  build-depends:
+      base,
+      deepseq,
+      containers,
+      vector                >= 0.13 && < 0.14,
+      parallel,
+      monad-par,
+      linear-base,
+      primitive,
+      array,
+      random,
+
+      -- Liquid stuff
+      liquid-prelude        >= 0.9.2.8.2,
+      liquidhaskell-boot    == 0.9.10.1,
+      liquidhaskell         == 0.9.10.1
+
+  default-language: GHC2021
+
+  ghc-options: -Wall -Wcompat
+               -- TODO: -Wno-blah below should be irradicated
+               -Wno-unused-matches -Wno-unused-imports -Wno-unused-local-binds
+               -Wno-incomplete-patterns -Wno-x-partial -Wno-simplifiable-class-constraints
+               -O2
+
+  -- the plugin stuff
+  build-depends: quest-plugin
+  ghc-options: -fplugin=QuestPlugin
+
+--   This is the dreaded if... Here are our constraints:
+--   - Linear and liquid checking are currently mutually exclusive (sadly)
+--   - We can't liquid-check the mutable configurations at the moment (see TODO in Array.hs)
+  if flag(liquid-checks) && !flag(mutable-arrays) && !flag(prim-mutable-arrays)
+    ghc-options: -fplugin=LiquidHaskell
+                  -fplugin-opt=LiquidHaskell:--ple
+                  -fplugin-opt=LiquidHaskell:--ple-with-undecided-guards
+                  -fplugin-opt=LiquidHaskell:--reflection
+                  -fplugin-opt=LiquidHaskell:--short-names
+    ghc-options: -fplugin-opt=QuestPlugin:liquid
+  else
+    default-extensions: LinearTypes
+    cpp-options: -DLINEAR
+    ghc-options: -fplugin-opt=QuestPlugin:linear

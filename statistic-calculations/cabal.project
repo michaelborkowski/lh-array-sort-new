@@ -1,0 +1,9 @@
+packages:
+    quest-plugin,
+    common-lemmas,
+    insertionsort
+
+with-compiler: ghc
+
+allow-newer:
+    liquidhaskell:bytestring
