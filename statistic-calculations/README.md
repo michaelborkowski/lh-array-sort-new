@@ -37,13 +37,13 @@ Note: some lines count as both proof and code, namely, lines with `?` annotation
 ## Configuration
 
 ### Flags
- - `mutable-arrays`: `False` \
- - `prim-mutable-arrays`: `False` \
- - `liquid-checks`: `True` \
+ - `mutable-arrays`: `False`
+ - `prim-mutable-arrays`: `False`
+ - `liquid-checks`: `True`
  - `runtime-checks`: `False`
 
 ### Software Versions
- - GHC: `9.10.3` \
- - Z3: `4.8.12` - 64 bit \
- - CPU: AMD Ryzen 7 7730U \
+ - GHC: `9.10.3`
+ - Z3: `4.8.12` - 64 bit
+ - CPU: AMD Ryzen 7 7730U
  - RAM: 32GB
