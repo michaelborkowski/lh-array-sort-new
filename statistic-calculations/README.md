@@ -31,7 +31,7 @@ hyperfine \
 'cabal clean && cabal build --flags="-liquid-checks"'
 ```
 to get the build time of each sort. Subtract the build time from the build + verification time to isolate the verification time for each sorting algorithm. Essentially, the equation for verification time is: \
-average build + verification time of sort - average build + verification time of common lemmas - (average build time of sort - average build time of common lemmas).
+`average build_plus_verification time of sort - average build_plus_verification time of common lemmas - (average build time of sort - average build time of common lemmas)`.
 
 <!-- Note: A command like:
 ```
