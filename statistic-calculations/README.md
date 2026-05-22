@@ -45,7 +45,7 @@ might be a more exact representation of verification time alone. -->
 ### Lines of implementation/proofs
 We count the lines of implementation/proofs manually. To simplify this process, we separated lemmas and implementation with clear comments where possible. When counting, you may find it helpful to temporarily delete all non-implementation or non-proof lines rather than counting each one in the original file.
 
-When counting implementation lines, we did not include defines, #ifdefs, includes, and other build-related lines of code.
+When counting implementation lines, we did not include defines, imports, file header pragmas, `#ifdef`/`#ifndef`/`#else`/`#endif` statements (although we included the lines in both branches of `#ifdef`s etc...), and other build-related lines of code.
 <!-- To find the lines of code, cd into the directory of the sort you want to test (e.g., `cd statistic-calculations/insertionsort`), then run `cloc src`. From there, manually count and subtract the number of proof lines and the number of comments from the sum of the `comments` and `code` columns (some proof lines are counted as comments).
 
 Note: some lines count as both proof and code, namely, lines with `?` annotations. Even if a function is reflected, we consider its body to be code lines not proof lines. -->
