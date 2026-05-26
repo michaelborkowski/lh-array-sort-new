@@ -125,6 +125,8 @@ jobs:
           cabal run benchrunner -- 5 Mergesort Seq 1000
           cabal run benchrunner -- 5 Mergesort Par 1000 +RTS -N1
           cabal run benchrunner -- 5 Mergesort Par 1000 +RTS -N2
+          cabal run benchrunner -- 5 Cilksort Par 1000 +RTS -N1
+          cabal run benchrunner -- 5 Cilksort Par 1000 +RTS -N2
           cabal run benchrunner -- 5 "VectorSort Insertionsort" Seq 1000
           cabal run benchrunner -- 5 "VectorSort Mergesort" Seq 1000
           cabal run benchrunner -- 5 "VectorSort Quicksort" Seq 1000
