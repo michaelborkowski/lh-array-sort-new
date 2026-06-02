@@ -1,4 +1,4 @@
--- Based on DpsMergeSort4Par.hs and Insertion.hs with analysis
+-- Based on DpsMergeSortPar.hs and Insertion.hs with analysis
 {-# LANGUAGE CPP #-}
 
 module PiecewiseFallbackSortPar where
@@ -9,7 +9,7 @@ import           ProofCombinators
 import           Array as A
 import           ArrayOperations
 import           DpsMergePar
--- import qualified DpsMergeSort4 as Seq    -- needed?
+-- import qualified DpsMergeSort as Seq    -- needed?
 import Properties.Equivalence
 import Properties.Order
 import           Insertion

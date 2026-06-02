@@ -1,4 +1,4 @@
--- Based on DpsMergeSort4.hs and Insertion.hs with analysis
+-- Based on DpsMergeSort.hs and Insertion.hs with analysis
 {-# LANGUAGE CPP #-}
 
 module PiecewiseFallbackSort where

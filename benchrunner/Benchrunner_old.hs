@@ -15,9 +15,9 @@ import qualified Insertion as I
 -- import qualified QuickSort as Q
 -- import qualified Merge as M
 import qualified DpsMergeSort as DMS
-import qualified DpsMergeSort4 as DMS4
+import qualified DpsMergeSort as DMS4
 import qualified DpsMergeSortPar as DMSP
-import qualified DpsMergeSort4Par as DMS4P
+import qualified DpsMergeSortPar as DMS4P
 import qualified Microbench as MB
 -- import qualified CilkSort as C
 import qualified Array as A
