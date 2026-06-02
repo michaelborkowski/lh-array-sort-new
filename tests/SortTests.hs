@@ -14,8 +14,8 @@ import           InvalidSorts
 import           Properties
 import           Array
 import           Insertion (isort_top')
-import qualified DpsMergeSort4 as M4
-import qualified DpsMergeSort4Par as M4Par
+import qualified DpsMergeSort as M4
+import qualified DpsMergeSortPar as M4Par
 import qualified PiecewiseFallbackSort as PF
 import qualified PiecewiseFallbackSortPar as PFPar
 import           QuickSort (quickSort)

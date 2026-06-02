@@ -17,7 +17,7 @@ import           Array as A
 import           ArrayOperations
 
 import           DpsMergePar
-import qualified DpsMergeSort4 as Seq
+import qualified DpsMergeSort as Seq
 
 import           Linear.Common
 #ifdef MUTABLE_ARRAYS
