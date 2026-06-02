@@ -99,7 +99,7 @@ makeArray = make
 free :: Array a -. ()
 free = Unsafe.toLinear (\_ -> ())
 
-{-# INLINE allocScratch #-} -- todo: are we linear in the use of the algorithm?
+{-# INLINE allocScratch #-} 
 {-@ allocScratch :: forall <p :: Array a -> Array a -> Bool>. n:Nat -> x:_
       -> f:({xs:_ | size xs == n && left xs == 0 && right xs == n }
               -> { ys:_ | size ys == n && left ys == 0 && right ys == n }
