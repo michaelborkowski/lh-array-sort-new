@@ -100,16 +100,18 @@ free :: Array a -. ()
 free = Unsafe.toLinear (\_ -> ())
 
 {-# INLINE allocScratch #-} -- todo: are we linear in the use of the algorithm?
-{-@ allocScratch :: forall <p :: Array dsts -> Bool>. n:Nat -> x:_ 
-      -> f:({xs:_ | size xs == n } -> { ys:_ | size ys == n } 
-              -> { tup:(Array<p> dsts, Array tmpdsts) | 
-                      token (fst tup) == token xs && token (snd tup) == token ys &&
-                      size (fst tup) == size xs && size (snd tup) == size ys &&
-                      left (fst tup) == left xs && left (snd tup) == left ys &&
-                      right (fst tup) == right xs && right (snd tup) == right ys })
-      -> { src:_ | size src == n } -> { dst:Array<p> dsts | token src == token dst } @-}
-allocScratch :: HasPrim tmps => Int -> tmps -> (Array srcs -. Array tmps -. (Array dsts, Array tmpdsts)) 
-                  -. Array srcs -. Array dsts
+{-@ allocScratch :: forall <p :: Array a -> Array a -> Bool>. n:Nat -> x:_
+      -> f:({xs:_ | size xs == n && left xs == 0 && right xs == n }
+              -> { ys:_ | size ys == n && left ys == 0 && right ys == n }
+              -> ( {zs:(Array<p xs> a) | token zs == token xs && size zs == size xs &&
+                                         left zs == left xs && right zs == right xs}
+                 , {ts:(Array a) | token ts == token ys && size ts == size ys &&
+                                   left ts == left ys && right ts == right ys} ))
+      -> { src:_ | size src == n && left src == 0 && right src == n }
+      -> { dst:(Array<p src> a) | token src == token dst &&
+                      size src == size dst && left src == left dst && right src == right dst } @-}
+allocScratch :: HasPrim a => Int -> a -> (Array a -. Array a -. (Array a, Array a))
+                  -. Array a -. Array a
 allocScratch i a f arr =
   let
     !(dst, tmp) = f arr (makeArray i a)
