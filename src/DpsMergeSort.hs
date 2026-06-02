@@ -2,7 +2,7 @@
 
 {-# OPTIONS_GHC -Wno-name-shadowing #-}
 
-module DpsMergeSort4 where
+module DpsMergeSort where
 
 import qualified Language.Haskell.Liquid.Bag as B
 import           Language.Haskell.Liquid.ProofCombinators hiding ((?))
