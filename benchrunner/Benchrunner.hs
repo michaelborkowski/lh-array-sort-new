@@ -98,7 +98,7 @@ randList _ty size = do
 sortFn :: (Show a, A.HasPrimOrd a, NFData a) => SortAlgo -> ParOrSeq -> (A.Array a -. A.Array a)
 sortFn bench parorseq = case (bench,parorseq) of
   (Insertionsort, Seq) -> I.isort_top'
-  (Quicksort, Seq)     -> Q.quickSort'
+  (Quicksort, Seq)     -> Q.quickSort
   (Mergesort, Seq) -> DMS.msort
   (Mergesort, Par) -> DMSP.msort
   (Optsort,   Seq) -> PFS.pfsort
