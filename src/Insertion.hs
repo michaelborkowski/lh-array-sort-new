@@ -197,26 +197,3 @@ isort_top xs0 =
   let !(Ur n, xs1) = A.size2 xs0
     in
       if n <= 1 then xs1 else isort 0 xs1
-
-{-
--- | Sort a copy of the input array. Therefore token is not preserved.
-{-@ isort_top :: { xs:_ | A.size xs > 1 }
-      -> { ys:_ | toBag xs  == toBag ys  && isSorted' ys &&
-                  A.size xs == A.size ys } @-}
-isort_top :: forall a. HasPrimOrd a => A.Array a -. A.Array a
-isort_top xs0 =
-  let !(Ur n, xs1) = A.size2 xs0
-    in
-      if n <= 1 then xs1
-      else
-        let !(Ur hd, xs2) = A.get2 0 xs1
-            isort_tmp :: A.Array a -. A.Array a -. (A.Array a, A.Array a)
-            isort_tmp src tmp =
-              let !(old_arr, tmp_arr) = A.copy2 0 0 n src tmp
-                in (isort 0 (tmp_arr ? lem_equal_slice_bag src tmp 0 n), old_arr) 
-                      ? lem_copy_equal_slice  src 0 tmp 0 n  -- there's an issue with using !()
-            {- @ promise :: { tmp:(Array a) | size tmp == n }
-                        -> { out:(Ur (Array a)) | size (unur out) == n &&
-                                                  toSlice (unur out) 0 n == toSlice xs2 0 n} @-}
-          in allocScratch n hd isort_tmp xs2
--}
