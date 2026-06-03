@@ -38,7 +38,7 @@ import           Criterion.Main               ( defaultMainWith, bgroup, bench, 
 import           Criterion.Main.Options       ( defaultConfig )
 import           Data.Int                     ( Int64 )
 import           Data.Maybe                   ( )
-import           Foreign                      ( newArray, peekArray, castPtr, sizeOf, Ptr )
+import           Foreign                      ( newArray, sizeOf )
 import           System.Environment           ( getArgs, withArgs )
 import           System.Random                ( newStdGen, randoms )
 import           Text.Read                    ( readMaybe )
@@ -48,12 +48,11 @@ import qualified Data.Vector.Algorithms.Insertion as ISDVS
 import qualified Data.Vector.Algorithms.Intro     as QSDVS
 import qualified Data.Vector.Algorithms.Merge     as MSDVS
 import qualified Data.Vector.Unboxed              as V
-import qualified Data.Vector.Unboxed.Mutable      as MV
 import qualified ForeignFunctionImports           as FFI
 import qualified Insertion                        as I
 import qualified QuickSort                        as Q
-import qualified DpsMergeSort4                    as DMS
-import qualified DpsMergeSort4Par                 as DMSP
+import qualified DpsMergeSort                     as DMS
+import qualified DpsMergeSortPar                  as DMSP
 
 --------------------------------------------------------------------------------
 -- CLI argument extraction
@@ -110,7 +109,7 @@ randList size = do
 mkArrayEnv :: A.Array Int64 -> IO (A.Array Int64)
 mkArrayEnv template =
   let n = A.size template
-      !dst = A.make n (A.get template 0)
+      !dst = A.makeArray n (A.get template 0)
   in pure $! A.copy template 0 dst 0 n
 
 insertionSortGroup :: Int -> IO [Benchmark]
@@ -178,7 +177,7 @@ quickSortGroup size = do
       templateArr = A.fromList templateList
 
   let grpOurs = bench "ours" $ perRunEnv (mkArrayEnv templateArr) $ \arr -> do
-        let !sorted = Q.quickSort' arr
+        let !sorted = Q.quickSort arr
         pure sorted
 
   let grpVector = bench "vector" $ perRunEnv (V.thaw templateVec) $ \vec -> do

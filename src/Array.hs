@@ -14,7 +14,8 @@ module Array
     Array
 
     -- * Construction and querying
-  , alloc, make, generate, generate_par, generate_par_m, makeArray
+  , alloc, make, allocScratch
+  , generate, generate_par, generate_par_m, makeArray
   , copy, copy_par, copy_par_m
   , size, get, set, slice, append
   , splitAt
@@ -95,8 +96,26 @@ makeArray = make
 #endif
 
 {-# INLINE free #-}
-free :: HasPrim a => Array a -. ()
+free :: Array a -. ()
 free = Unsafe.toLinear (\_ -> ())
+
+{-# INLINE allocScratch #-} 
+{-@ allocScratch :: forall <p :: Array a -> Array a -> Bool>. n:Nat -> x:_
+      -> f:({xs:_ | size xs == n && left xs == 0 && right xs == n }
+              -> { ys:_ | size ys == n && left ys == 0 && right ys == n }
+              -> ( {zs:(Array<p xs> a) | token zs == token xs && size zs == size xs &&
+                                         left zs == left xs && right zs == right xs}
+                 , {ts:(Array a) | token ts == token ys && size ts == size ys &&
+                                   left ts == left ys && right ts == right ys} ))
+      -> { src:_ | size src == n && left src == 0 && right src == n }
+      -> { dst:(Array<p src> a) | token src == token dst &&
+                      size src == size dst && left src == left dst && right src == right dst } @-}
+allocScratch :: HasPrim a => Int -> a -> (Array a -. Array a -. (Array a, Array a))
+                  -. Array a -. Array a
+allocScratch i a f arr =
+  let
+    !(dst, tmp) = f arr (makeArray i a)
+  in case free tmp of !() -> dst
 
 --------------------------------------------------------------------------------
 -- Parallel operations
