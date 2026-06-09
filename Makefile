@@ -26,7 +26,17 @@ else
 endif
 endif
 
-all: checkdeps build bench
+bench-paper:
+	cabal configure --constraint="lh-array-sort +prim-mutable-arrays -liquid-checks"
+    # sequential benchmarks:
+	python3 benchmarks/scripts/sweep_paper.py
+	python3 benchmarks/scripts/plot_paper.py
+    # parallel benchmarks:
+	python3 benchmarks/scripts/sweep_parallel.py
+	python3 benchmarks/scripts/plot_parallel.py
+    # combined figure (all sweeps + parallel on one page):
+	python3 benchmarks/scripts/plot_combined.py
+
 
 bench: bench_verified bench_canonical_c bench_gibbon_c
 
@@ -89,4 +99,4 @@ checkdeps:
 clean:
 	cd $(CSORTS_DIR) && make clean
 
-.PHONY: all build build_haskell build_c bench bench_verified bench_gibbon_c bench_canonical_c clean
+.PHONY: all bench-paper build build_haskell build_c bench bench_verified bench_gibbon_c bench_canonical_c clean

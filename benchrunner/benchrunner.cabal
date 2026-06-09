@@ -4,7 +4,51 @@ version:            0.1
 build-type:         Simple
 synopsis:           Benchmark harness.
 
-executable benchrunner
+executable bench-criterion
+    main-is:          BenchCriterion.hs
+    other-modules:      ForeignFunctionImports
+                      , Types
+    build-depends:      base
+                      , lh-array-sort
+                      , criterion
+                      , random
+                      , deepseq
+                      , time
+                      , primitive
+                      , vector
+                      , vector-algorithms
+                      , system-cxx-std-lib
+    default-language:   GHC2021
+    default-extensions: TupleSections
+                        BangPatterns
+                        ScopedTypeVariables
+                        LinearTypes
+    ghc-options:        -Wall -Wcompat
+                        -threaded -rtsopts
+                        -O2
+
+    c-sources:
+                      csorts/insertionsort.c
+                      csorts/mergesort.c
+                      csorts/quicksort.c
+                      csorts-mono/insertionsort_mono.c
+                      csorts-mono/mergesort_mono.c
+                      csorts-mono/quicksort_mono.c
+
+    cxx-sources:
+                      cxx/insertionsort.cpp
+                      cxx/mergesort.cpp
+                      cxx/insertionsort_int_wrapper.cpp
+                      cxx/mergesort_int_wrapper.cpp
+
+    -- DNDEBUG disables asserts in cbits/
+    cc-options:        -std=c11 -O3 -DNDEBUG=1
+                       -fno-strict-aliasing
+                       -Werror=undef
+
+    cxx-options: -std=c++11 -O3 -fno-strict-aliasing
+
+executable benchrunner-old
     main-is:          Benchrunner.hs
     other-modules:      Measure
                       , ForeignFunctionImports
@@ -39,6 +83,9 @@ executable benchrunner
                       csorts/insertionsort.c
                       csorts/mergesort.c
                       csorts/quicksort.c
+                      csorts-mono/insertionsort_mono.c
+                      csorts-mono/mergesort_mono.c
+                      csorts-mono/quicksort_mono.c
 
     cxx-sources:
                       cxx/insertionsort.cpp
