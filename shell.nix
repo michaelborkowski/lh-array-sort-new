@@ -5,5 +5,11 @@ pkgs.mkShell {
     pkgs.haskell.compiler.${compiler}
     pkgs.haskellPackages.cabal-install # have to use default cabal instead of ${compiler}'s one to hit nix cache
     pkgs.z3
+
+  (pkgs.python3.withPackages (python-pkgs: with python-pkgs; [
+        numpy
+        matplotlib
+        pandas
+      ]))
     ];
 }
