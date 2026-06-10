@@ -1,5 +1,5 @@
 #include "benchmarks.h"
-#include "insertionsort.cpp"
+#include "insertionsort.hpp"
 
 extern "C" {
     extern int64_t *insertionsort_cxx_int(int64_t *pbase, size_t total_elems){

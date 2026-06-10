@@ -74,7 +74,7 @@ executable benchrunner-old
     ghc-options:        -Wall -Wcompat
                         -threaded -rtsopts
                         -fdefer-typed-holes
-                        -O2
+                        -O2 -optl -lstdc++
 
     c-sources:
                       csorts/insertionsort.c
