@@ -56,10 +56,8 @@ library
       DpsMerge
       DpsMergePar
       DpsMergeParSeqFallback
-      -- DpsMergeSort     -- don't necessarily need for paper
-      DpsMergeSort4
-      -- DpsMergeSortPar  -- don't necessarily need for paper
-      DpsMergeSort4Par
+      DpsMergeSort
+      DpsMergeSortPar
 
       Microbench
 

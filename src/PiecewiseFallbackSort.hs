@@ -1,4 +1,4 @@
--- Based on DpsMergeSort4.hs and Insertion.hs with analysis
+-- Based on DpsMergeSort.hs and Insertion.hs with analysis
 {-# LANGUAGE CPP #-}
 
 module PiecewiseFallbackSort where
@@ -24,11 +24,11 @@ import           Array.List as A
 {-@ msortInplace :: cutoff:Int ->  xs:Array a
       -> { ys:(Array a ) | A.size ys  == A.size xs   && left xs == left ys &&
                            right xs == right ys }
-      -> (Array a, Array a)<{\zs ts -> toBag xs == toBag zs && isSorted' zs &&
-                                       token xs == token zs && token ys == token ts &&
-                                       A.size xs == A.size zs && A.size ys == A.size ts &&
-                                       left zs == left xs && right zs == right xs &&
-                                       left ts == left ys && right ts == right ys }>
+      -> ( {zs:(Array a) | toBag xs == toBag zs && isSorted' zs &&
+                           token xs == token zs && A.size xs == A.size zs &&
+                           left zs == left xs && right zs == right xs}
+         , {ts:(Array a) | token ys == token ts && A.size ys == A.size ts &&
+                           left ts == left ys && right ts == right ys} )
        / [A.size xs] @-}
 msortInplace :: (Show a, HasPrimOrd a) => Int -> A.Array a -. A.Array a -. (A.Array a, A.Array a)
 msortInplace cutoff src tmp =  -- cutoff > 0, though it may not be necessary to show sorting correctness
@@ -65,13 +65,13 @@ msortInplace cutoff src tmp =  -- cutoff > 0, though it may not be necessary to 
                                A.size xs == A.size zs && token xs == token zs } @-}
 pfsort' :: (Show a, HasPrimOrd a) => a -> A.Array a -. A.Array a
 pfsort' anyVal src =
-  let !(Ur len, src') = A.size2 src  -- below expression is always in the interval [28, 708] (interval changed from meeting doc).
-      !(src'', _tmp) = msortInplace (if len <= 708 then 708  -- this can be any number >= 708 without affecting semantics, including `len`
-                                     else if len < 451776
-                                          -- this is the same as truncate (18820.2738 / sqrt (fromIntegral len)) per GHC.Float
-                                          then truncate((18820.2738 / (exp ((log (fromIntegral len)) * 0.5) )) :: Float)
-                                          else 28) src' (A.makeArray len anyVal) in
-  case A.free _tmp of !() -> src''
+    let !(Ur len, src') = A.size2 src -- below expression is always in the interval [28, 708] (interval changed from meeting doc).
+        cutoff          = if len <= 708 then 708  -- this can be any number >= 708 without affecting semantics, including `len`
+                        else if len < 451776
+                             -- this is the same as truncate (18820.2738 / sqrt (fromIntegral len)) per GHC.Float
+                             then truncate((18820.2738 / (exp ((log (fromIntegral len)) * 0.5) )) :: Float)
+                             else 28  
+     in allocScratch len anyVal (msortInplace cutoff) src'
 
 {-@ pfsort :: { xs:(A.Array a) | left xs == 0 && right xs == size xs }
                     -> { ys:_ | toBag xs == toBag ys && isSorted' ys &&
