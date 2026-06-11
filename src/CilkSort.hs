@@ -6,21 +6,28 @@ module CilkSort where
 import qualified Language.Haskell.Liquid.Bag as B
 import           Language.Haskell.Liquid.ProofCombinators hiding ((?))
 import           ProofCombinators
-import           Array
+
 import           ArrayOperations
-import           DpsMerge
-import Properties.Equivalence
-import Properties.Order
+import           Properties.Equivalence
+import           Properties.Order
+import           Par
+
+import           DpsMergePar 
+import qualified DpsMergeSort as Seq
 import           Insertion
 import           QuickSortCilk
 
+import           Linear.Common
 #ifdef MUTABLE_ARRAYS
 import           Array.Mutable as A
+import           Control.DeepSeq ( NFData(..) )
 #else
 import           Array.List as A
 #endif
+import           Array as A
 
 #define KILO 1024
+#define SEQSIZE   (4*KILO)
 #define MERGESIZE (2*KILO)
 #define QUICKSIZE (2*KILO)
 #define INSERTIONSIZE 20
@@ -29,11 +36,11 @@ import           Array.List as A
 {-@ cilkSortInplace :: xs:Array a
       -> { ys:(Array a ) | A.size ys  == A.size xs   && left xs == left ys &&
                            right xs == right ys }
-      -> (Array a, Array a)<{\zs ts -> toBag xs == toBag zs && isSorted' zs &&
-                                       token xs == token zs && token ys == token ts &&
-                                       A.size xs == A.size zs && A.size ys == A.size ts &&
-                                       left zs == left xs && right zs == right xs &&
-                                       left ts == left ys && right ts == right ys }>
+      -> ( {zs:(Array a) | toBag xs == toBag zs && isSorted' zs &&
+                           token xs == token zs && A.size xs == A.size zs &&
+                           left zs == left xs && right zs == right xs}
+         , {ts:(Array a) | token ys == token ts && A.size ys == A.size ts &&
+                           left ts == left ys && right ts == right ys} )
        / [A.size xs] @-}
 #ifdef MUTABLE_ARRAYS
 cilkSortInplace :: (Show a, HasPrimOrd a, NFData a) =>
@@ -42,15 +49,15 @@ cilkSortInplace :: (Show a, HasPrimOrd a) =>
 #endif
   A.Array a -. A.Array a -. (A.Array a, A.Array a)
 cilkSortInplace src tmp = go src tmp where
-  {-@ go ::xs:Array a
-      -> { ys:(Array a ) | A.size ys  == A.size xs   && left xs == left ys &&
-                           right xs == right ys }
-      -> (Array a, Array a)<{\zs ts -> toBag xs == toBag zs && isSorted' zs &&
-                                       token xs == token zs && token ys == token ts &&
-                                       A.size xs == A.size zs && A.size ys == A.size ts &&
-                                       left zs == left xs && right zs == right xs &&
-                                       left ts == left ys && right ts == right ys }>
-       / [A.size xs] @-}
+  {-@ go :: xs:Array a
+        -> { ys:(Array a ) | A.size ys  == A.size xs   && left xs == left ys &&
+                             right xs == right ys }
+        -> ( {zs:(Array a) | toBag xs == toBag zs && isSorted' zs &&
+                             token xs == token zs && A.size xs == A.size zs &&
+                             left zs == left xs && right zs == right xs}
+           , {ts:(Array a) | token ys == token ts && A.size ys == A.size ts &&
+                             left ts == left ys && right ts == right ys} )
+        / [A.size xs] @-}
 #ifdef MUTABLE_ARRAYS
   go :: (Show a, HasPrimOrd a, NFData a) =>
 #else
@@ -62,7 +69,7 @@ cilkSortInplace src tmp = go src tmp where
     if len <= SEQSIZE
     then
       if len <= QUICKSIZE
-      then let src'' = quickSort' src'
+      then let src'' = quickSort src'
             in (src'', tmp)
       else Seq.msortInplace src' tmp
     else
@@ -75,13 +82,10 @@ cilkSortInplace src tmp = go src tmp where
           !(((src1', tmp1'), (src2', tmp2')), ((src3', tmp3'), (src4', tmp4')))
                            = (go src1 tmp1 .||. go src2 tmp2) .||.
                              (go src3 tmp3 .||. go src4 tmp4)
-  --                         = (.||||.) (go src1 tmp1) (go src2 tmp2)
-  --                                    (go src3 tmp3) (go src4 tmp4)
           tmpA'            = A.append tmp1' tmp2'
           tmpB'            = A.append tmp3' tmp4'
           !((srcA'', tmpA''), (srcB'', tmpB''))
                            = merge_par src1' src2' tmpA' .||. merge_par src3' src4' tmpB'
-    --                         = tuple2 (merge_par src1' src2') tmpA' (merge_par src3' src4') tmpB'
           src''            = A.append srcA'' srcB''
           !(tmp''', src''') = merge_par tmpA'' tmpB'' src''
        in  (src''', tmp''') ? lem_toBag_splitMid src
@@ -113,7 +117,7 @@ cilkSort' anyVal src =
                                 A.size xs == A.size ys && token xs == token ys  } @-}
 cilkSort :: (Show a, Ord a) => A.Array a -> A.Array a
 cilkSort src =
-  let (len, src') = A.size2 src in
+  let !(Ur len, src') = A.size2 src in
       if len == 0 then src'
       else let !(Ur x0, src'') = A.get2 0 src' in cilkSort' x0 src''
 {-# INLINABLE cilkSort #-}
