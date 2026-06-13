@@ -6,7 +6,6 @@ module Par where
 
 import           Linear.Common
 import qualified Unsafe.Linear as Unsafe
-import           Control.DeepSeq ( NFData(..) )
 import           GHC.Conc ( par, pseq )
 import qualified Control.Monad.Par as P
 
@@ -28,9 +27,9 @@ tuple2 f1 x f2 y = p `par` q `pseq` (p,q)
     q = f2 y
 
 {-# INLINE tuple4 #-}
-tuple4 :: (NFData a, NFData b) => (a -> b) -> a -> (c -> d) -> c
-                               -> (e -> f) -> e -> (g -> h) -> g
-                               -> ((b, d), (f, h))
+tuple4 :: (a -> b) -> a -> (c -> d) -> c
+       -> (e -> f) -> e -> (g -> h) -> g
+       -> ((b, d), (f, h))
 tuple4 f1 x f2 y f3 z f4 a  = p `par` q `par` r `par` s `pseq` ((p,q), (r,s))
   where
     p = f1 x
@@ -39,7 +38,9 @@ tuple4 f1 x f2 y f3 z f4 a  = p `par` q `par` r `par` s `pseq` ((p,q), (r,s))
     s = f4 a
 
 {-# INLINABLE (.||.) #-}
-(.||.) :: (NFData a) => a -. a -. (a,a)
+-- NB: no NFData needed: this uses only new/fork/put_/get/runPar, none of which
+-- require it (put_ is head-strict). WHNF suffices to force the in-place sorts.
+(.||.) :: a -. a -. (a,a)
 --(.||.) = Unsafe.toLinear (\a -> Unsafe.toLinear (\b -> (a `par` b `pseq` (a,b))))
 (.||.) = Unsafe.toLinear (\a -> Unsafe.toLinear (\b -> P.runPar $ do
                     i <- P.new
@@ -52,7 +53,7 @@ tuple4 f1 x f2 y f3 z f4 a  = p `par` q `par` r `par` s `pseq` ((p,q), (r,s))
   ))
 
 
-(.||||.) :: (NFData a) => a -. a -. a -. a -. ((a,a),(a,a))  
+(.||||.) :: a -. a -. a -. a -. ((a,a),(a,a))
 (.||||.) = Unsafe.toLinear (\a -> 
                 Unsafe.toLinear (\b -> 
                     Unsafe.toLinear (\c -> 

@@ -18,7 +18,6 @@ import           Par
 import           Linear.Common
 #ifdef MUTABLE_ARRAYS
 import           Array.Mutable as A
-import           Control.DeepSeq ( NFData(..) )
 #else
 import           Array.List as A
 #endif
@@ -36,11 +35,7 @@ import           Array.List as A
          , {ts:(Array a) | token ys == token ts && A.size ys == A.size ts &&
                            left ts == left ys && right ts == right ys} )
        / [A.size xs] @-}
-#ifdef MUTABLE_ARRAYS
-msortInplace :: (Show a, HasPrimOrd a, NFData a) =>
-#else
 msortInplace :: (Show a, HasPrimOrd a) =>
-#endif
   Int -> A.Array a -. A.Array a -. (A.Array a, A.Array a)
 msortInplace cutoff src tmp =
   let !(Ur len, src') = A.size2 src in
@@ -77,11 +72,7 @@ msortInplace cutoff src tmp =
            -> { xs:(Array a) | A.size xs > 0 && left xs == 0 && right xs == size xs && y == A.get xs 0 }
            -> { zs:(Array a) | toBag xs == toBag zs && isSorted' zs &&
                                A.size xs == A.size zs && token xs == token zs } @-}
-#ifdef MUTABLE_ARRAYS
-pfsort' :: (Show a, HasPrimOrd a, NFData a) =>
-#else
 pfsort' :: (Show a, HasPrimOrd a) =>
-#endif
   a -> A.Array a -. A.Array a
 pfsort' anyVal src =
   let !(Ur len, src') = A.size2 src -- below expression is always in the interval [28, 708] (interval changed from meeting doc).
@@ -95,11 +86,7 @@ pfsort' anyVal src =
 {-@ pfsort :: { xs:(A.Array a) | left xs == 0 && right xs == size xs }
                     -> { ys:_ | toBag xs == toBag ys && isSorted' ys &&
                                 A.size xs == A.size ys && token xs == token ys  } @-}
-#ifdef MUTABLE_ARRAYS
-pfsort :: (Show a, HasPrimOrd a, NFData a) =>
-#else
 pfsort :: (Show a, HasPrimOrd a) =>
-#endif
   A.Array a -. A.Array a
 pfsort src =
   let !(Ur len, src') = A.size2 src in

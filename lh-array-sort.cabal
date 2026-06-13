@@ -65,13 +65,12 @@ library
       PiecewiseFallbackSort
       PiecewiseFallbackSortPar
 
-      -- JZ: Add Parallel Cilksort
-      -- Current Cilksort is entirely sequential
+      -- Parallel Cilksort
+      QuickSortCilk
+      CilkSort
 
 -- remove until ready:
 --      QuickSortNew
---  the last not quite ready yet?
---      CilkSort
       Linear.Common
   other-modules:
       Array.List
