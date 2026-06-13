@@ -19,7 +19,6 @@ import           Par
 import           Linear.Common
 #ifdef MUTABLE_ARRAYS
 import           Array.Mutable as A
-import           Control.DeepSeq ( NFData(..) )
 #else
 import           Array.List as A
 #endif
@@ -345,11 +344,7 @@ lem_merge_par_func_sorted src1 src2 dst =
                    left (snd (fst t)) == left xs2 && right (snd (fst t)) == right xs2 &&
                    size (snd t) == size zs && token (snd t) == token zs &&
                    left (snd t) == left zs && right (snd t) == right zs  } / [size xs1] @-}
-#ifdef MUTABLE_ARRAYS
-merge_par' :: (Show a, HasPrimOrd a, NFData a) =>
-#else
 merge_par' :: (Show a, HasPrimOrd a) =>
-#endif
    A.Array a -. (A.Array a -. (A.Array a -. ((A.Array a, A.Array a), A.Array a)))
 merge_par' !src1 !src2 !dst = go src1 src2 dst where
   {-@ go :: xs1:(Array a) -> { xs2:(Array a) | token xs1 == token xs2 }
@@ -360,11 +355,7 @@ merge_par' !src1 !src2 !dst = go src1 src2 dst where
                      left (snd (fst t)) == left xs2 && right (snd (fst t)) == right xs2 &&
                      size (snd t) == size zs && token (snd t) == token zs &&
                      left (snd t) == left zs && right (snd t) == right zs  } / [size xs1] @-}
-#ifdef MUTABLE_ARRAYS
-  go :: (Show a, HasPrimOrd a, NFData a) =>
-#else
   go :: (Show a, HasPrimOrd a) =>
-#endif
    A.Array a -. (A.Array a -. (A.Array a -. ((A.Array a, A.Array a), A.Array a)))
   go src1 src2 dst =
     let !(Ur n3, dst')  = A.size2 dst in
@@ -445,11 +436,7 @@ binarySearch query ls = let !(Ur n, ls')  = A.size2 ls
                                    left (snd t) == left zs  && right (snd t) == right zs  &&
                                    size (fst t) == size xs1 + size xs2 &&
                                    size (snd t) == size zs } / [size xs1] @-}
-#ifdef MUTABLE_ARRAYS
-merge_par :: (Show a, HasPrimOrd a, NFData a) =>
-#else
 merge_par :: (Show a, HasPrimOrd a) =>
-#endif
    A.Array a -. (A.Array a -. (A.Array a -. (A.Array a, A.Array a)))
 merge_par !src1 !src2 !dst =
   let !((src1', src2'), dst') = merge_par' src1  src2  dst

@@ -22,7 +22,6 @@ import qualified DpsMergeSort as Seq
 import           Linear.Common
 #ifdef MUTABLE_ARRAYS
 import           Array.Mutable as A
-import           Control.DeepSeq ( NFData(..) )
 #else
 import           Array.List as A
 #endif
@@ -42,11 +41,7 @@ import           Array.List as A
          , {ts:(Array a) | token ys == token ts && A.size ys == A.size ts &&
                            left ts == left ys && right ts == right ys} )
        / [A.size xs] @-}
-#ifdef MUTABLE_ARRAYS
-msortInplace :: (Show a, HasPrimOrd a, NFData a) =>
-#else
 msortInplace :: (Show a, HasPrimOrd a) =>
-#endif
   A.Array a -. A.Array a -. (A.Array a, A.Array a)
 msortInplace src tmp = go src tmp where
   {-@ go :: xs:Array a
@@ -58,11 +53,7 @@ msortInplace src tmp = go src tmp where
            , {ts:(Array a) | token ys == token ts && A.size ys == A.size ts &&
                              left ts == left ys && right ts == right ys} )
          / [A.size xs] @-}
-#ifdef MUTABLE_ARRAYS
-  go :: (Show a, HasPrimOrd a, NFData a) =>
-#else
   go :: (Show a, HasPrimOrd a) =>
-#endif
     A.Array a -. A.Array a -. (A.Array a, A.Array a)
   go src tmp =
     let !(Ur len, src') = A.size2 src in
@@ -99,11 +90,7 @@ msortInplace src tmp = go src tmp where
            -> { xs:(Array a) | A.size xs > 0 && left xs == 0 && right xs == size xs && y == A.get xs 0 }
            -> { zs:(Array a) | toBag xs == toBag zs && isSorted' zs &&
                                A.size xs == A.size zs && token xs == token zs } @-}
-#ifdef MUTABLE_ARRAYS
-msort' :: (Show a, HasPrimOrd a, NFData a) =>
-#else
 msort' :: (Show a, HasPrimOrd a) =>
-#endif
   a -> A.Array a -. A.Array a
 msort' anyVal src =
   let !(Ur len, src') = A.size2 src in allocScratch len anyVal msortInplace src'
@@ -113,11 +100,7 @@ msort' anyVal src =
 {-@ msort :: { xs:(A.Array a) | left xs == 0 && right xs == size xs }
                     -> { ys:_ | toBag xs == toBag ys && isSorted' ys &&
                                 A.size xs == A.size ys && token xs == token ys  } @-}
-#ifdef MUTABLE_ARRAYS
-msort :: (Show a, HasPrimOrd a, NFData a) =>
-#else
 msort :: (Show a, HasPrimOrd a) =>
-#endif
   A.Array a -. A.Array a
 msort src =
   let !(Ur len, src') = A.size2 src in
