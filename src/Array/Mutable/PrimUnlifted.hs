@@ -40,19 +40,19 @@ makeNoFill# len elt =
   where
     nbytes = (P.sizeOf# elt) GHC.*# len
 
-{-# INLINABLE get# #-}
+{-# INLINE get# #-}
 get# :: P.Prim a => Array# a -> GHC.Int# -> a
 get# (Array# !arr) i =
   case GHC.runRW# (P.readByteArray# arr i) of
     (# _, !ret #) -> ret
 
-{-# INLINABLE set# #-}
+{-# INLINE set# #-}
 set# :: P.Prim a => Array# a -> GHC.Int# -> a -> Array# a
 set# (Array# !arr) i !a =
   case GHC.runRW# (P.writeByteArray# arr i a) of
     _ -> Array# arr
 
-{-# INLINABLE copy# #-}
+{-# INLINE copy# #-}
 copy# :: P.Prim a => a -> Array# a -> GHC.Int# -> Array# a -> GHC.Int# -> GHC.Int# -> Array# a
 copy# elt (Array# !src) src_offset (Array# !dst) dst_offset n =
   case GHC.runRW# (GHC.copyMutableByteArray# src src_offset_bytes dst dst_offset_bytes n_bytes) of
@@ -62,7 +62,7 @@ copy# elt (Array# !src) src_offset (Array# !dst) dst_offset n =
     dst_offset_bytes = (P.sizeOf# elt) GHC.*# dst_offset
     n_bytes          = (P.sizeOf# elt) GHC.*# n
 
-{-# INLINABLE size# #-}
+{-# INLINE size# #-}
 size# :: forall a. P.Prim a => Array# a -> GHC.Int#
 size# (Array# arr) =
   case GHC.runRW# (GHC.getSizeofMutableByteArray# arr) of
